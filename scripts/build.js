@@ -49,6 +49,10 @@ const jsFiles = [
 ];
 const js = jsFiles.map(readFile).join("\n\n");
 
+const fav32B64 = fs.readFileSync(path.join(__dirname, "..", "favicon-32x32.png")).toString("base64");
+const logoB64 = fs.readFileSync(path.join(__dirname, "..", "logo.png")).toString("base64");
+const htmlWithLogo = html.replace(/src="logo\.png"/g, `src="data:image/png;base64,${logoB64}"`);
+
 // 4. Assemble HTML Template
 const bundle = `<!DOCTYPE html>
 <html lang="en">
@@ -56,14 +60,17 @@ const bundle = `<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Poppy</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' rx='44' fill='%23f23d2a'/%3E%3Cg fill='%23ffe6dc'%3E%3Cellipse cx='100' cy='58' rx='36' ry='42'/%3E%3Cellipse cx='142' cy='100' rx='42' ry='36'/%3E%3Cellipse cx='100' cy='142' rx='36' ry='42'/%3E%3Cellipse cx='58' cy='100' rx='42' ry='36'/%3E%3C/g%3E%3Ccircle cx='100' cy='100' r='14' fill='%232a0d16'/%3E%3C/svg%3E">
-<link rel="alternate icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAWElEQVR42mP8z8BQDwAEhQGAhKmMIQBDvQ5m/P///1+YGEgywmgGEGMjNsb/j//jC3FZh8v1mFwNy3p0l2NzCSzrcbmEmKDH5w5iwhiXu4h1DTp2A7EZjwcA7r9y1a3s2k8AAAAASUVORK5CYII=">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" href="favicon.ico">
+<link rel="icon" type="image/png" href="data:image/png;base64,${fav32B64}">
 <style>
 ${css}
 </style>
 </head>
 <body>
-${html}
+${htmlWithLogo}
 
 <script>
 ${js}
@@ -83,9 +90,21 @@ fs.writeFileSync(path.join(__dirname, "..", "index.html"), bundle, "utf8");
 fs.writeFileSync(path.join(__dirname, "..", "poppy.html"), bundle, "utf8");
 fs.writeFileSync(path.join(__dirname, "..", "dist", "index.html"), bundle, "utf8");
 
-// 7. Write static favicon.ico
-const icoBuf = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAWElEQVR42mP8z8BQDwAEhQGAhKmMIQBDvQ5m/P///1+YGEgywmgGEGMjNsb/j//jC3FZh8v1mFwNy3p0l2NzCSzrcbmEmKDH5w5iwhiXu4h1DTp2A7EZjwcA7r9y1a3s2k8AAAAASUVORK5CYII=", "base64");
-fs.writeFileSync(path.join(__dirname, "..", "favicon.ico"), icoBuf);
-fs.writeFileSync(path.join(__dirname, "..", "dist", "favicon.ico"), icoBuf);
+// 7. Ensure favicon.ico and logo assets are copied to dist
+if (fs.existsSync(path.join(__dirname, "..", "favicon.ico"))) {
+  fs.copyFileSync(path.join(__dirname, "..", "favicon.ico"), path.join(__dirname, "..", "dist", "favicon.ico"));
+}
+if (fs.existsSync(path.join(__dirname, "..", "favicon-32x32.png"))) {
+  fs.copyFileSync(path.join(__dirname, "..", "favicon-32x32.png"), path.join(__dirname, "..", "dist", "favicon-32x32.png"));
+}
+if (fs.existsSync(path.join(__dirname, "..", "favicon-16x16.png"))) {
+  fs.copyFileSync(path.join(__dirname, "..", "favicon-16x16.png"), path.join(__dirname, "..", "dist", "favicon-16x16.png"));
+}
+if (fs.existsSync(path.join(__dirname, "..", "apple-touch-icon.png"))) {
+  fs.copyFileSync(path.join(__dirname, "..", "apple-touch-icon.png"), path.join(__dirname, "..", "dist", "apple-touch-icon.png"));
+}
+if (fs.existsSync(path.join(__dirname, "..", "logo.png"))) {
+  fs.copyFileSync(path.join(__dirname, "..", "logo.png"), path.join(__dirname, "..", "dist", "logo.png"));
+}
 
 console.log(`Build complete! Output written to index.html, poppy.html, dist/index.html, and favicon.ico (${bundle.length} bytes). Verified exactly 1 script closing tag.`);

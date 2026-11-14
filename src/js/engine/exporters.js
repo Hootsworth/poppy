@@ -467,7 +467,7 @@ if ($("#gistSyncBtn")) $("#gistSyncBtn").onclick = async () => {
       method: "POST",
       headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
       body: JSON.stringify({
-        description: "Poppy 2.0 Encrypted Backup (" + new Date().toISOString() + ")",
+        description: "Poppy Encrypted Backup (" + new Date().toISOString() + ")",
         public: false,
         files: { "poppy-backup.poppyenc": { content: b64 } }
       })
@@ -966,7 +966,7 @@ async function doPublish(targetProv, repoName, customToken) {
       const putRes = await fetch(`https://api.github.com/repos/${owner}/${name}/contents/index.html`, {
         method: "PUT",
         headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
-        body: JSON.stringify({ message: "Publish site via Poppy 2.0", content: b64, sha })
+        body: JSON.stringify({ message: "Publish site via Poppy", content: b64, sha })
       });
       if (!putRes.ok) throw new Error("Failed to upload files: " + (await putRes.text()));
 
