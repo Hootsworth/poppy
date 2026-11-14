@@ -64,18 +64,46 @@ CRITICAL RULES:
 8. PERSISTENCE: If appropriate, use poppy.store.get/set or localStorage to keep data across reloads.`;
 
 function balanceDelimiters(code) {
+  let c = code.replace(/\s+$/, "");
   const stack = [];
   let inString = null;
+  let inLineComment = false;
+  let inBlockComment = false;
   let escaped = false;
-  let c = code.replace(/\s+$/, "");
   
   for (let i = 0; i < c.length; i++) {
     const ch = c[i];
+    const next = c[i + 1] || "";
+    
     if (escaped) { escaped = false; continue; }
     if (ch === "\\") { escaped = true; continue; }
     
+    if (inLineComment) {
+      if (ch === "\n") inLineComment = false;
+      continue;
+    }
+    
+    if (inBlockComment) {
+      if (ch === "*" && next === "/") {
+        inBlockComment = false;
+        i++;
+      }
+      continue;
+    }
+    
     if (inString) {
       if (ch === inString) inString = null;
+      continue;
+    }
+    
+    if (ch === "/" && next === "/") {
+      inLineComment = true;
+      i++;
+      continue;
+    }
+    if (ch === "/" && next === "*") {
+      inBlockComment = true;
+      i++;
       continue;
     }
     
@@ -96,7 +124,14 @@ function balanceDelimiters(code) {
   }
   
   let patch = "";
+  if (inLineComment) patch += "\n";
+  if (inBlockComment) patch += "*/\n";
   if (inString) patch += inString;
+  
+  let trimmed = c.trimEnd();
+  if (/[,=?:+*&|]\s*$/.test(trimmed)) {
+    c = trimmed.replace(/[,=?:+*&|]\s*$/, "");
+  }
   
   while (stack.length) {
     const open = stack.pop();
@@ -131,7 +166,35 @@ function repairHtml(html) {
     h = h.slice(0, scriptTagEnd + 1) + "\n" + code;
   }
   
-  // 2. Ensure body and html tags are closed
+  // 2. Scan every <script> block and repair any syntax errors
+  h = h.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi, (match, attrs, code) => {
+    if (/\bsrc\s*=/i.test(attrs)) return match;
+    const trimmed = code.trim();
+    if (!trimmed) return match;
+    try {
+      new Function(trimmed);
+      return match;
+    } catch(err) {
+      const repaired = balanceDelimiters(trimmed);
+      try {
+        new Function(repaired);
+        return `<script${attrs}>\n${repaired}\n</scr` + `ipt>`;
+      } catch (err2) {
+        let lines = trimmed.split("\n");
+        while (lines.length > 1) {
+          lines.pop();
+          const attempt = balanceDelimiters(lines.join("\n"));
+          try {
+            new Function(attempt);
+            return `<script${attrs}>\n${attempt}\n</scr` + `ipt>`;
+          } catch(e) {}
+        }
+        return match;
+      }
+    }
+  });
+  
+  // 3. Ensure body and html tags are closed
   if (!/<\/body>/i.test(h)) h += "\n</body>";
   if (!/<\/html>/i.test(h)) h += "\n</html>";
   
@@ -336,6 +399,74 @@ function autoWireButtons(html) {
         row.style.transform = "scale(0.95)";
         setTimeout(() => { row.remove(); }, 200);
       }
+    }
+
+    // 5. Musical Instrument & Guitar / Synth Engine
+    const isInstrument = text.includes("string") || text.includes("strum") || text.includes("fret") || text.includes("chord") ||
+      text.includes("guitar") || text.includes("note") || text.includes("tune") || text.includes("pick") ||
+      /^[a-g][#b]?[0-8]?$/i.test(text) || btn.dataset.note || btn.dataset.string || btn.dataset.chord ||
+      cls.includes("string") || cls.includes("fret") || cls.includes("key") || id.includes("string") || id.includes("fret");
+
+    if (isInstrument) {
+      const noteFreqs = {
+        "e2": 82.41, "f2": 87.31, "g2": 98.00, "a2": 110.00, "b2": 123.47,
+        "c3": 130.81, "d3": 146.83, "e3": 164.81, "f3": 174.61, "g3": 196.00, "a3": 220.00, "b3": 246.94,
+        "c4": 261.63, "d4": 293.66, "e4": 329.63, "f4": 349.23, "g4": 392.00, "a4": 440.00, "b4": 493.88,
+        "c5": 523.25, "d5": 587.33, "e5": 659.25,
+        "string 6": 82.41, "string 5": 110.00, "string 4": 146.83, "string 3": 196.00, "string 2": 246.94, "string 1": 329.63,
+        "6": 82.41, "5": 110.00, "4": 146.83, "3": 196.00, "2": 246.94, "1": 329.63,
+        "c": 261.63, "d": 293.66, "e": 329.63, "f": 349.23, "g": 392.00, "a": 440.00, "b": 493.88,
+        "c maj": 261.63, "g maj": 392.00, "am": 440.00, "f maj": 349.23, "d min": 293.66, "em": 329.63
+      };
+
+      let freq = 220;
+      const key = (btn.dataset.note || btn.dataset.string || btn.dataset.chord || text).toLowerCase().trim();
+      if (noteFreqs[key]) {
+        freq = noteFreqs[key];
+      } else {
+        const found = Object.keys(noteFreqs).find(k => key.includes(k));
+        if (found) freq = noteFreqs[found];
+      }
+
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          const actx = window.__poppyAudioCtx || (window.__poppyAudioCtx = new AudioCtx());
+          if (actx.state === "suspended") actx.resume();
+          const t0 = actx.currentTime;
+          
+          const osc1 = actx.createOscillator();
+          const osc2 = actx.createOscillator();
+          const gain = actx.createGain();
+          const filter = actx.createBiquadFilter();
+
+          osc1.type = "sawtooth";
+          osc1.frequency.setValueAtTime(freq, t0);
+          osc2.type = "triangle";
+          osc2.frequency.setValueAtTime(freq * 1.002, t0);
+
+          filter.type = "lowpass";
+          filter.frequency.setValueAtTime(freq * 5.0, t0);
+          filter.frequency.exponentialRampToValueAtTime(freq * 0.9, t0 + 1.2);
+
+          gain.gain.setValueAtTime(0.3, t0);
+          gain.gain.exponentialRampToValueAtTime(0.001, t0 + 1.4);
+
+          osc1.connect(filter);
+          osc2.connect(filter);
+          filter.connect(gain);
+          gain.connect(actx.destination);
+
+          osc1.start(t0);
+          osc2.start(t0);
+          osc1.stop(t0 + 1.4);
+          osc2.stop(t0 + 1.4);
+
+          btn.style.transition = "transform .06s ease";
+          btn.style.transform = "scale(0.96) translateY(2px)";
+          setTimeout(() => { btn.style.transform = ""; }, 120);
+        }
+      } catch(err) {}
     }
   }, true);
 })();\n` + "</scr" + "ipt>";

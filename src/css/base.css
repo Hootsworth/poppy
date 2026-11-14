@@ -115,14 +115,14 @@ h1 span{display:inline-block;animation:rise .8s cubic-bezier(.2,.9,.3,1) both;an
 .bub.work::after{content:"";display:inline-block;width:14px;height:14px;border:2.5px solid var(--line);border-top-color:var(--ink);border-radius:50%;animation:spin .75s linear infinite;flex:none}
 
 /* result */
-#stage{position:fixed;inset:0;z-index:10;display:none;background:#fff}
+#stage{position:fixed;inset:0;z-index:50;display:none;background:#fff}
 #frame{width:100%;height:100%;border:0;display:block;background:#fff}
-#fab{position:fixed;z-index:20;right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;border:2px solid var(--ink);background:var(--red);padding:7px;display:none;box-shadow:0 4px 0 var(--ink)}
+#fab{position:fixed;z-index:60;right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;border:2px solid var(--ink);background:var(--red);padding:7px;display:none;box-shadow:0 4px 0 var(--ink)}
 #fab svg{width:100%;height:100%}
 #fab.busy svg{animation:spin 1.4s linear infinite}
 #fab:hover{transform:rotate(30deg) scale(1.08)}
 #fab:active{transform:scale(.9)}
-#panel{position:fixed;z-index:20;right:max(16px,env(safe-area-inset-right));bottom:calc(max(16px,env(safe-area-inset-bottom)) + 70px);width:min(440px,calc(100vw - 32px));background:var(--red);border:2px solid var(--ink);border-radius:26px;padding:14px;display:none;flex-direction:column;gap:12px;box-shadow:0 6px 0 var(--ink)}
+#panel{position:fixed;z-index:60;right:max(16px,env(safe-area-inset-right));bottom:calc(max(16px,env(safe-area-inset-bottom)) + 70px);width:min(440px,calc(100vw - 32px));background:var(--red);border:2px solid var(--ink);border-radius:26px;padding:14px;display:none;flex-direction:column;gap:12px;box-shadow:0 6px 0 var(--ink)}
 #panel .ask{box-shadow:none}
 #panel .ask:focus-within{box-shadow:none;transform:none}
 #panel .at-dropdown{top:auto;bottom:calc(100% + 10px)}
@@ -135,11 +135,12 @@ h1 span{display:inline-block;animation:rise .8s cubic-bezier(.2,.9,.3,1) both;an
 #menu button:hover{background:var(--ink);color:var(--white)}
 #menu:not([hidden]){animation:pop .22s var(--ease);transform-origin:bottom right}
 #usage{grid-column:1/-1;font-size:.78rem;font-weight:700;opacity:.85;text-align:center}#usage:empty{display:none}
+.live #home{display:none!important}
 .live #stage,.live #fab{display:block}
 .live #panel.open{display:flex;animation:pop .3s var(--ease);transform-origin:bottom right}
 .live #fab{animation:pop .6s .7s var(--ease) both}
 .prev #fab,.prev #panel{display:none!important}
-#code{position:fixed;inset:0;z-index:15;display:none;flex-direction:column;background:var(--ink);padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom));gap:12px}
+#code{position:fixed;inset:0;z-index:70;display:none;flex-direction:column;background:var(--ink);padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom));gap:12px}
 #code.open{display:flex}
 .ed{flex:1;display:flex;min-height:0;background:#1a0710;border:2px solid var(--red);border-radius:16px;overflow:hidden}
 #gut{margin:0;padding:14px 10px 14px 12px;color:#9b6f67;font:13px/1.5 ui-monospace,Menlo,monospace;text-align:right;overflow:hidden;user-select:none;min-width:3.6em}
