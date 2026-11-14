@@ -26,8 +26,11 @@ const ARCHETYPES = {
 - Finish: Flagpole / Castle at the end of the level to trigger victory fanfare and next level / victory screen.
 - Controls:
   * Keyboard: ArrowLeft / ArrowRight / A / D to move, Space / ArrowUp / W to jump.
-  * Mobile Touch Controls: On-screen semi-transparent buttons (#btnLeft, #btnRight, #btnJump, #btnRestart).
+  * Touch & Click Controls: On-screen buttons (#btnLeft, #btnRight, #btnJump, #btnRestart) MUST bind to BOTH touchstart/touchend AND mousedown/mouseup/click events so buttons respond instantly on desktop and mobile.
 - WebAudio Sounds:
+  * Initialize AudioContext lazily on the first user interaction (click, keydown, touchstart) to comply with browser autoplay policies:
+    let audioCtx = null;
+    function getAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); return audioCtx; }
   * Jump: Frequency ramp from 160Hz to 620Hz.
   * Coin: Dual-tone chime (987Hz -> 1318Hz, B5 -> E6).
   * Stomp: Low square impact (140Hz -> 35Hz).
@@ -73,10 +76,10 @@ const ARCHETYPES = {
 /* Responsive pixel-art arcade layout, HUD styling, touch controls & canvas scaling */
 
 --- FILE: audio.js ---
-/* WebAudio oscillator sound synthesizer: playJump(), playCoin(), playStomp(), playGameOver(), playVictory() */
+/* WebAudio oscillator sound synthesizer with lazy context initialization on first interaction: playJump(), playCoin(), playStomp(), playGameOver(), playVictory() */
 
 --- FILE: engine.js ---
-/* 60fps delta-time requestAnimationFrame game loop, player physics, AABB collision engine, keyboard and touch event listeners */
+/* 60fps delta-time requestAnimationFrame game loop, player physics, AABB collision engine, keyboard and touch/mouse event listeners for all buttons */
 
 --- FILE: levels.js ---
 /* Level tilemap, question mark blocks with bouncing coins, patrolling Goombas, flagpole finish, rendering routines & game state management */`

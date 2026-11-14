@@ -178,6 +178,17 @@ function repairHtml(html) {
   if (!html || typeof html !== "string") return html;
   let h = html.trim();
   
+  // 0. Sanitize escaped JSON/model attribute quotes:
+  // e.g. viewBox=\"0 0 24 24\" -> viewBox="0 0 24 24"
+  // e.g. d=\"M10.325...\" -> d="M10.325..."
+  if (/=\\"|viewBox=\\"|d=\\"|class=\\"|id=\\"/i.test(h)) {
+    h = h.replace(/=\\"/g, '="').replace(/\\">/g, '">').replace(/\\"\s/g, '" ');
+    h = h.replace(/viewBox="\\+/g, 'viewBox="').replace(/d="\\+/g, 'd="');
+    if (/\\"[a-zA-Z0-9_\s-]+\\"/i.test(h)) {
+      h = h.replace(/\\"/g, '"');
+    }
+  }
+
   // 1. Check for unclosed style tags
   const openStyles = (h.match(/<style\b[^>]*>/gi) || []).length;
   const closeStyles = (h.match(/<\/style>/gi) || []).length;
@@ -194,8 +205,8 @@ function repairHtml(html) {
   }
 
   // 2. Check for genuinely unclosed HTML tags at the end of the document
-  const lastOpenTag = h.slice(Math.max(0, h.length - 250)).match(/<[a-z0-9-]+(?:\s+[^>]*?)?$/i);
-  if (lastOpenTag) {
+  const lastOpenTag = h.slice(Math.max(0, h.length - 250)).match(/<([a-z0-9-]+)(?:\s+[^>]*?)?$/i);
+  if (lastOpenTag && !['html', 'body'].includes(lastOpenTag[1].toLowerCase())) {
     const tagSnippet = lastOpenTag[0];
     const doubleQuotes = (tagSnippet.match(/"/g) || []).length;
     const singleQuotes = (tagSnippet.match(/'/g) || []).length;
@@ -203,6 +214,8 @@ function repairHtml(html) {
     else if (singleQuotes % 2 !== 0) h += "'>";
     else h += ">";
   }
+  // Strip any accidental trailing quote/bracket artifacts (e.g. leaked "> rendered on screen)
+  h = h.replace(/">\s*(<\/body>|<\/html>|$)/gi, (m, endTag) => endTag ? "\n" + endTag : "");
 
   // 3. Check for unclosed script tags
   const openScripts = (h.match(/<script\b[^>]*>/gi) || []).length;
@@ -306,24 +319,30 @@ function autoWireButtons(html) {
   };
 
   // 1. Tactile sound synthesis & WebAudio Autoplay Unlocking
+  let userInteracted = false;
   const unlockAudio = () => {
+    userInteracted = true;
     try {
       if (window.__poppyAudioCtx && window.__poppyAudioCtx.state === "suspended") {
-        window.__poppyAudioCtx.resume();
+        window.__poppyAudioCtx.resume().catch(()=>{});
       }
       if (window.Tone && window.Tone.context && window.Tone.context.state === "suspended") {
-        window.Tone.start();
+        window.Tone.start().catch(()=>{});
       }
       if (window.audioCtx && window.audioCtx.state === "suspended") {
-        window.audioCtx.resume();
+        window.audioCtx.resume().catch(()=>{});
       }
       if (window.audioContext && window.audioContext.state === "suspended") {
-        window.audioContext.resume();
+        window.audioContext.resume().catch(()=>{});
       }
     } catch(e) {}
   };
+  ["click", "keydown", "touchstart", "pointerdown", "mousedown"].forEach(ev => {
+    window.addEventListener(ev, unlockAudio, { capture: true, once: true });
+  });
 
   const playClickSfx = () => {
+    if (!userInteracted) return;
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;
@@ -344,6 +363,7 @@ function autoWireButtons(html) {
   };
 
   const playInstrumentSound = (param) => {
+    if (!userInteracted) return;
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;

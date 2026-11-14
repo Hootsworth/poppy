@@ -266,7 +266,9 @@ function extractHtml(t){
     const code = b[1].trim();
     if (/<(!doctype|html|body|main|div|style|script)\b/i.test(code)) {
       const start = code.search(/<!doctype|<html/i);
-      return (start >= 0 ? code.slice(start) : code).trim();
+      let res = (start >= 0 ? code.slice(start) : code).trim();
+      if (/=\\"|viewBox=\\"|d=\\"|class=\\"|id=\\"/i.test(res)) res = res.replace(/\\"/g, '"');
+      return res;
     }
   }
 
@@ -276,16 +278,22 @@ function extractHtml(t){
     let raw = t.slice(startIdx);
     const endIdx = raw.search(/<\/html>/i);
     if (endIdx > 0) raw = raw.slice(0, endIdx + 7);
-    return raw.trim();
+    let res = raw.trim();
+    if (/=\\"|viewBox=\\"|d=\\"|class=\\"|id=\\"/i.test(res)) res = res.replace(/\\"/g, '"');
+    return res;
   }
 
   // 3. Fallback to any content with HTML tags
   if (/<[a-z!]/i.test(t)) {
     const fIdx = t.indexOf("<");
-    return t.slice(fIdx).trim();
+    let res = t.slice(fIdx).trim();
+    if (/=\\"|viewBox=\\"|d=\\"|class=\\"|id=\\"/i.test(res)) res = res.replace(/\\"/g, '"');
+    return res;
   }
 
-  return t.trim();
+  let res = t.trim();
+  if (/=\\"|viewBox=\\"|d=\\"|class=\\"|id=\\"/i.test(res)) res = res.replace(/\\"/g, '"');
+  return res;
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -670,13 +678,48 @@ if(n==="chart"||n==="chartjs"){await load("https://cdnjs.cloudflare.com/ajax/lib
 if(n==="marked"){await load("https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js");return window.marked}
 if(n==="confetti"){await load("https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js");return window.confetti}
 if(n==="qrcode"){await load("https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js");return window.QRCode}
-if(n==="sfx"){return(freq=440,type="sine",dur=0.15)=>{try{const ac=new(window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(0.1,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+dur);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+dur);return true;}catch(e){return false;}}}
+if(n==="sfx"){return(freq=440,type="sine",dur=0.15)=>{try{if(!__poppy_user_unlocked)return false;const ac=new(window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(0.1,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+dur);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+dur);return true;}catch(e){return false;}}}
 if(window.__poppy_plugins&&window.__poppy_plugins[n]){return window.__poppy_plugins[n]}
 throw new Error("Unknown library "+n+". Available: pyodide, sqlite, transformers, duckdb, ffmpeg, chart, marked, confetti, qrcode, sfx.")}
 };
 // Universal Button & Interaction Safety Net (6-Layer Resilience Engine)
 let __poppy_actx = null;
+let __poppy_user_unlocked = false;
+const __poppy_pending_audio = new Set();
+const __poppy_unlock_audio = () => {
+  if (__poppy_user_unlocked) return;
+  __poppy_user_unlocked = true;
+  for (const c of __poppy_pending_audio) {
+    try { if (c.state === "suspended") c.resume().catch(()=>{}); } catch(e) {}
+  }
+  __poppy_pending_audio.clear();
+  try {
+    if (window.Tone && typeof window.Tone.start === "function") window.Tone.start().catch(()=>{});
+    if (__poppy_actx && __poppy_actx.state === "suspended") __poppy_actx.resume().catch(()=>{});
+  } catch(e) {}
+};
+["click", "keydown", "touchstart", "pointerdown", "mousedown"].forEach(ev => {
+  window.addEventListener(ev, __poppy_unlock_audio, { capture: true, once: true });
+  document.addEventListener(ev, __poppy_unlock_audio, { capture: true, once: true });
+});
+
+// Guard AudioContext against pre-gesture console warnings & loops
+try {
+  const OrigAC = window.AudioContext || window.webkitAudioContext;
+  if (OrigAC && OrigAC.prototype && OrigAC.prototype.resume) {
+    const origResume = OrigAC.prototype.resume;
+    OrigAC.prototype.resume = function() {
+      if (!__poppy_user_unlocked) {
+        __poppy_pending_audio.add(this);
+        return Promise.resolve();
+      }
+      return origResume.apply(this, arguments);
+    };
+  }
+} catch(e) {}
+
 const resumeAudio = () => {
+  if (!__poppy_user_unlocked) return;
   try {
     if (window.Tone && typeof window.Tone.start === "function") window.Tone.start().catch(()=>{});
     const AC = window.AudioContext || window.webkitAudioContext;
@@ -686,9 +729,6 @@ const resumeAudio = () => {
     }
   } catch(e) {}
 };
-["click", "keydown", "touchstart", "mousedown"].forEach(ev => {
-  document.addEventListener(ev, resumeAudio, { capture: true });
-});
 
 const playClickAudio=()=>{
   try{
@@ -1646,6 +1686,10 @@ function bundleFiles(files, assetMap = {}){
   return html;
 }
 function parseFiles(t){
+  if (!t || typeof t !== "string") return { "index.html": "" };
+  if (/=\\"|viewBox=\\"|d=\\"|class=\\"|id=\\"/i.test(t)) {
+    t = t.replace(/\\"/g, '"');
+  }
   const fileRe = /(?:^|\n)(?:---|===)\s*FILE:\s*([^\n\r]+?)\s*(?:---|===)\s*\n([\s\S]*?)(?=(?:\n(?:---|===)\s*FILE:)|$)/gi;
   let m = fileRe.exec(t);
   if (m) {
@@ -1977,7 +2021,7 @@ async function build(text, auto){
   if (live) { $("#fab").classList.add("busy"); if (!auto) $("#panel").classList.remove("open"); }
   else { bub(text, "me"); note = bub("Growing your site"); note.classList.add("work"); phase("building"); }
   let peek, peekTok = null;
-  if (!live && !auto) { let last = 0, pf; peekTok = out => { const n = Date.now(); if (n - last < 1400) return; const i = out.search(/<(!doctype|html)/i); if (i < 0 || !/<body/i.test(out)) return; last = n; if (!peek) { peek = bub("", "peek"); pf = document.createElement("iframe"); pf.setAttribute("sandbox", ""); pf.setAttribute("title", "Live peek"); pf.setAttribute("aria-hidden", "true"); pf.tabIndex = -1; peek.append(pf); } pf.srcdoc = out.slice(i); }; }
+  if (!live && !auto) { let last = 0, pf; peekTok = out => { const n = Date.now(); if (n - last < 1400) return; const i = out.search(/<(!doctype|html)/i); if (i < 0 || !/<body/i.test(out)) return; last = n; if (!peek) { peek = bub("", "peek"); pf = document.createElement("iframe"); pf.setAttribute("sandbox", "allow-scripts allow-forms allow-modals"); pf.setAttribute("title", "Live peek"); pf.setAttribute("aria-hidden", "true"); pf.tabIndex = -1; peek.append(pf); } pf.srcdoc = out.slice(i).replace(/<script\b[\s\S]*?(?:<\/script>|$)/gi, ""); }; }
   const agentEnabled = $("#agentOn") && $("#agentOn").checked;
   if (!auto && agentEnabled) {
     try {

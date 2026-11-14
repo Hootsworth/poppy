@@ -1203,7 +1203,9 @@ function extractHtml(t){
     const code = b[1].trim();
     if (/<(!doctype|html|body|main|div|style|script)\b/i.test(code)) {
       const start = code.search(/<!doctype|<html/i);
-      return (start >= 0 ? code.slice(start) : code).trim();
+      let res = (start >= 0 ? code.slice(start) : code).trim();
+      if (/=\\"|viewBox=\\"|d=\\"|class=\\"|id=\\"/i.test(res)) res = res.replace(/\\"/g, '"');
+      return res;
     }
   }
 
@@ -1213,16 +1215,22 @@ function extractHtml(t){
     let raw = t.slice(startIdx);
     const endIdx = raw.search(/<\/html>/i);
     if (endIdx > 0) raw = raw.slice(0, endIdx + 7);
-    return raw.trim();
+    let res = raw.trim();
+    if (/=\\"|viewBox=\\"|d=\\"|class=\\"|id=\\"/i.test(res)) res = res.replace(/\\"/g, '"');
+    return res;
   }
 
   // 3. Fallback to any content with HTML tags
   if (/<[a-z!]/i.test(t)) {
     const fIdx = t.indexOf("<");
-    return t.slice(fIdx).trim();
+    let res = t.slice(fIdx).trim();
+    if (/=\\"|viewBox=\\"|d=\\"|class=\\"|id=\\"/i.test(res)) res = res.replace(/\\"/g, '"');
+    return res;
   }
 
-  return t.trim();
+  let res = t.trim();
+  if (/=\\"|viewBox=\\"|d=\\"|class=\\"|id=\\"/i.test(res)) res = res.replace(/\\"/g, '"');
+  return res;
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -1607,13 +1615,48 @@ if(n==="chart"||n==="chartjs"){await load("https://cdnjs.cloudflare.com/ajax/lib
 if(n==="marked"){await load("https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js");return window.marked}
 if(n==="confetti"){await load("https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js");return window.confetti}
 if(n==="qrcode"){await load("https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js");return window.QRCode}
-if(n==="sfx"){return(freq=440,type="sine",dur=0.15)=>{try{const ac=new(window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(0.1,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+dur);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+dur);return true;}catch(e){return false;}}}
+if(n==="sfx"){return(freq=440,type="sine",dur=0.15)=>{try{if(!__poppy_user_unlocked)return false;const ac=new(window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(0.1,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+dur);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+dur);return true;}catch(e){return false;}}}
 if(window.__poppy_plugins&&window.__poppy_plugins[n]){return window.__poppy_plugins[n]}
 throw new Error("Unknown library "+n+". Available: pyodide, sqlite, transformers, duckdb, ffmpeg, chart, marked, confetti, qrcode, sfx.")}
 };
 // Universal Button & Interaction Safety Net (6-Layer Resilience Engine)
 let __poppy_actx = null;
+let __poppy_user_unlocked = false;
+const __poppy_pending_audio = new Set();
+const __poppy_unlock_audio = () => {
+  if (__poppy_user_unlocked) return;
+  __poppy_user_unlocked = true;
+  for (const c of __poppy_pending_audio) {
+    try { if (c.state === "suspended") c.resume().catch(()=>{}); } catch(e) {}
+  }
+  __poppy_pending_audio.clear();
+  try {
+    if (window.Tone && typeof window.Tone.start === "function") window.Tone.start().catch(()=>{});
+    if (__poppy_actx && __poppy_actx.state === "suspended") __poppy_actx.resume().catch(()=>{});
+  } catch(e) {}
+};
+["click", "keydown", "touchstart", "pointerdown", "mousedown"].forEach(ev => {
+  window.addEventListener(ev, __poppy_unlock_audio, { capture: true, once: true });
+  document.addEventListener(ev, __poppy_unlock_audio, { capture: true, once: true });
+});
+
+// Guard AudioContext against pre-gesture console warnings & loops
+try {
+  const OrigAC = window.AudioContext || window.webkitAudioContext;
+  if (OrigAC && OrigAC.prototype && OrigAC.prototype.resume) {
+    const origResume = OrigAC.prototype.resume;
+    OrigAC.prototype.resume = function() {
+      if (!__poppy_user_unlocked) {
+        __poppy_pending_audio.add(this);
+        return Promise.resolve();
+      }
+      return origResume.apply(this, arguments);
+    };
+  }
+} catch(e) {}
+
 const resumeAudio = () => {
+  if (!__poppy_user_unlocked) return;
   try {
     if (window.Tone && typeof window.Tone.start === "function") window.Tone.start().catch(()=>{});
     const AC = window.AudioContext || window.webkitAudioContext;
@@ -1623,9 +1666,6 @@ const resumeAudio = () => {
     }
   } catch(e) {}
 };
-["click", "keydown", "touchstart", "mousedown"].forEach(ev => {
-  document.addEventListener(ev, resumeAudio, { capture: true });
-});
 
 const playClickAudio=()=>{
   try{
@@ -2583,6 +2623,10 @@ function bundleFiles(files, assetMap = {}){
   return html;
 }
 function parseFiles(t){
+  if (!t || typeof t !== "string") return { "index.html": "" };
+  if (/=\\"|viewBox=\\"|d=\\"|class=\\"|id=\\"/i.test(t)) {
+    t = t.replace(/\\"/g, '"');
+  }
   const fileRe = /(?:^|\n)(?:---|===)\s*FILE:\s*([^\n\r]+?)\s*(?:---|===)\s*\n([\s\S]*?)(?=(?:\n(?:---|===)\s*FILE:)|$)/gi;
   let m = fileRe.exec(t);
   if (m) {
@@ -2914,7 +2958,7 @@ async function build(text, auto){
   if (live) { $("#fab").classList.add("busy"); if (!auto) $("#panel").classList.remove("open"); }
   else { bub(text, "me"); note = bub("Growing your site"); note.classList.add("work"); phase("building"); }
   let peek, peekTok = null;
-  if (!live && !auto) { let last = 0, pf; peekTok = out => { const n = Date.now(); if (n - last < 1400) return; const i = out.search(/<(!doctype|html)/i); if (i < 0 || !/<body/i.test(out)) return; last = n; if (!peek) { peek = bub("", "peek"); pf = document.createElement("iframe"); pf.setAttribute("sandbox", ""); pf.setAttribute("title", "Live peek"); pf.setAttribute("aria-hidden", "true"); pf.tabIndex = -1; peek.append(pf); } pf.srcdoc = out.slice(i); }; }
+  if (!live && !auto) { let last = 0, pf; peekTok = out => { const n = Date.now(); if (n - last < 1400) return; const i = out.search(/<(!doctype|html)/i); if (i < 0 || !/<body/i.test(out)) return; last = n; if (!peek) { peek = bub("", "peek"); pf = document.createElement("iframe"); pf.setAttribute("sandbox", "allow-scripts allow-forms allow-modals"); pf.setAttribute("title", "Live peek"); pf.setAttribute("aria-hidden", "true"); pf.tabIndex = -1; peek.append(pf); } pf.srcdoc = out.slice(i).replace(/<script\b[\s\S]*?(?:<\/script>|$)/gi, ""); }; }
   const agentEnabled = $("#agentOn") && $("#agentOn").checked;
   if (!auto && agentEnabled) {
     try {
@@ -4832,7 +4876,7 @@ async function openGallery() {
         frame.setAttribute("loading", "lazy");
         frame.setAttribute("aria-hidden", "true");
         frame.tabIndex = -1;
-        frame.srcdoc = cur.html;
+        frame.srcdoc = (cur.html || "").replace(/<script\b[\s\S]*?<\/script>/gi, "");
         th.append(frame);
       }
 
@@ -4941,8 +4985,11 @@ const ARCHETYPES = {
 - Finish: Flagpole / Castle at the end of the level to trigger victory fanfare and next level / victory screen.
 - Controls:
   * Keyboard: ArrowLeft / ArrowRight / A / D to move, Space / ArrowUp / W to jump.
-  * Mobile Touch Controls: On-screen semi-transparent buttons (#btnLeft, #btnRight, #btnJump, #btnRestart).
+  * Touch & Click Controls: On-screen buttons (#btnLeft, #btnRight, #btnJump, #btnRestart) MUST bind to BOTH touchstart/touchend AND mousedown/mouseup/click events so buttons respond instantly on desktop and mobile.
 - WebAudio Sounds:
+  * Initialize AudioContext lazily on the first user interaction (click, keydown, touchstart) to comply with browser autoplay policies:
+    let audioCtx = null;
+    function getAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); return audioCtx; }
   * Jump: Frequency ramp from 160Hz to 620Hz.
   * Coin: Dual-tone chime (987Hz -> 1318Hz, B5 -> E6).
   * Stomp: Low square impact (140Hz -> 35Hz).
@@ -4988,10 +5035,10 @@ const ARCHETYPES = {
 /* Responsive pixel-art arcade layout, HUD styling, touch controls & canvas scaling */
 
 --- FILE: audio.js ---
-/* WebAudio oscillator sound synthesizer: playJump(), playCoin(), playStomp(), playGameOver(), playVictory() */
+/* WebAudio oscillator sound synthesizer with lazy context initialization on first interaction: playJump(), playCoin(), playStomp(), playGameOver(), playVictory() */
 
 --- FILE: engine.js ---
-/* 60fps delta-time requestAnimationFrame game loop, player physics, AABB collision engine, keyboard and touch event listeners */
+/* 60fps delta-time requestAnimationFrame game loop, player physics, AABB collision engine, keyboard and touch/mouse event listeners for all buttons */
 
 --- FILE: levels.js ---
 /* Level tilemap, question mark blocks with bouncing coins, patrolling Goombas, flagpole finish, rendering routines & game state management */`
@@ -5282,6 +5329,17 @@ function repairHtml(html) {
   if (!html || typeof html !== "string") return html;
   let h = html.trim();
   
+  // 0. Sanitize escaped JSON/model attribute quotes:
+  // e.g. viewBox=\"0 0 24 24\" -> viewBox="0 0 24 24"
+  // e.g. d=\"M10.325...\" -> d="M10.325..."
+  if (/=\\"|viewBox=\\"|d=\\"|class=\\"|id=\\"/i.test(h)) {
+    h = h.replace(/=\\"/g, '="').replace(/\\">/g, '">').replace(/\\"\s/g, '" ');
+    h = h.replace(/viewBox="\\+/g, 'viewBox="').replace(/d="\\+/g, 'd="');
+    if (/\\"[a-zA-Z0-9_\s-]+\\"/i.test(h)) {
+      h = h.replace(/\\"/g, '"');
+    }
+  }
+
   // 1. Check for unclosed style tags
   const openStyles = (h.match(/<style\b[^>]*>/gi) || []).length;
   const closeStyles = (h.match(/<\/style>/gi) || []).length;
@@ -5298,8 +5356,8 @@ function repairHtml(html) {
   }
 
   // 2. Check for genuinely unclosed HTML tags at the end of the document
-  const lastOpenTag = h.slice(Math.max(0, h.length - 250)).match(/<[a-z0-9-]+(?:\s+[^>]*?)?$/i);
-  if (lastOpenTag) {
+  const lastOpenTag = h.slice(Math.max(0, h.length - 250)).match(/<([a-z0-9-]+)(?:\s+[^>]*?)?$/i);
+  if (lastOpenTag && !['html', 'body'].includes(lastOpenTag[1].toLowerCase())) {
     const tagSnippet = lastOpenTag[0];
     const doubleQuotes = (tagSnippet.match(/"/g) || []).length;
     const singleQuotes = (tagSnippet.match(/'/g) || []).length;
@@ -5307,6 +5365,8 @@ function repairHtml(html) {
     else if (singleQuotes % 2 !== 0) h += "'>";
     else h += ">";
   }
+  // Strip any accidental trailing quote/bracket artifacts (e.g. leaked "> rendered on screen)
+  h = h.replace(/">\s*(<\/body>|<\/html>|$)/gi, (m, endTag) => endTag ? "\n" + endTag : "");
 
   // 3. Check for unclosed script tags
   const openScripts = (h.match(/<script\b[^>]*>/gi) || []).length;
@@ -5410,24 +5470,30 @@ function autoWireButtons(html) {
   };
 
   // 1. Tactile sound synthesis & WebAudio Autoplay Unlocking
+  let userInteracted = false;
   const unlockAudio = () => {
+    userInteracted = true;
     try {
       if (window.__poppyAudioCtx && window.__poppyAudioCtx.state === "suspended") {
-        window.__poppyAudioCtx.resume();
+        window.__poppyAudioCtx.resume().catch(()=>{});
       }
       if (window.Tone && window.Tone.context && window.Tone.context.state === "suspended") {
-        window.Tone.start();
+        window.Tone.start().catch(()=>{});
       }
       if (window.audioCtx && window.audioCtx.state === "suspended") {
-        window.audioCtx.resume();
+        window.audioCtx.resume().catch(()=>{});
       }
       if (window.audioContext && window.audioContext.state === "suspended") {
-        window.audioContext.resume();
+        window.audioContext.resume().catch(()=>{});
       }
     } catch(e) {}
   };
+  ["click", "keydown", "touchstart", "pointerdown", "mousedown"].forEach(ev => {
+    window.addEventListener(ev, unlockAudio, { capture: true, once: true });
+  });
 
   const playClickSfx = () => {
+    if (!userInteracted) return;
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;
@@ -5448,6 +5514,7 @@ function autoWireButtons(html) {
   };
 
   const playInstrumentSound = (param) => {
+    if (!userInteracted) return;
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;
