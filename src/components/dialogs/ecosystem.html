@@ -1,0 +1,33 @@
+<dialog id="ecosystemDlg" aria-labelledby="ecoT">
+  <div class="dh">
+    <h2 id="ecoT" style="display:flex;align-items:center;gap:10px">
+      <span>Ecosystem &amp; Plugins</span>
+      <span class="lib-count-badge">Ecosystem Hub</span>
+    </h2>
+    <button class="x" type="button" aria-label="Close">&times;</button>
+  </div>
+  <div class="db">
+    <div class="tabs" id="ecoTabs">
+      <button class="tab" data-tab="plugins" aria-pressed="true">Skill Plugins (poppy.use)</button>
+      <button class="tab" data-tab="templates">Template Marketplace</button>
+    </div>
+
+    <!-- Plugins Tab -->
+    <div id="ecoTabPlugins" class="inspect-panel">
+      <p class="hint">Powerful client-side tools and skills callable inside your sites using <code>await poppy.use("name")</code> or via AI.</p>
+      <div class="acts" style="border:0;padding:0;gap:8px">
+        <button class="go sm" id="ecoAddPluginBtn" type="button">+ Add Custom Plugin</button>
+      </div>
+      <div id="ecoPluginsGrid" class="eco-grid"></div>
+    </div>
+
+    <!-- Templates Tab -->
+    <div id="ecoTabTemplates" class="inspect-panel" style="display:none">
+      <p class="hint">Production-ready community starter templates. Click "Clone Template" to start a new project instantly.</p>
+      <div id="ecoTemplatesGrid" class="eco-grid"></div>
+    </div>
+  </div>
+  <div class="acts">
+    <button class="go sp" id="ecoClose">Done</button>
+  </div>
+</dialog>

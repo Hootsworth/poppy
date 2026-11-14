@@ -1,0 +1,77 @@
+<dialog id="inspectDlg" aria-labelledby="inspectT">
+  <div class="dh">
+    <h2 id="inspectT" style="display:flex;align-items:center;gap:10px">
+      <span>Element Inspector</span>
+      <span id="inspectTagBadge" class="sec-badge sec-badge-conn">&lt;div&gt;</span>
+    </h2>
+    <button class="x" type="button" aria-label="Close">&times;</button>
+  </div>
+  <div class="db">
+    <div class="tabs" id="inspectTabs">
+      <button class="tab" data-tab="text" aria-pressed="true">Edit Text</button>
+      <button class="tab" data-tab="ai">Targeted AI</button>
+      <button class="tab" data-tab="styles">Styles</button>
+    </div>
+    
+    <div id="inspectTabText" class="inspect-panel">
+      <p class="hint">In-place copy edit: changes the text directly inside this element without using AI tokens.</p>
+      <label class="fld">
+        <span>Content Text</span>
+        <textarea id="inspectTextIn" rows="4" style="width:100%;font-family:inherit;font-size:.9rem;padding:8px;border:1.5px solid var(--ink);border-radius:10px;resize:vertical;box-sizing:border-box"></textarea>
+      </label>
+      <div class="row2" style="margin-top:10px">
+        <button class="go sm" id="inspectApplyTextBtn" type="button">Save Text</button>
+      </div>
+    </div>
+    
+    <div id="inspectTabAi" class="inspect-panel" style="display:none">
+      <p class="hint">Surgical AI edit: Poppy updates only this selected element's markup and styles in ~1s.</p>
+      <label class="fld">
+        <span>Instruction for this element</span>
+        <input id="inspectAiIn" placeholder="e.g. Turn into an energetic gradient CTA button with hover bounce" autocomplete="off">
+      </label>
+      <div class="row2" style="margin-top:10px">
+        <button class="go sm" id="inspectApplyAiBtn" type="button">Apply AI Edit</button>
+      </div>
+      <p class="hint st" id="inspectAiSt"></p>
+    </div>
+
+    <div id="inspectTabStyles" class="inspect-panel" style="display:none">
+      <p class="hint">Live visual adjustments: tweaks are previewed in realtime and saved to version history.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <label class="fld">
+          <span>Font Size: <strong id="inspectValFontSize">16px</strong></span>
+          <input id="inspectStyleFontSize" type="range" min="10" max="72" value="16">
+        </label>
+        <label class="fld">
+          <span>Border Radius: <strong id="inspectValRadius">4px</strong></span>
+          <input id="inspectStyleRadius" type="range" min="0" max="48" value="4">
+        </label>
+        <label class="fld">
+          <span>Padding: <strong id="inspectValPadding">8px</strong></span>
+          <input id="inspectStylePadding" type="range" min="0" max="64" value="8">
+        </label>
+        <label class="fld">
+          <span>Text Color</span>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input id="inspectStyleColor" type="color" value="#000000" style="width:36px;height:32px;padding:0;border:1px solid var(--ink);border-radius:6px;cursor:pointer">
+            <input id="inspectStyleColorText" placeholder="#000000" style="flex:1;height:32px;padding:2px 8px;border:1.5px solid var(--ink);border-radius:6px;font-family:monospace;font-size:.85rem">
+          </div>
+        </label>
+        <label class="fld" style="grid-column:1/-1">
+          <span>Background Color</span>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input id="inspectStyleBgColor" type="color" value="#ffffff" style="width:36px;height:32px;padding:0;border:1px solid var(--ink);border-radius:6px;cursor:pointer">
+            <input id="inspectStyleBgColorText" placeholder="#ffffff" style="flex:1;height:32px;padding:2px 8px;border:1.5px solid var(--ink);border-radius:6px;font-family:monospace;font-size:.85rem">
+          </div>
+        </label>
+      </div>
+      <div class="row2" style="margin-top:12px">
+        <button class="go sm" id="inspectApplyStylesBtn" type="button">Save Styles</button>
+      </div>
+    </div>
+  </div>
+  <div class="acts">
+    <button class="go sp" id="inspectClose">Done</button>
+  </div>
+</dialog>

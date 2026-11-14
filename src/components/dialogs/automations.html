@@ -1,0 +1,42 @@
+<dialog id="autoDlg" aria-labelledby="autoT" style="width:min(660px,calc(100vw - 24px))">
+  <div class="dh"><h2 id="autoT">Workflow Automations</h2><button class="x" type="button" aria-label="Close">&times;</button></div>
+  <div class="db">
+    <p class="hint">Automate background workflows with triggers, sequential step pipelines, AI transformations, and data synchronization.</p>
+    <div class="acts" style="border:0;padding:0 0 12px;gap:8px">
+      <button class="go sm" id="addAutoBtn" type="button">+ New Workflow</button>
+    </div>
+    <div id="newAutoBox" class="cf" style="margin-bottom:12px;display:none">
+      <label class="fld"><span>Workflow Name</span><input id="autoName" placeholder="Daily summary and sync" autocomplete="off"></label><input id="autoActionVal" type="hidden" value="">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <label class="fld"><span>Trigger</span>
+          <select id="autoTrigger">
+            <option value="open">On site open</option>
+            <option value="timer">Timer interval</option>
+            <option value="change">On data change</option>
+            <option value="webhook">Relay webhook</option>
+            <option value="manual">Manual run</option>
+          </select>
+        </label>
+        <label class="fld" id="autoTimerRow" style="display:none"><span>Interval (minutes)</span><input id="autoInterval" type="number" min="1" value="15"></label>
+      </div>
+
+      <!-- Multi-step pipeline builder -->
+      <div style="margin:12px 0 8px;padding-top:10px;border-top:1px dashed var(--line)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:.85rem;font-weight:700">Pipeline Steps</span>
+          <button class="link sm" id="autoAddStepBtn" type="button">+ Add Step</button>
+        </div>
+        <div id="autoStepsContainer"></div>
+      </div>
+
+      <div class="row2" style="margin-top:12px">
+        <button class="go sm" id="saveAutoBtn" type="button">Save Workflow</button>
+        <button class="link sm" id="testPipelineBtn" type="button">Test Run</button>
+        <button class="link sm" id="cancelAutoBtn" type="button">Cancel</button>
+      </div>
+      <div id="autoTestLog" style="display:none;margin-top:10px;padding:8px;background:#fff;border:1px solid var(--ink);border-radius:8px;font-size:.8rem;font-family:monospace;max-height:140px;overflow-y:auto"></div>
+    </div>
+    <div id="autoList"></div>
+  </div>
+  <div class="acts"><button class="go sp" id="autoClose" type="button">Done</button></div>
+</dialog>

@@ -1,0 +1,33 @@
+<dialog id="roomDlg" aria-labelledby="roomT">
+  <div class="dh">
+    <h2 id="roomT" style="display:flex;align-items:center;gap:10px">
+      <span>Realtime Collaboration</span>
+      <span id="roomPeersCount" class="lib-count-badge">1 active</span>
+    </h2>
+    <button class="x" type="button" aria-label="Close">&times;</button>
+  </div>
+  <div class="db">
+    <p class="hint">Collaborate in realtime with peers in the same room. Live cursor movements, presence avatars, and document changes synchronize automatically.</p>
+    
+    <label class="fld">
+      <span>Active Room ID</span>
+      <div style="display:flex;gap:8px">
+        <input id="roomNameIn" placeholder="project-lobby" autocomplete="off" style="flex:1">
+        <button class="go sm" id="roomJoinBtn" type="button">Switch Room</button>
+      </div>
+    </label>
+
+    <div class="row2" style="margin:12px 0">
+      <button class="link sm" id="roomCopyLinkBtn" type="button">Copy Invite Link</button>
+      <button class="link sm" id="roomBroadcastPingBtn" type="button">Ping Peers</button>
+    </div>
+
+    <div style="margin-top:14px;border-top:1px dashed var(--line);padding-top:12px">
+      <h4 style="margin:0 0 8px;font-size:.9rem;font-weight:700">Collaborators in this Room</h4>
+      <div id="roomPeersList" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+  </div>
+  <div class="acts">
+    <button class="go sp" id="roomClose">Done</button>
+  </div>
+</dialog>

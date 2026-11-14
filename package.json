@@ -1,0 +1,13 @@
+{
+  "name": "poppy",
+  "version": "2.1.0",
+  "description": "Universal in-browser generative software creation engine",
+  "main": "dist/index.html",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "test": "node scripts/test.js"
+  },
+  "keywords": ["generative-ui", "offline-first", "wasm", "sqlite", "presentation-engine"],
+  "author": "Poppy Team",
+  "license": "MIT"
+}
