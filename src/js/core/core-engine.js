@@ -84,14 +84,62 @@ const PH = IDEAS.map(t => t.replace(/^An? /, "A "));
 let phi = 0;
 setInterval(() => { if (!$("#prompt").value) $("#prompt").placeholder = PH[++phi % PH.length]; }, 3500);
 const AT_OPTIONS = [
-  { tag: "@slides", title: "Keynote Pitch Deck", desc: "16:9 presentation with speaker notes & PDF export", hint: "slides" },
-  { tag: "@game", title: "Playable 2D Game", desc: "60fps canvas loop, WebAudio sound effects & controls", hint: "game" },
-  { tag: "@pdf", title: "Document & Invoice Studio", desc: "Print-to-PDF formatting & table calculations", hint: "pdf" },
-  { tag: "@tool", title: "Desktop Utility & Tool", desc: "Live calculation engines & format converters", hint: "tool" },
-  { tag: "@realtime", title: "Collaborative Realtime App", desc: "Multiplayer sync & P2P whiteboard", hint: "realtime" },
-  { tag: "@db", title: "Database & CRUD App", desc: "SQLite poppy.db tables & persistent state", hint: "db" },
-  { tag: "@synth", title: "WebAudio Synthesizer", desc: "Playable musical instrument with polyphony", hint: "synth" },
-  { tag: "@ai", title: "Smart AI App", desc: "Embedded streaming AI logic & assistants", hint: "ai" }
+  {
+    tag: "@slides",
+    title: "Keynote Pitch Deck",
+    desc: "16:9 presentation with speaker notes & PDF export",
+    hint: "slides",
+    svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'
+  },
+  {
+    tag: "@game",
+    title: "Playable 2D Game",
+    desc: "60fps canvas loop, WebAudio sound effects & controls",
+    hint: "game",
+    svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="6"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/></svg>'
+  },
+  {
+    tag: "@pdf",
+    title: "Document & Invoice Studio",
+    desc: "Print-to-PDF formatting & table calculations",
+    hint: "pdf",
+    svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>'
+  },
+  {
+    tag: "@tool",
+    title: "Desktop Utility & Tool",
+    desc: "Live calculation engines & format converters",
+    hint: "tool",
+    svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>'
+  },
+  {
+    tag: "@realtime",
+    title: "Collaborative Realtime App",
+    desc: "Multiplayer sync & P2P whiteboard",
+    hint: "realtime",
+    svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
+  },
+  {
+    tag: "@db",
+    title: "Database & CRUD App",
+    desc: "SQLite poppy.db tables & persistent state",
+    hint: "db",
+    svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>'
+  },
+  {
+    tag: "@synth",
+    title: "WebAudio Synthesizer",
+    desc: "Playable musical instrument with polyphony",
+    hint: "synth",
+    svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>'
+  },
+  {
+    tag: "@ai",
+    title: "Smart AI App",
+    desc: "Embedded streaming AI logic & assistants",
+    hint: "ai",
+    svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'
+  }
 ];
 
 function initAtMention(inId, ddId) {
@@ -128,9 +176,12 @@ function initAtMention(inId, ddId) {
     activeIdx = 0;
     dd.innerHTML = opts.map((o, i) => `
       <div class="at-item${i === 0 ? " active" : ""}" data-tag="${o.tag}">
-        <span class="at-tag">${o.tag}</span>
+        <div class="at-icon" aria-hidden="true">${o.svg}</div>
         <div class="at-info">
-          <strong class="at-title">${o.title}</strong>
+          <div class="at-top">
+            <span class="at-title">${o.title}</span>
+            <span class="at-tag">${o.tag}</span>
+          </div>
           <span class="at-desc">${o.desc}</span>
         </div>
       </div>
