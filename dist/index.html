@@ -819,13 +819,20 @@ function toast(t){ const e = $("#toast"); e.textContent = t; e.style.display = "
 const PROVIDERS = {
   anthropic: {name: "Anthropic", model: "claude-sonnet-4-6", hint: "Get a key at console.anthropic.com."},
   openai: {name: "OpenAI", model: "gpt-4.1", hint: "Get a key at platform.openai.com."},
-  gemini: {name: "Gemini", model: "gemini-2.5-pro", hint: "Get a key at aistudio.google.com."},
+  gemini: {name: "Gemini", model: "gemini-2.0-flash", hint: "Get a key at aistudio.google.com."},
   meta: {name: "Meta", model: "Llama-4-Maverick-17B-128E-Instruct-FP8", hint: "Get a key at llama.developer.meta.com. Meta's API may block direct browser calls."}
 };
 if (ls.get("poppy.key") && !ls.get("poppy.key.anthropic")) ls.set("poppy.key.anthropic", ls.get("poppy.key"));
 const prov = () => ls.get("poppy.prov") || "anthropic";
 const keyOf = p => ls.get("poppy.key." + p);
-const modelOf = p => ls.get("poppy.model." + p) || PROVIDERS[p].model;
+const modelOf = p => {
+  let m = ls.get("poppy.model." + p) || PROVIDERS[p].model;
+  if (p === "gemini" && (m === "gemini-2.5-pro" || m === "gemini-pro" || !m)) {
+    m = "gemini-2.0-flash";
+    ls.set("poppy.model.gemini", m);
+  }
+  return m;
+};
 function updateProv(){ const p = prov(), on = !!keyOf(p); $("#provLabel").textContent = on ? PROVIDERS[p].name : "Add a key";  }
 let sel = "anthropic";
 function saveTab(){ ls.set("poppy.key." + sel, $("#key").value.trim()); ls.set("poppy.model." + sel, $("#model").value.trim()); }
@@ -1266,11 +1273,26 @@ if(window.__poppy_plugins&&window.__poppy_plugins[n]){return window.__poppy_plug
 throw new Error("Unknown library "+n+". Available: pyodide, sqlite, transformers, duckdb, ffmpeg, chart, marked, confetti, qrcode, sfx.")}
 };
 // Universal Button & Interaction Safety Net (6-Layer Resilience Engine)
+let __poppy_actx = null;
+const resumeAudio = () => {
+  try {
+    if (window.Tone && typeof window.Tone.start === "function") window.Tone.start().catch(()=>{});
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) {
+      if (!__poppy_actx) __poppy_actx = new AC();
+      if (__poppy_actx.state === "suspended") __poppy_actx.resume().catch(()=>{});
+    }
+  } catch(e) {}
+};
+["click", "keydown", "touchstart", "mousedown"].forEach(ev => {
+  document.addEventListener(ev, resumeAudio, { capture: true });
+});
+
 const playClickAudio=()=>{
   try{
-    const AC=window.AudioContext||window.webkitAudioContext;
-    if(!AC)return;
-    const ctx=new AC();
+    resumeAudio();
+    if(!__poppy_actx) return;
+    const ctx = __poppy_actx;
     const osc=ctx.createOscillator();
     const gain=ctx.createGain();
     osc.type="sine";
@@ -1452,7 +1474,12 @@ const rep=(t,m)=>{try{P.postMessage({poppy:1,report:{t,m:String(m).slice(0,400)}
 addEventListener("error",e=>rep("error",e.message+(e.lineno?" (line "+e.lineno+")":"")));
 addEventListener("unhandledrejection",e=>rep("promise",(e.reason&&e.reason.message)||e.reason));
 })();`;
-function inject(html, code = SDK){ const tag = "<scr" + "ipt>" + code + "</scr" + "ipt>"; return /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, m => m + tag) : tag + html; }
+function inject(html, code = SDK){
+  if (typeof repairHtml === "function") html = repairHtml(html);
+  if (typeof autoWireButtons === "function") html = autoWireButtons(html);
+  const tag = "<scr" + "ipt>" + code + "</scr" + "ipt>";
+  return /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, m => m + tag) : tag + html;
+}
 function show(html){
   if (typeof repairHtml === "function") html = repairHtml(html);
   if (typeof autoWireButtons === "function") html = autoWireButtons(html);
@@ -2593,6 +2620,7 @@ async function build(text, auto){
       let html = await runMultiAgentPipeline(text, note, im, (step) => setNote(note, step));
       if (peek) { peek.remove(); peek = null; }
       if (!/<[a-z!]/i.test(html) || html.length < 40) throw new Error("Multi-agent build fell back.");
+      if (typeof repairHtml === "function") html = repairHtml(html);
       if (typeof autoWireButtons === "function") html = autoWireButtons(html);
       current = html;
       currentFiles = { "index.html": html };
@@ -2629,6 +2657,7 @@ async function build(text, auto){
     if (peek) { peek.remove(); peek = null; }
     if (!/<[a-z!]/i.test(html) || html.length < 40) throw new Error("Poppy didn't get a page back. Try rewording.");
     if (!auto) html = await checkAndFix(html, note);
+    if (typeof repairHtml === "function") html = repairHtml(html);
     if (typeof autoWireButtons === "function") html = autoWireButtons(html);
     current = html;
     if (!siteId) { siteId = crypto.randomUUID(); ls.set("poppy.site", siteId); meta = {}; }
