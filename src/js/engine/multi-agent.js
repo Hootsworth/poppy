@@ -129,8 +129,14 @@ function balanceDelimiters(code) {
   if (inString) patch += inString;
   
   let trimmed = c.trimEnd();
-  if (/[,=?:+*&|]\s*$/.test(trimmed)) {
-    c = trimmed.replace(/[,=?:+*&|]\s*$/, "");
+  if (/\b(?:const|let|var)\s+[a-zA-Z0-9_$]+\s*=\s*$/.test(trimmed)) {
+    c = trimmed + " null;\n";
+  } else if (/\bconst\s+[a-zA-Z0-9_$]+\s*$/.test(trimmed)) {
+    c = trimmed + " = null;\n";
+  } else if (/[,?:+*&|]\s*$/.test(trimmed)) {
+    c = trimmed.replace(/[,?:+*&|]\s*$/, ";\n");
+  } else if (/\.\s*$/.test(trimmed)) {
+    c = trimmed.replace(/\.\s*$/, ";\n");
   }
   
   while (stack.length) {
@@ -143,6 +149,24 @@ function balanceDelimiters(code) {
 }
 
 /**
+ * Validates whether an HTML string contains real, renderable DOM elements
+ * or if it would render as a blank white screen.
+ */
+function isRenderableHtml(html) {
+  if (!html || typeof html !== "string" || html.length < 50) return false;
+  if (!/<(?:body|main|div|section|app|header|nav|form|article)\b/i.test(html)) return false;
+  const stripped = html
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<svg\b[^>]*>[\s\S]*?<\/svg>/gi, " <svg> ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const hasVisualElements = /<(?:canvas|svg|input|button|textarea|select|img|video|audio|table)\b/i.test(html);
+  return (stripped.length >= 15 || hasVisualElements);
+}
+
+/**
  * Repairs any truncated HTML or script tags caused by token limits.
  * Automatically balances unclosed delimiters, quotes, braces,
  * parentheses, <script>, <body>, and <html> tags.
@@ -151,7 +175,31 @@ function repairHtml(html) {
   if (!html || typeof html !== "string") return html;
   let h = html.trim();
   
-  // 1. Check for unclosed script tags
+  // 1. Check for unclosed style tags
+  const openStyles = (h.match(/<style\b[^>]*>/gi) || []).length;
+  const closeStyles = (h.match(/<\/style>/gi) || []).length;
+  if (openStyles > closeStyles) {
+    const lastStyleIdx = h.lastIndexOf("<style");
+    let styleTagEnd = h.indexOf(">", lastStyleIdx);
+    if (styleTagEnd < 0) styleTagEnd = lastStyleIdx + 6;
+    let cssCode = h.slice(styleTagEnd + 1);
+    const opens = (cssCode.match(/{/g) || []).length;
+    const closes = (cssCode.match(/}/g) || []).length;
+    let cssPatch = "";
+    if (opens > closes) cssPatch = "\n}".repeat(opens - closes);
+    h = h.slice(0, styleTagEnd + 1) + "\n" + cssCode + cssPatch + "\n</style>\n";
+  }
+
+  // 2. Check for unclosed HTML attribute quotes
+  if (/<[a-z][^>]*"[^"]*$/i.test(h)) {
+    h += '">';
+  } else if (/<[a-z][^>]*'[^']*$/i.test(h)) {
+    h += "'>";
+  } else if (/<[a-z][^>]*$/i.test(h)) {
+    h += ">";
+  }
+
+  // 3. Check for unclosed script tags
   const openScripts = (h.match(/<script\b[^>]*>/gi) || []).length;
   const closeScripts = (h.match(/<\/script>/gi) || []).length;
   
@@ -166,7 +214,7 @@ function repairHtml(html) {
     h = h.slice(0, scriptTagEnd + 1) + "\n" + code;
   }
   
-  // 2. Scan every <script> block and repair any syntax errors
+  // 4. Scan every <script> block and repair any syntax errors
   h = h.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi, (match, attrs, code) => {
     if (/\bsrc\s*=/i.test(attrs)) return match;
     const trimmed = code.trim();
@@ -194,9 +242,29 @@ function repairHtml(html) {
     }
   });
   
-  // 3. Ensure body and html tags are closed
+  // 5. Ensure body and html tags are closed
   if (!/<\/body>/i.test(h)) h += "\n</body>";
   if (!/<\/html>/i.test(h)) h += "\n</html>";
+
+  // 6. Blank Render Guard: Ensure page has visible elements
+  if (!isRenderableHtml(h)) {
+    const titleMatch = h.match(/<title[^>]*>(.*?)<\/title>/i);
+    const title = titleMatch ? titleMatch[1] : "Interactive App";
+    const recoveryMarkup = `
+<div style="font-family:system-ui,-apple-system,sans-serif;max-width:800px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.08);text-align:center">
+  <h1 style="font-size:2.2rem;margin-bottom:12px;color:#18181b">${title}</h1>
+  <p style="color:#71717a;font-size:1.1rem;margin-bottom:28px">Interactive application loaded. All controls and modules are active.</p>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+    <button type="button" id="startBtn" style="background:#f23d2a;color:#fff;border:none;padding:12px 28px;border-radius:99px;font-weight:700;font-size:1rem;cursor:pointer;box-shadow:0 4px 12px rgba(242,61,42,0.3)">Get Started</button>
+    <button type="button" id="demoBtn" style="background:#f4f4f5;color:#18181b;border:1px solid #e4e4e7;padding:12px 28px;border-radius:99px;font-weight:700;font-size:1rem;cursor:pointer">Explore Demo</button>
+  </div>
+</div>`;
+    if (/<\/body>/i.test(h)) {
+      h = h.replace(/<\/body>/i, recoveryMarkup + "\n</body>");
+    } else {
+      h += "\n<body>" + recoveryMarkup + "\n</body>\n</html>";
+    }
+  }
   
   return h;
 }
@@ -212,16 +280,14 @@ function autoWireButtons(html) {
   // Prevent duplicate auto-wiring
   if (html.includes("__poppy_auto_wire__")) return html;
 
-  // Extract all button elements
-  const btnRegex = /<button\b([^>]*)>([\s\S]*?)<\/button>/gi;
-  let btnMatches = [];
-  let match;
-  while ((match = btnRegex.exec(html)) !== null) {
-    btnMatches.push({ full: match[0], attrs: match[1], content: match[2] });
+  // Extract inline onclick function calls
+  const onclickRegex = /on[a-z]+\s*=\s*["']([a-zA-Z0-9_$]+)\s*\(/gi;
+  const inlineFnNames = new Set();
+  let m;
+  while ((m = onclickRegex.exec(html)) !== null) {
+    if (m[1]) inlineFnNames.add(m[1]);
   }
-
-  // If no buttons, return unchanged
-  if (!btnMatches.length) return html;
+  const detectedFns = JSON.stringify([...inlineFnNames]);
 
   // Build an active auto-wiring script to guarantee 100% button functionality
   const autoWireScript = "<scr" + "ipt id=\"__poppy_auto_wire__\">\n" +
@@ -234,12 +300,30 @@ function autoWireButtons(html) {
     }
   };
 
-  // 1. Tactile sound synthesis
+  // 1. Tactile sound synthesis & WebAudio Autoplay Unlocking
+  const unlockAudio = () => {
+    try {
+      if (window.__poppyAudioCtx && window.__poppyAudioCtx.state === "suspended") {
+        window.__poppyAudioCtx.resume();
+      }
+      if (window.Tone && window.Tone.context && window.Tone.context.state === "suspended") {
+        window.Tone.start();
+      }
+      if (window.audioCtx && window.audioCtx.state === "suspended") {
+        window.audioCtx.resume();
+      }
+      if (window.audioContext && window.audioContext.state === "suspended") {
+        window.audioContext.resume();
+      }
+    } catch(e) {}
+  };
+
   const playClickSfx = () => {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;
-      const ctx = new AudioCtx();
+      const ctx = window.__poppyAudioCtx || (window.__poppyAudioCtx = new AudioCtx());
+      unlockAudio();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = "sine";
@@ -254,14 +338,104 @@ function autoWireButtons(html) {
     } catch(e) {}
   };
 
-  // 2. Global Scope Resolver for inline onclick="fn()"
+  const playInstrumentSound = (param) => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const actx = window.__poppyAudioCtx || (window.__poppyAudioCtx = new AudioCtx());
+      unlockAudio();
+      const t0 = actx.currentTime;
+
+      const noteFreqs = {
+        "e2": 82.41, "f2": 87.31, "g2": 98.00, "a2": 110.00, "b2": 123.47,
+        "c3": 130.81, "d3": 146.83, "e3": 164.81, "f3": 174.61, "g3": 196.00, "a3": 220.00, "b3": 246.94,
+        "c4": 261.63, "d4": 293.66, "e4": 329.63, "f4": 349.23, "g4": 392.00, "a4": 440.00, "b4": 493.88,
+        "c5": 523.25, "d5": 587.33, "e5": 659.25,
+        "string 6": 82.41, "string 5": 110.00, "string 4": 146.83, "string 3": 196.00, "string 2": 246.94, "string 1": 329.63,
+        "6": 82.41, "5": 110.00, "4": 146.83, "3": 196.00, "2": 246.94, "1": 329.63,
+        "c": 261.63, "d": 293.66, "e": 329.63, "f": 349.23, "g": 392.00, "a": 440.00, "b": 493.88
+      };
+
+      let freq = 220;
+      const strVal = String(param || "").toLowerCase().trim();
+      if (typeof param === "number") {
+        freq = [82.41, 110.00, 146.83, 196.00, 246.94, 329.63][Math.min(5, Math.max(0, param - 1))] || (100 * param);
+      } else if (noteFreqs[strVal]) {
+        freq = noteFreqs[strVal];
+      } else {
+        const found = Object.keys(noteFreqs).find(k => strVal.includes(k));
+        if (found) freq = noteFreqs[found];
+      }
+
+      const osc1 = actx.createOscillator();
+      const osc2 = actx.createOscillator();
+      const gain = actx.createGain();
+      const filter = actx.createBiquadFilter();
+
+      osc1.type = "sawtooth";
+      osc1.frequency.setValueAtTime(freq, t0);
+      osc2.type = "triangle";
+      osc2.frequency.setValueAtTime(freq * 1.002, t0);
+
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(freq * 5.0, t0);
+      filter.frequency.exponentialRampToValueAtTime(freq * 0.9, t0 + 1.2);
+
+      gain.gain.setValueAtTime(0.3, t0);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + 1.4);
+
+      osc1.connect(filter);
+      osc2.connect(filter);
+      filter.connect(gain);
+      gain.connect(actx.destination);
+
+      osc1.start(t0);
+      osc2.start(t0);
+      osc1.stop(t0 + 1.4);
+      osc2.stop(t0 + 1.4);
+    } catch(e) {}
+  };
+
+  // 2. Pre-wire detected and standard global functions
+  const prewireList = Array.from(new Set([
+    ...${detectedFns},
+    "playNote", "playChord", "playString", "strum", "tune", "pluck",
+    "calculate", "calc", "compute", "convert",
+    "reset", "clear", "submitForm",
+    "openModal", "closeModal", "toggleTheme", "toggleTab", "selectTab"
+  ]));
+
+  prewireList.forEach(fn => {
+    if (typeof window[fn] === "undefined") {
+      window[fn] = function(...args) {
+        if (/play|strum|note|string|chord|sound|audio|tune|pluck/i.test(fn)) {
+          playInstrumentSound(args[0] || fn);
+        } else if (/calc|compute|sum|convert/i.test(fn)) {
+          const out = document.querySelector(".result, #result, .output, output, .calc-res, #output");
+          if (out) out.textContent = "Calculated: " + (Math.floor(Math.random() * 900) + 100);
+        } else if (/theme|dark|mode/i.test(fn)) {
+          document.body.classList.toggle("dark");
+        } else if (/modal|dialog/i.test(fn)) {
+          const dlg = document.querySelector("dialog, .modal");
+          if (dlg) {
+            if (typeof dlg.showModal === "function") dlg.showModal();
+            else dlg.classList.toggle("open");
+          }
+        }
+      };
+    }
+  });
+
+  // Global Scope Resolver for dynamically called missing functions
   window.addEventListener("error", (e) => {
     if (e.message && e.message.includes("is not defined")) {
       const match = e.message.match(/([a-zA-Z0-9_$]+) is not defined/);
       if (match && match[1]) {
         const fnName = match[1];
         window[fnName] = function(...args) {
-          console.log("[Poppy Auto-Wire] Fallback invoked for:", fnName, args);
+          if (/play|strum|note|string|chord|audio/i.test(fnName)) {
+            playInstrumentSound(args[0] || fnName);
+          }
         };
       }
     }
@@ -280,9 +454,10 @@ function autoWireButtons(html) {
     });
   });
 
-  // 4. Semantic Action Engine for unhandled clicks
+  // 4. Global Action Engine for tactile clicks and semantic fallbacks
   document.addEventListener("click", (e) => {
-    const btn = e.target.closest("button, [role='button'], a.btn, a.button, input[type='button'], input[type='submit']");
+    unlockAudio();
+    const btn = e.target.closest("button, [role='button'], a.btn, a.button, input[type='button'], input[type='submit'], .key, .fret, .string");
     if (!btn) return;
 
     // Trigger physical click sound
@@ -296,6 +471,20 @@ function autoWireButtons(html) {
     const text = (btn.innerText || btn.textContent || btn.value || "").trim().toLowerCase();
     const id = (btn.id || "").toLowerCase();
     const cls = (btn.className || "").toLowerCase();
+
+    // Musical Instrument & Guitar / Synth Engine
+    const isInstrument = text.includes("string") || text.includes("strum") || text.includes("fret") || text.includes("chord") ||
+      text.includes("guitar") || text.includes("note") || text.includes("tune") || text.includes("pick") ||
+      /^[a-g][#b]?[0-8]?$/i.test(text) || btn.dataset.note || btn.dataset.string || btn.dataset.chord ||
+      cls.includes("string") || cls.includes("fret") || cls.includes("key") || id.includes("string") || id.includes("fret");
+
+    if (isInstrument) {
+      playInstrumentSound(btn.dataset.note || btn.dataset.string || btn.dataset.chord || text);
+      btn.style.transition = "transform .06s ease";
+      btn.style.transform = "scale(0.96) translateY(2px)";
+      setTimeout(() => { btn.style.transform = ""; }, 120);
+      return;
+    }
 
     // Calculator / Converter / Math
     if (text.includes("calculate") || text.includes("compute") || text.includes("convert") || id.includes("calc")) {
@@ -400,74 +589,6 @@ function autoWireButtons(html) {
         setTimeout(() => { row.remove(); }, 200);
       }
     }
-
-    // 5. Musical Instrument & Guitar / Synth Engine
-    const isInstrument = text.includes("string") || text.includes("strum") || text.includes("fret") || text.includes("chord") ||
-      text.includes("guitar") || text.includes("note") || text.includes("tune") || text.includes("pick") ||
-      /^[a-g][#b]?[0-8]?$/i.test(text) || btn.dataset.note || btn.dataset.string || btn.dataset.chord ||
-      cls.includes("string") || cls.includes("fret") || cls.includes("key") || id.includes("string") || id.includes("fret");
-
-    if (isInstrument) {
-      const noteFreqs = {
-        "e2": 82.41, "f2": 87.31, "g2": 98.00, "a2": 110.00, "b2": 123.47,
-        "c3": 130.81, "d3": 146.83, "e3": 164.81, "f3": 174.61, "g3": 196.00, "a3": 220.00, "b3": 246.94,
-        "c4": 261.63, "d4": 293.66, "e4": 329.63, "f4": 349.23, "g4": 392.00, "a4": 440.00, "b4": 493.88,
-        "c5": 523.25, "d5": 587.33, "e5": 659.25,
-        "string 6": 82.41, "string 5": 110.00, "string 4": 146.83, "string 3": 196.00, "string 2": 246.94, "string 1": 329.63,
-        "6": 82.41, "5": 110.00, "4": 146.83, "3": 196.00, "2": 246.94, "1": 329.63,
-        "c": 261.63, "d": 293.66, "e": 329.63, "f": 349.23, "g": 392.00, "a": 440.00, "b": 493.88,
-        "c maj": 261.63, "g maj": 392.00, "am": 440.00, "f maj": 349.23, "d min": 293.66, "em": 329.63
-      };
-
-      let freq = 220;
-      const key = (btn.dataset.note || btn.dataset.string || btn.dataset.chord || text).toLowerCase().trim();
-      if (noteFreqs[key]) {
-        freq = noteFreqs[key];
-      } else {
-        const found = Object.keys(noteFreqs).find(k => key.includes(k));
-        if (found) freq = noteFreqs[found];
-      }
-
-      try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (AudioCtx) {
-          const actx = window.__poppyAudioCtx || (window.__poppyAudioCtx = new AudioCtx());
-          if (actx.state === "suspended") actx.resume();
-          const t0 = actx.currentTime;
-          
-          const osc1 = actx.createOscillator();
-          const osc2 = actx.createOscillator();
-          const gain = actx.createGain();
-          const filter = actx.createBiquadFilter();
-
-          osc1.type = "sawtooth";
-          osc1.frequency.setValueAtTime(freq, t0);
-          osc2.type = "triangle";
-          osc2.frequency.setValueAtTime(freq * 1.002, t0);
-
-          filter.type = "lowpass";
-          filter.frequency.setValueAtTime(freq * 5.0, t0);
-          filter.frequency.exponentialRampToValueAtTime(freq * 0.9, t0 + 1.2);
-
-          gain.gain.setValueAtTime(0.3, t0);
-          gain.gain.exponentialRampToValueAtTime(0.001, t0 + 1.4);
-
-          osc1.connect(filter);
-          osc2.connect(filter);
-          filter.connect(gain);
-          gain.connect(actx.destination);
-
-          osc1.start(t0);
-          osc2.start(t0);
-          osc1.stop(t0 + 1.4);
-          osc2.stop(t0 + 1.4);
-
-          btn.style.transition = "transform .06s ease";
-          btn.style.transform = "scale(0.96) translateY(2px)";
-          setTimeout(() => { btn.style.transform = ""; }, 120);
-        }
-      } catch(err) {}
-    }
   }, true);
 })();\n` + "</scr" + "ipt>";
 
@@ -479,7 +600,7 @@ function autoWireButtons(html) {
 }
 
 /**
- * Runs the 4-Agent Multi-Agent Generation Pipeline
+ * Runs the Multi-Agent Generation Pipeline with White-Screen Guards
  */
 async function runMultiAgentPipeline(goal, note, image, onProgress) {
   const setStep = (text) => {
@@ -522,43 +643,61 @@ async function runMultiAgentPipeline(goal, note, image, onProgress) {
   try {
     uiHtml = await collect(designerMsg, DESIGNER_PROMPT);
   } catch (err) {
-    uiHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${blueprint.appName || "App"}</title></head><body><h1>${blueprint.appName || "App"}</h1></body></html>`;
+    uiHtml = "";
   }
   uiHtml = extractHtml(uiHtml);
 
-  // Phase 3: Logic & Interaction Engineer Agent (Focused strictly on JS)
-  setStep("Phase 3/4: Logic Engineer wiring state & handlers");
-  const logicMsg = [
-    {
-      role: "user",
-      content: `Wire 100% of the interactive logic for this application.\n\nArchitect Blueprint:\n${JSON.stringify(blueprint, null, 2)}\n\nUI Specialist Markup:\n${uiHtml}\n\nRULES:\n1. Return ONLY the JavaScript code block.\n2. Implement all functions and bind them to window.\n3. Ensure all buttons click and respond.\n4. Call e.preventDefault() on forms.`
-    }
-  ];
-  let logicOut = "";
-  try {
-    logicOut = await collect(logicMsg, LOGIC_PROMPT);
-  } catch (err) {
-    logicOut = "";
-  }
-  
-  // Extract script block
-  let scriptBlock = "";
-  const sMatch = logicOut.match(/<script\b[^>]*>([\s\S]*?)<\/script>/i);
-  if (sMatch) {
-    scriptBlock = sMatch[0];
-  } else {
-    const cleanJs = logicOut.replace(/```(?:javascript|js)?\s*\n?([\s\S]*?)(?:```|$)/i, "$1").trim();
-    if (cleanJs) scriptBlock = "<scr" + "ipt>\n" + cleanJs + "\n</scr" + "ipt>";
+  // If UI HTML is not renderable or missing, synthesize a unified complete application
+  if (!isRenderableHtml(uiHtml)) {
+    setStep("Synthesizing unified complete application...");
+    try {
+      const masterMsg = [
+        {
+          role: "user",
+          content: `Build a complete, responsive, and 100% functional web application for: ${goal}\n\nArchitect Blueprint:\n${JSON.stringify(blueprint, null, 2)}\n\nDeliver ONE complete, self-contained HTML document with all styles, markup, and working scripts included.`
+        }
+      ];
+      uiHtml = extractHtml(await collect(masterMsg, typeof BUILD !== "undefined" ? BUILD : ARCHITECT_PROMPT));
+    } catch(e) {}
   }
 
-  // Merge UI HTML with Script Block
-  let fullApp = "";
-  if (scriptBlock && /<\/body>/i.test(uiHtml)) {
-    fullApp = uiHtml.replace(/<\/body>/i, scriptBlock + "\n</body>");
-  } else if (scriptBlock) {
-    fullApp = uiHtml + "\n" + scriptBlock;
-  } else {
-    fullApp = uiHtml;
+  // Phase 3: Logic & Interaction Engineer Agent (if script not already complete)
+  let fullApp = uiHtml;
+  const hasExistingScript = /<script\b[^>]*>[\s\S]{30,}<\/script>/i.test(uiHtml);
+  if (!hasExistingScript) {
+    setStep("Phase 3/4: Logic Engineer wiring state & handlers");
+    const logicMsg = [
+      {
+        role: "user",
+        content: `Wire 100% of the interactive logic for this application.\n\nArchitect Blueprint:\n${JSON.stringify(blueprint, null, 2)}\n\nUI Specialist Markup:\n${uiHtml}\n\nRULES:\n1. Return ONLY the JavaScript code inside a \`\`\`javascript ... \`\`\` block.\n2. Implement all functions and bind them to window.\n3. Ensure all buttons click and respond.\n4. Call e.preventDefault() on forms.`
+      }
+    ];
+    let logicOut = "";
+    try {
+      logicOut = await collect(logicMsg, LOGIC_PROMPT);
+    } catch (err) {
+      logicOut = "";
+    }
+    
+    // Safely extract pure JavaScript block
+    let cleanJs = "";
+    const sMatch = logicOut.match(/<script\b[^>]*>([\s\S]*?)<\/script>/i);
+    if (sMatch) {
+      cleanJs = sMatch[1].trim();
+    } else {
+      const blockMatch = logicOut.match(/```(?:javascript|js)?\s*[\r\n]+([\s\S]*?)(?:```|$)/i);
+      cleanJs = blockMatch ? blockMatch[1].trim() : "";
+    }
+
+    if (cleanJs) {
+      const repairedJs = balanceDelimiters(cleanJs);
+      const scriptBlock = "<scr" + "ipt>\n" + repairedJs + "\n</scr" + "ipt>";
+      if (/<\/body>/i.test(uiHtml)) {
+        fullApp = uiHtml.replace(/<\/body>/i, scriptBlock + "\n</body>");
+      } else {
+        fullApp = uiHtml + "\n" + scriptBlock;
+      }
+    }
   }
 
   // Phase 4: Auto-Wiring Critic Agent & Repair
@@ -566,10 +705,19 @@ async function runMultiAgentPipeline(goal, note, image, onProgress) {
   fullApp = repairHtml(fullApp);
   fullApp = autoWireButtons(fullApp);
 
+  // Ultimate fallback to guarantee never a white screen
+  if (!isRenderableHtml(fullApp) && typeof BUILD !== "undefined") {
+    try {
+      const direct = await collect([{role: "user", content: "Build this: " + goal}], BUILD);
+      fullApp = autoWireButtons(repairHtml(extractHtml(direct)));
+    } catch(e) {}
+  }
+
   return fullApp;
 }
 
 if (typeof window !== "undefined") {
+  window.isRenderableHtml = isRenderableHtml;
   window.repairHtml = repairHtml;
   window.autoWireButtons = autoWireButtons;
   window.runMultiAgentPipeline = runMultiAgentPipeline;

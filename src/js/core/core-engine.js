@@ -258,10 +258,34 @@ function burst(x, y){
 }
 
 function extractHtml(t){
-  const f = t.match(/```(?:html)?\s*\n([\s\S]*?)(?:```|$)/i);
-  let h = f ? f[1] : t;
-  const i = h.search(/<!doctype|<html/i);
-  return (i > 0 ? h.slice(i) : h).trim();
+  if (!t || typeof t !== "string") return "";
+
+  // 1. Check all markdown code blocks for one containing actual HTML markup
+  const blocks = [...t.matchAll(/```(?:html)?\s*[\r\n]+([\s\S]*?)(?:```|$)/gi)];
+  for (const b of blocks) {
+    const code = b[1].trim();
+    if (/<(!doctype|html|body|main|div|style|script)\b/i.test(code)) {
+      const start = code.search(/<!doctype|<html/i);
+      return (start >= 0 ? code.slice(start) : code).trim();
+    }
+  }
+
+  // 2. If no code block contained HTML, search raw text for <!doctype or <html
+  const startIdx = t.search(/<!doctype|<html/i);
+  if (startIdx >= 0) {
+    let raw = t.slice(startIdx);
+    const endIdx = raw.search(/<\/html>/i);
+    if (endIdx > 0) raw = raw.slice(0, endIdx + 7);
+    return raw.trim();
+  }
+
+  // 3. Fallback to any content with HTML tags
+  if (/<[a-z!]/i.test(t)) {
+    const fIdx = t.indexOf("<");
+    return t.slice(fIdx).trim();
+  }
+
+  return t.trim();
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -1788,6 +1812,17 @@ async function checkAndFix(html, note){
   if (qaOn()) for (let k = 0; k < 2; k++) {
     setNote(note, k ? "Checking again" : "Testing the site");
     const q = await probe(html, 390); if (!q.issues.length) break;
+    if (q.issues.some(i => i.toLowerCase().includes("blank"))) {
+      setNote(note, "Rebuilding complete interface...");
+      try {
+        const full = await collect([{role: "user", content: "The previous code rendered completely blank with no controls or visible text. Rebuild a complete, self-contained single-page application from scratch for this goal:\n" + (lastText || "interactive web app") + "\nEnsure all HTML structure, interactive buttons, styles, and scripts are present in one complete HTML document."}], BUILD);
+        const cand = typeof repairHtml === "function" ? repairHtml(extractHtml(full)) : extractHtml(full);
+        if (typeof isRenderableHtml === "function" ? isRenderableHtml(cand) : (cand && cand.length > 80)) {
+          html = cand;
+          break;
+        }
+      } catch (err) {}
+    }
     await apply("An automated check found these problems. Fix them and change nothing else:\n- " + q.issues.join("\n- "), "Fixing " + q.issues.length + " problem" + (q.issues.length > 1 ? "s" : ""));
   }
   if (vrOn()) { setNote(note, "Reviewing the design"); const fx = await visualReview(html); if (fx.length) await apply("A design review of screenshots found these problems. Fix them and change nothing else:\n- " + fx.join("\n- "), "Polishing the layout"); }
@@ -1951,9 +1986,11 @@ async function build(text, auto){
       phase("building");
       let html = await runMultiAgentPipeline(text, note, im, (step) => setNote(note, step));
       if (peek) { peek.remove(); peek = null; }
-      if (!/<[a-z!]/i.test(html) || html.length < 40) throw new Error("Multi-agent build fell back.");
+      const isRenderable = typeof isRenderableHtml === "function" ? isRenderableHtml(html) : (html && html.length > 50 && /<[a-z!]/i.test(html));
+      if (!isRenderable) throw new Error("Multi-agent build fell back.");
       if (typeof repairHtml === "function") html = repairHtml(html);
       if (typeof autoWireButtons === "function") html = autoWireButtons(html);
+      if (!auto) html = await checkAndFix(html, note);
       current = html;
       currentFiles = { "index.html": html };
       activeFile = "index.html";
@@ -1987,7 +2024,8 @@ async function build(text, auto){
       html = bundleFiles(currentFiles, aMap);
     }
     if (peek) { peek.remove(); peek = null; }
-    if (!/<[a-z!]/i.test(html) || html.length < 40) throw new Error("Poppy didn't get a page back. Try rewording.");
+    const isRenderable = typeof isRenderableHtml === "function" ? isRenderableHtml(html) : (html && html.length > 50 && /<[a-z!]/i.test(html));
+    if (!isRenderable) throw new Error("Poppy didn't get a page back. Try rewording.");
     if (!auto) html = await checkAndFix(html, note);
     if (typeof repairHtml === "function") html = repairHtml(html);
     if (typeof autoWireButtons === "function") html = autoWireButtons(html);
