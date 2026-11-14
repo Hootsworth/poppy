@@ -48,26 +48,21 @@ h1{font-size:clamp(2.6rem,8.4vw,6.4rem);line-height:.95;letter-spacing:-.04em;ma
 .bub.card{width:100%;padding:16px 18px;border-radius:20px 20px 20px 4px}
 .bub.card>b{display:block;font-size:1.05rem;margin-bottom:6px}
 .ask{display:flex;align-items:center;gap:6px;background:var(--white);border-radius:99px;padding:6px;box-shadow:0 5px 0 var(--ink);border:2px solid var(--ink);transition:box-shadow .2s,transform .2s;position:relative}
-.ask-wrap{position:relative;flex:1;min-width:0;height:44px;display:flex;align-items:center}
-.ask-backdrop{position:absolute;inset:0;padding:10px 16px;font-size:1.1rem;font-weight:600;font-family:inherit;line-height:normal;white-space:pre;overflow:hidden;pointer-events:none;color:var(--ink);box-sizing:border-box;display:flex;align-items:center}
-.ask input{position:relative;z-index:2;flex:1;width:100%;height:100%;border:0;background:transparent;padding:10px 16px;font-size:1.1rem;font-weight:600;font-family:inherit;line-height:normal;box-sizing:border-box;caret-color:var(--ink);color:var(--ink)}
-.ask input.has-text{color:transparent}
-.ask input::placeholder{color:#8a6a6a;font-weight:500}
+.ask input{flex:1;min-width:0;height:44px;border:0;background:transparent;padding:10px 18px;font-size:1.1rem;font-weight:600;font-family:inherit;line-height:normal;box-sizing:border-box;caret-color:var(--ink);color:var(--ink)}
+.ask input::placeholder{color:#8a6a6a;font-weight:500;opacity:.85}
 .ask input:focus-visible{outline:none}
 .ask:focus-within{outline:3px solid var(--ink);outline-offset:4px;box-shadow:0 8px 0 var(--ink);transform:translateY(-2px)}
 .ask .go{min-height:44px;padding:0 24px;position:relative;z-index:3}
 
-/* Keyword gradient glow - warm solar poppy flame (no purple) */
-.kw-gradient{background:linear-gradient(135deg,#ef4444 0%,#ea580c 45%,#f59e0b 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;color:transparent;font-weight:800;display:inline-block;padding:0 2px;position:relative;filter:drop-shadow(0 1px 2px rgba(234,88,12,.25))}
-.kw-gradient::after{content:"";position:absolute;bottom:0;left:2px;right:2px;height:2.5px;background:linear-gradient(90deg,#ef4444,#ea580c,#f59e0b);border-radius:99px;box-shadow:0 1px 4px rgba(234,88,12,.4)}
-.kw-token-normal{color:var(--ink)}
-
-/* Detected Intent Pill */
-.intent-pill{display:inline-flex;align-items:center;gap:10px;margin-top:14px;padding:6px 16px 6px 8px;background:var(--white);border:2px solid var(--ink);border-radius:999px;box-shadow:0 4px 0 var(--ink);font-size:.88rem;font-weight:700;animation:pop .22s cubic-bezier(.16,1,.3,1) both}
-.intent-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;background:linear-gradient(135deg,#ef4444 0%,#ea580c 55%,#f59e0b 100%);color:#fff;font-size:.74rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;box-shadow:0 2px 6px rgba(234,88,12,.3)}
-.intent-badge::before{content:"";width:6px;height:6px;border-radius:50%;background:#fff;box-shadow:0 0 6px #fff;animation:pulseDot 1.4s ease-in-out infinite}
-@keyframes pulseDot{0%,100%{opacity:.6;transform:scale(.9)}50%{opacity:1;transform:scale(1.15)}}
-.intent-desc{color:var(--ink);font-size:.85rem;font-weight:600}
+/* @ Mention Autocomplete Dropdown */
+.at-dropdown{position:absolute;top:calc(100% + 8px);left:14px;min-width:320px;max-width:440px;background:var(--white);border:2px solid var(--ink);border-radius:18px;box-shadow:0 12px 28px rgba(0,0,0,.15),0 4px 0 var(--ink);padding:6px;z-index:1000;display:flex;flex-direction:column;gap:3px;animation:pop .18s cubic-bezier(.16,1,.3,1) both}
+.at-dropdown[hidden]{display:none}
+.at-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:12px;cursor:pointer;transition:background .12s,transform .1s;user-select:none}
+.at-item:hover,.at-item.active{background:#fff0ed}
+.at-tag{font-family:monospace;font-size:.88rem;font-weight:800;color:var(--petal);background:rgba(232,68,56,.1);padding:3px 8px;border-radius:6px;border:1px solid rgba(232,68,56,.25);flex-shrink:0}
+.at-info{display:flex;flex-direction:column;gap:1px;min-width:0}
+.at-title{font-size:.88rem;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.at-desc{font-size:.76rem;font-weight:500;color:#71717a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .att,.mic{width:40px;height:40px;border-radius:50%;flex:none;padding:0;display:grid;place-items:center}
 .att{border:2px solid var(--ink);background:transparent;font-weight:800;font-size:1.25rem;line-height:1}
 .att:hover{background:var(--ink);color:var(--white)}
@@ -402,13 +397,10 @@ dialog::backdrop{background:rgba(42,13,22,.55)}
       <p class="lede" id="ledeText">Describe any website, game or tool. This page turns into it.</p>
       <div id="log" aria-live="polite"></div>
       <form class="ask" id="homeForm">
-        <div class="ask-wrap">
-          <div class="ask-backdrop" id="promptBackdrop" aria-hidden="true"></div>
-          <input id="prompt" placeholder="A pomodoro timer shaped like a lighthouse" autocomplete="off" aria-label="What should Poppy build?" autofocus spellcheck="false">
-        </div>
+        <input id="prompt" placeholder="A pomodoro timer shaped like a lighthouse" autocomplete="off" aria-label="What should Poppy build?" autofocus spellcheck="false">
+        <div id="atDropdown" class="at-dropdown" hidden></div>
         <button type="button" class="att" aria-label="Attach an image">+</button><button type="button" class="mic" aria-label="Hold to talk"><i></i><i></i><i></i><i></i></button><button class="go" id="go">Build</button>
       </form>
-      <div id="detectedIntent" class="intent-pill" hidden><span class="intent-badge" id="intentBadge">Intent</span><span class="intent-desc" id="intentDesc"></span></div>
       <div class="opts"><label class="sw"><input type="checkbox" id="multiAgentOn" role="switch" checked><span class="trk"></span><span>Multi-Agent Engine</span></label><label class="sw" style="margin-left:8px"><input type="checkbox" id="planFirst" role="switch"><span class="trk"></span><span>Plan first</span></label><label class="sw" style="margin-left:8px"><input type="checkbox" id="agentOn" role="switch"><span class="trk"></span><span>Autonomous loop</span></label></div>
       <div class="opts" style="margin-top:12px">
   <div class="pick-wrap">
@@ -430,10 +422,8 @@ dialog::backdrop{background:rgba(42,13,22,.55)}
 <button id="fab" aria-label="Change this site" title="Change this site"><svg viewBox="0 0 200 200"><use href="#fl"/></svg></button>
 <div id="panel">
   <form class="ask" id="tweakForm">
-    <div class="ask-wrap">
-      <div class="ask-backdrop" id="tweakBackdrop" aria-hidden="true"></div>
-      <input id="tweak" placeholder="Make it darker, add a timer, or start something new" autocomplete="off" aria-label="Change the site" spellcheck="false">
-    </div>
+    <input id="tweak" placeholder="Make it darker, add a timer, or start something new" autocomplete="off" aria-label="Change the site" spellcheck="false">
+    <div id="tweakAtDropdown" class="at-dropdown" hidden></div>
     <button type="button" class="att" aria-label="Attach an image">+</button><button type="button" class="mic" aria-label="Hold to talk"><i></i><i></i><i></i><i></i></button><button class="go" id="tweakGo">Apply</button>
   </form>
   <div class="row"><button class="sq" id="undo" aria-label="Undo" disabled>&#8630;</button><button class="sq" id="redo" aria-label="Redo" disabled>&#8631;</button><button class="sq" id="inspectBtn" aria-label="Inspect element" title="Inspect & Edit Element"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/></svg></button><button class="sq" id="blocksBtn" aria-label="UI Blocks" title="Pre-Built UI Blocks"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></button><button class="sq" id="dbStudioBtn" aria-label="Database Studio" title="Database & Store Studio"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></button><select id="vers" aria-label="Version history"></select><button class="sq" id="moreBtn" aria-label="More actions" aria-expanded="false">&#8943;</button></div>
@@ -855,19 +845,118 @@ updateProv();
 const PH = IDEAS.map(t => t.replace(/^An? /, "A "));
 let phi = 0;
 setInterval(() => { if (!$("#prompt").value) $("#prompt").placeholder = PH[++phi % PH.length]; }, 3500);
-const initKwInput = (inId, bdId, pillId, badgeId, descId) => {
-  const inp = $(inId), bd = $(bdId), pill = pillId ? $(pillId) : null, badge = badgeId ? $(badgeId) : null, desc = descId ? $(descId) : null;
-  if (!inp || !bd) return;
-  const update = () => {
-    highlightKeywords(inp, bd, pill, badge, desc);
-    bd.scrollLeft = inp.scrollLeft;
+const AT_OPTIONS = [
+  { tag: "@slides", title: "Keynote Pitch Deck", desc: "16:9 presentation with speaker notes & PDF export", hint: "slides" },
+  { tag: "@game", title: "Playable 2D Game", desc: "60fps canvas loop, WebAudio sound effects & controls", hint: "game" },
+  { tag: "@pdf", title: "Document & Invoice Studio", desc: "Print-to-PDF formatting & table calculations", hint: "pdf" },
+  { tag: "@tool", title: "Desktop Utility & Tool", desc: "Live calculation engines & format converters", hint: "tool" },
+  { tag: "@realtime", title: "Collaborative Realtime App", desc: "Multiplayer sync & P2P whiteboard", hint: "realtime" },
+  { tag: "@db", title: "Database & CRUD App", desc: "SQLite poppy.db tables & persistent state", hint: "db" },
+  { tag: "@synth", title: "WebAudio Synthesizer", desc: "Playable musical instrument with polyphony", hint: "synth" },
+  { tag: "@ai", title: "Smart AI App", desc: "Embedded streaming AI logic & assistants", hint: "ai" }
+];
+
+function initAtMention(inId, ddId) {
+  const inp = $(inId), dd = $(ddId);
+  if (!inp || !dd) return;
+  let activeIdx = 0, filtered = [];
+
+  const close = () => {
+    dd.hidden = true;
+    dd.innerHTML = "";
+    activeIdx = 0;
   };
-  inp.addEventListener("input", update);
-  inp.addEventListener("keyup", update);
-  inp.addEventListener("scroll", () => { bd.scrollLeft = inp.scrollLeft; });
-};
-initKwInput("#prompt", "#promptBackdrop", "#detectedIntent", "#intentBadge", "#intentDesc");
-initKwInput("#tweak", "#tweakBackdrop");
+
+  const select = (tag) => {
+    const val = inp.value;
+    const caret = inp.selectionStart || val.length;
+    const textBefore = val.slice(0, caret);
+    const atIdx = textBefore.lastIndexOf("@");
+    if (atIdx >= 0) {
+      inp.value = val.slice(0, atIdx) + tag + " " + val.slice(caret);
+      const newPos = atIdx + tag.length + 1;
+      inp.setSelectionRange(newPos, newPos);
+    } else {
+      inp.value = tag + " " + val;
+    }
+    close();
+    inp.focus();
+    inp.dispatchEvent(new Event("input", { bubbles: true }));
+  };
+
+  const render = (opts) => {
+    filtered = opts;
+    if (!opts.length) { close(); return; }
+    activeIdx = 0;
+    dd.innerHTML = opts.map((o, i) => `
+      <div class="at-item${i === 0 ? " active" : ""}" data-tag="${o.tag}">
+        <span class="at-tag">${o.tag}</span>
+        <div class="at-info">
+          <strong class="at-title">${o.title}</strong>
+          <span class="at-desc">${o.desc}</span>
+        </div>
+      </div>
+    `).join("");
+    dd.hidden = false;
+
+    dd.querySelectorAll(".at-item").forEach((item, i) => {
+      item.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        select(opts[i].tag);
+      };
+      item.onmouseenter = () => {
+        dd.querySelectorAll(".at-item").forEach(it => it.classList.remove("active"));
+        item.classList.add("active");
+        activeIdx = i;
+      };
+    });
+  };
+
+  inp.addEventListener("input", () => {
+    const val = inp.value;
+    const caret = inp.selectionStart || val.length;
+    const textBefore = val.slice(0, caret);
+    const lastAt = textBefore.lastIndexOf("@");
+    if (lastAt >= 0 && !/\s/.test(textBefore.slice(lastAt))) {
+      const q = textBefore.slice(lastAt + 1).toLowerCase();
+      const matches = AT_OPTIONS.filter(o => o.tag.slice(1).startsWith(q) || o.title.toLowerCase().includes(q) || o.hint.includes(q));
+      render(matches);
+    } else {
+      close();
+    }
+  });
+
+  inp.addEventListener("keydown", (e) => {
+    if (dd.hidden) return;
+    const items = dd.querySelectorAll(".at-item");
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      activeIdx = (activeIdx + 1) % items.length;
+      items.forEach((it, i) => it.classList.toggle("active", i === activeIdx));
+      items[activeIdx]?.scrollIntoView({ block: "nearest" });
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      activeIdx = (activeIdx - 1 + items.length) % items.length;
+      items.forEach((it, i) => it.classList.toggle("active", i === activeIdx));
+      items[activeIdx]?.scrollIntoView({ block: "nearest" });
+    } else if (e.key === "Enter" || e.key === "Tab") {
+      if (filtered[activeIdx]) {
+        e.preventDefault();
+        select(filtered[activeIdx].tag);
+      }
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      close();
+    }
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!dd.contains(e.target) && e.target !== inp) close();
+  });
+}
+initAtMention("#prompt", "#atDropdown");
+initAtMention("#tweak", "#tweakAtDropdown");
 $("#prompt").addEventListener("input", e => $("#flower").style.setProperty("--lean", Math.min(e.target.value.length, 40) * 3 + "deg"));
 
 function burst(x, y){
@@ -2422,7 +2511,7 @@ const tplPick = () => TPL[$("#tpl").selectedIndex - 1];
 
 function detectIntent(text = "") {
   const t = text.toLowerCase();
-  if (/\b(ppt|pptx|slides?|deck|presentation|pitch|keynote)\b/i.test(t)) {
+  if (/\b(ppt|pptx|slides?|deck|presentation|pitch|keynote|@slides?|@deck)\b/i.test(t)) {
     return {
       type: "deck",
       label: "Presentation Deck",
@@ -2430,7 +2519,7 @@ function detectIntent(text = "") {
       hint: "\n\nCategory: Widescreen 16:9 presentation slide deck with Keynote typography, keyboard navigation, speaker notes drawer with timer, slide overview grid, and print-to-PDF styles."
     };
   }
-  if (/\b(game|arcade|shooter|platformer|canvas|play)\b/i.test(t)) {
+  if (/\b(game|arcade|shooter|platformer|canvas|play|@game)\b/i.test(t)) {
     return {
       type: "game",
       label: "Interactive Game",
@@ -2438,7 +2527,7 @@ function detectIntent(text = "") {
       hint: "\n\nCategory: Playable 2D/canvas game with 60fps game loop, WebAudio sound effects, score tracking, keyboard/touch controls, and restart."
     };
   }
-  if (/\b(pdf|invoice|receipt|contract|report|document|doc)\b/i.test(t)) {
+  if (/\b(pdf|invoice|receipt|contract|report|document|doc|@pdf|@invoice|@doc)\b/i.test(t)) {
     return {
       type: "pdf",
       label: "Printable Document",
@@ -2446,7 +2535,7 @@ function detectIntent(text = "") {
       hint: "\n\nCategory: Standalone utility tool with instant working calculations, file import/export, and clean @media print styles."
     };
   }
-  if (/\b(room|whiteboard|collab|realtime|multiplayer|p2p|chat)\b/i.test(t)) {
+  if (/\b(room|whiteboard|collab|realtime|multiplayer|p2p|chat|@realtime|@room)\b/i.test(t)) {
     return {
       type: "room",
       label: "Realtime Collab Room",
@@ -2454,7 +2543,7 @@ function detectIntent(text = "") {
       hint: "\n\nCategory: Realtime multi-user collaborative room powered by poppy.room with presence and live state sync."
     };
   }
-  if (/\b(tool|calculator|converter|generator|utility)\b/i.test(t)) {
+  if (/\b(tool|calculator|converter|generator|utility|@tool|@utility)\b/i.test(t)) {
     return {
       type: "tool",
       label: "Desktop Utility",
@@ -2462,7 +2551,7 @@ function detectIntent(text = "") {
       hint: "\n\nCategory: Standalone utility tool with instant working calculations, file import/export, and print formatting."
     };
   }
-  if (/\b(synth|audio|music|beat|sound)\b/i.test(t)) {
+  if (/\b(synth|audio|music|beat|sound|@synth|@audio)\b/i.test(t)) {
     return {
       type: "audio",
       label: "WebAudio Studio",
@@ -2470,65 +2559,19 @@ function detectIntent(text = "") {
       hint: "\n\nCategory: WebAudio synthesizer and beat machine with real-time sound controls."
     };
   }
+  if (/\b(db|database|sqlite|sql|crud|@db)\b/i.test(t)) {
+    return {
+      type: "db",
+      label: "SQLite Database App",
+      desc: "Relational Tables & Persistent Store",
+      hint: "\n\nCategory: Database application using poppy.db for SQLite queries and persistent records."
+    };
+  }
   return null;
 }
 
 function escapeHtml(s) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-function highlightKeywords(inputEl, backdropEl, pillEl, badgeEl, descEl) {
-  if (!inputEl || !backdropEl) return;
-  const val = inputEl.value;
-  const kwRegex = /\b(ppt|pptx|slides?|deck|presentation|pitch|keynote|game|arcade|shooter|platformer|canvas|play|pdf|invoice|receipt|contract|report|document|doc|room|whiteboard|collab|realtime|multiplayer|p2p|chat|tool|calculator|converter|generator|utility|synth|audio|music|beat|sound)\b/gi;
-  
-  backdropEl.scrollLeft = inputEl.scrollLeft;
-
-  if (!val) {
-    backdropEl.innerHTML = "";
-    inputEl.classList.remove("has-text");
-    if (pillEl) pillEl.hidden = true;
-    return;
-  }
-
-  const hasKeywords = kwRegex.test(val);
-  kwRegex.lastIndex = 0; // Reset regex state after test
-
-  if (!hasKeywords) {
-    backdropEl.innerHTML = "";
-    inputEl.classList.remove("has-text");
-    if (pillEl) pillEl.hidden = true;
-    return;
-  }
-  
-  inputEl.classList.add("has-text");
-  let lastIndex = 0;
-  let html = "";
-  let match;
-  
-  while ((match = kwRegex.exec(val)) !== null) {
-    const start = match.index;
-    const end = kwRegex.lastIndex;
-    const normal = val.slice(lastIndex, start);
-    if (normal) html += `<span class="kw-token-normal">${escapeHtml(normal)}</span>`;
-    html += `<span class="kw-gradient">${escapeHtml(match[0])}</span>`;
-    lastIndex = end;
-  }
-  const remaining = val.slice(lastIndex);
-  if (remaining) html += `<span class="kw-token-normal">${escapeHtml(remaining)}</span>`;
-  
-  backdropEl.innerHTML = html;
-  
-  const intent = detectIntent(val);
-  if (pillEl) {
-    if (intent) {
-      pillEl.hidden = false;
-      if (badgeEl) badgeEl.textContent = intent.label;
-      if (descEl) descEl.textContent = intent.desc;
-    } else {
-      pillEl.hidden = true;
-    }
-  }
 }
 
 function buildHints(promptText = ""){

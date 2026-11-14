@@ -24,11 +24,14 @@ const MARKETPLACE_TEMPLATES = eval(tplMatch[1]);
 if (MARKETPLACE_TEMPLATES.length < 9) throw new Error("Expected at least 9 templates");
 console.log(`Marketplace Templates: ${MARKETPLACE_TEMPLATES.length} verified.`);
 
-// 4. Verify Keyword Gradient Engine
-if (!html.includes('id="promptBackdrop"') || !html.includes('kw-gradient') || !html.includes('detectIntent')) {
-  throw new Error("Keyword gradient highlighting engine missing");
+// 4. Verify @ Mention Target Engine & Intent Detection
+if (!html.includes('id="atDropdown"') || !html.includes('initAtMention') || !html.includes('detectIntent')) {
+  throw new Error("@ Mention autocomplete dropdown & intent detection missing");
 }
-console.log("Keyword gradient highlighting & intent detection: verified.");
+if (html.includes('id="promptBackdrop"') || html.includes('id="detectedIntent"')) {
+  throw new Error("Obsolete backdrop/intent banner found in HTML! Should be removed.");
+}
+console.log("@ Mention target engine & intent detection: verified.");
 
 // 5. Verify Universal Button Safety Engine & Multi-Agent Architecture
 if (!html.includes('wireButtons') || !html.includes('scale(0.96)')) {

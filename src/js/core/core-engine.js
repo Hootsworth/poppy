@@ -83,19 +83,118 @@ updateProv();
 const PH = IDEAS.map(t => t.replace(/^An? /, "A "));
 let phi = 0;
 setInterval(() => { if (!$("#prompt").value) $("#prompt").placeholder = PH[++phi % PH.length]; }, 3500);
-const initKwInput = (inId, bdId, pillId, badgeId, descId) => {
-  const inp = $(inId), bd = $(bdId), pill = pillId ? $(pillId) : null, badge = badgeId ? $(badgeId) : null, desc = descId ? $(descId) : null;
-  if (!inp || !bd) return;
-  const update = () => {
-    highlightKeywords(inp, bd, pill, badge, desc);
-    bd.scrollLeft = inp.scrollLeft;
+const AT_OPTIONS = [
+  { tag: "@slides", title: "Keynote Pitch Deck", desc: "16:9 presentation with speaker notes & PDF export", hint: "slides" },
+  { tag: "@game", title: "Playable 2D Game", desc: "60fps canvas loop, WebAudio sound effects & controls", hint: "game" },
+  { tag: "@pdf", title: "Document & Invoice Studio", desc: "Print-to-PDF formatting & table calculations", hint: "pdf" },
+  { tag: "@tool", title: "Desktop Utility & Tool", desc: "Live calculation engines & format converters", hint: "tool" },
+  { tag: "@realtime", title: "Collaborative Realtime App", desc: "Multiplayer sync & P2P whiteboard", hint: "realtime" },
+  { tag: "@db", title: "Database & CRUD App", desc: "SQLite poppy.db tables & persistent state", hint: "db" },
+  { tag: "@synth", title: "WebAudio Synthesizer", desc: "Playable musical instrument with polyphony", hint: "synth" },
+  { tag: "@ai", title: "Smart AI App", desc: "Embedded streaming AI logic & assistants", hint: "ai" }
+];
+
+function initAtMention(inId, ddId) {
+  const inp = $(inId), dd = $(ddId);
+  if (!inp || !dd) return;
+  let activeIdx = 0, filtered = [];
+
+  const close = () => {
+    dd.hidden = true;
+    dd.innerHTML = "";
+    activeIdx = 0;
   };
-  inp.addEventListener("input", update);
-  inp.addEventListener("keyup", update);
-  inp.addEventListener("scroll", () => { bd.scrollLeft = inp.scrollLeft; });
-};
-initKwInput("#prompt", "#promptBackdrop", "#detectedIntent", "#intentBadge", "#intentDesc");
-initKwInput("#tweak", "#tweakBackdrop");
+
+  const select = (tag) => {
+    const val = inp.value;
+    const caret = inp.selectionStart || val.length;
+    const textBefore = val.slice(0, caret);
+    const atIdx = textBefore.lastIndexOf("@");
+    if (atIdx >= 0) {
+      inp.value = val.slice(0, atIdx) + tag + " " + val.slice(caret);
+      const newPos = atIdx + tag.length + 1;
+      inp.setSelectionRange(newPos, newPos);
+    } else {
+      inp.value = tag + " " + val;
+    }
+    close();
+    inp.focus();
+    inp.dispatchEvent(new Event("input", { bubbles: true }));
+  };
+
+  const render = (opts) => {
+    filtered = opts;
+    if (!opts.length) { close(); return; }
+    activeIdx = 0;
+    dd.innerHTML = opts.map((o, i) => `
+      <div class="at-item${i === 0 ? " active" : ""}" data-tag="${o.tag}">
+        <span class="at-tag">${o.tag}</span>
+        <div class="at-info">
+          <strong class="at-title">${o.title}</strong>
+          <span class="at-desc">${o.desc}</span>
+        </div>
+      </div>
+    `).join("");
+    dd.hidden = false;
+
+    dd.querySelectorAll(".at-item").forEach((item, i) => {
+      item.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        select(opts[i].tag);
+      };
+      item.onmouseenter = () => {
+        dd.querySelectorAll(".at-item").forEach(it => it.classList.remove("active"));
+        item.classList.add("active");
+        activeIdx = i;
+      };
+    });
+  };
+
+  inp.addEventListener("input", () => {
+    const val = inp.value;
+    const caret = inp.selectionStart || val.length;
+    const textBefore = val.slice(0, caret);
+    const lastAt = textBefore.lastIndexOf("@");
+    if (lastAt >= 0 && !/\s/.test(textBefore.slice(lastAt))) {
+      const q = textBefore.slice(lastAt + 1).toLowerCase();
+      const matches = AT_OPTIONS.filter(o => o.tag.slice(1).startsWith(q) || o.title.toLowerCase().includes(q) || o.hint.includes(q));
+      render(matches);
+    } else {
+      close();
+    }
+  });
+
+  inp.addEventListener("keydown", (e) => {
+    if (dd.hidden) return;
+    const items = dd.querySelectorAll(".at-item");
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      activeIdx = (activeIdx + 1) % items.length;
+      items.forEach((it, i) => it.classList.toggle("active", i === activeIdx));
+      items[activeIdx]?.scrollIntoView({ block: "nearest" });
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      activeIdx = (activeIdx - 1 + items.length) % items.length;
+      items.forEach((it, i) => it.classList.toggle("active", i === activeIdx));
+      items[activeIdx]?.scrollIntoView({ block: "nearest" });
+    } else if (e.key === "Enter" || e.key === "Tab") {
+      if (filtered[activeIdx]) {
+        e.preventDefault();
+        select(filtered[activeIdx].tag);
+      }
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      close();
+    }
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!dd.contains(e.target) && e.target !== inp) close();
+  });
+}
+initAtMention("#prompt", "#atDropdown");
+initAtMention("#tweak", "#tweakAtDropdown");
 $("#prompt").addEventListener("input", e => $("#flower").style.setProperty("--lean", Math.min(e.target.value.length, 40) * 3 + "deg"));
 
 function burst(x, y){
@@ -1650,7 +1749,7 @@ const tplPick = () => TPL[$("#tpl").selectedIndex - 1];
 
 function detectIntent(text = "") {
   const t = text.toLowerCase();
-  if (/\b(ppt|pptx|slides?|deck|presentation|pitch|keynote)\b/i.test(t)) {
+  if (/\b(ppt|pptx|slides?|deck|presentation|pitch|keynote|@slides?|@deck)\b/i.test(t)) {
     return {
       type: "deck",
       label: "Presentation Deck",
@@ -1658,7 +1757,7 @@ function detectIntent(text = "") {
       hint: "\n\nCategory: Widescreen 16:9 presentation slide deck with Keynote typography, keyboard navigation, speaker notes drawer with timer, slide overview grid, and print-to-PDF styles."
     };
   }
-  if (/\b(game|arcade|shooter|platformer|canvas|play)\b/i.test(t)) {
+  if (/\b(game|arcade|shooter|platformer|canvas|play|@game)\b/i.test(t)) {
     return {
       type: "game",
       label: "Interactive Game",
@@ -1666,7 +1765,7 @@ function detectIntent(text = "") {
       hint: "\n\nCategory: Playable 2D/canvas game with 60fps game loop, WebAudio sound effects, score tracking, keyboard/touch controls, and restart."
     };
   }
-  if (/\b(pdf|invoice|receipt|contract|report|document|doc)\b/i.test(t)) {
+  if (/\b(pdf|invoice|receipt|contract|report|document|doc|@pdf|@invoice|@doc)\b/i.test(t)) {
     return {
       type: "pdf",
       label: "Printable Document",
@@ -1674,7 +1773,7 @@ function detectIntent(text = "") {
       hint: "\n\nCategory: Standalone utility tool with instant working calculations, file import/export, and clean @media print styles."
     };
   }
-  if (/\b(room|whiteboard|collab|realtime|multiplayer|p2p|chat)\b/i.test(t)) {
+  if (/\b(room|whiteboard|collab|realtime|multiplayer|p2p|chat|@realtime|@room)\b/i.test(t)) {
     return {
       type: "room",
       label: "Realtime Collab Room",
@@ -1682,7 +1781,7 @@ function detectIntent(text = "") {
       hint: "\n\nCategory: Realtime multi-user collaborative room powered by poppy.room with presence and live state sync."
     };
   }
-  if (/\b(tool|calculator|converter|generator|utility)\b/i.test(t)) {
+  if (/\b(tool|calculator|converter|generator|utility|@tool|@utility)\b/i.test(t)) {
     return {
       type: "tool",
       label: "Desktop Utility",
@@ -1690,7 +1789,7 @@ function detectIntent(text = "") {
       hint: "\n\nCategory: Standalone utility tool with instant working calculations, file import/export, and print formatting."
     };
   }
-  if (/\b(synth|audio|music|beat|sound)\b/i.test(t)) {
+  if (/\b(synth|audio|music|beat|sound|@synth|@audio)\b/i.test(t)) {
     return {
       type: "audio",
       label: "WebAudio Studio",
@@ -1698,65 +1797,19 @@ function detectIntent(text = "") {
       hint: "\n\nCategory: WebAudio synthesizer and beat machine with real-time sound controls."
     };
   }
+  if (/\b(db|database|sqlite|sql|crud|@db)\b/i.test(t)) {
+    return {
+      type: "db",
+      label: "SQLite Database App",
+      desc: "Relational Tables & Persistent Store",
+      hint: "\n\nCategory: Database application using poppy.db for SQLite queries and persistent records."
+    };
+  }
   return null;
 }
 
 function escapeHtml(s) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-function highlightKeywords(inputEl, backdropEl, pillEl, badgeEl, descEl) {
-  if (!inputEl || !backdropEl) return;
-  const val = inputEl.value;
-  const kwRegex = /\b(ppt|pptx|slides?|deck|presentation|pitch|keynote|game|arcade|shooter|platformer|canvas|play|pdf|invoice|receipt|contract|report|document|doc|room|whiteboard|collab|realtime|multiplayer|p2p|chat|tool|calculator|converter|generator|utility|synth|audio|music|beat|sound)\b/gi;
-  
-  backdropEl.scrollLeft = inputEl.scrollLeft;
-
-  if (!val) {
-    backdropEl.innerHTML = "";
-    inputEl.classList.remove("has-text");
-    if (pillEl) pillEl.hidden = true;
-    return;
-  }
-
-  const hasKeywords = kwRegex.test(val);
-  kwRegex.lastIndex = 0; // Reset regex state after test
-
-  if (!hasKeywords) {
-    backdropEl.innerHTML = "";
-    inputEl.classList.remove("has-text");
-    if (pillEl) pillEl.hidden = true;
-    return;
-  }
-  
-  inputEl.classList.add("has-text");
-  let lastIndex = 0;
-  let html = "";
-  let match;
-  
-  while ((match = kwRegex.exec(val)) !== null) {
-    const start = match.index;
-    const end = kwRegex.lastIndex;
-    const normal = val.slice(lastIndex, start);
-    if (normal) html += `<span class="kw-token-normal">${escapeHtml(normal)}</span>`;
-    html += `<span class="kw-gradient">${escapeHtml(match[0])}</span>`;
-    lastIndex = end;
-  }
-  const remaining = val.slice(lastIndex);
-  if (remaining) html += `<span class="kw-token-normal">${escapeHtml(remaining)}</span>`;
-  
-  backdropEl.innerHTML = html;
-  
-  const intent = detectIntent(val);
-  if (pillEl) {
-    if (intent) {
-      pillEl.hidden = false;
-      if (badgeEl) badgeEl.textContent = intent.label;
-      if (descEl) descEl.textContent = intent.desc;
-    } else {
-      pillEl.hidden = true;
-    }
-  }
 }
 
 function buildHints(promptText = ""){
