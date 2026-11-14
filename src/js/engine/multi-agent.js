@@ -608,7 +608,7 @@ function autoWireButtons(html) {
  * Runs the Multi-Agent Generation Pipeline with White-Screen Guards
  */
 /**
- * Runs the Multi-Agent Generation Pipeline
+ * Runs the Multi-Agent Generation Pipeline with Archetype Injection & Staged Compilation
  */
 async function runMultiAgentPipeline(goal, note, image, onProgress) {
   const setStep = (text) => {
@@ -616,12 +616,16 @@ async function runMultiAgentPipeline(goal, note, image, onProgress) {
     if (typeof onProgress === "function") onProgress(text);
   };
 
+  const archetype = typeof detectArchetype === "function" ? detectArchetype(goal) : null;
+  const archName = archetype ? archetype.name : "Universal Web Application";
+  const archSpec = archetype ? `\nDomain Archetype (${archetype.name}):\n${archetype.spec}\n${archetype.fileTemplate}` : "";
+
   // Phase 1: Architect Agent drafting technical blueprint
-  setStep("Phase 1/3: Architect drafting technical blueprint & mechanics");
+  setStep(`Phase 1/3: Architect drafting technical blueprint (${archName})`);
   const architectMsg = [
     {
       role: "user",
-      content: `Architect a complete, production-grade technical specification for this goal:\n${goal}\n\nDeliver the exact state schema, game loop/canvas physics/controls if a game, interactive DOM elements with IDs, and data flow.`
+      content: `Architect a complete, production-grade technical specification for this goal:\n${goal}${archSpec}\n\nDeliver the exact state schema, game loop / canvas physics / controls if a game, interactive DOM elements with IDs, and data flow.`
     }
   ];
   let blueprintRaw = "";
@@ -640,37 +644,64 @@ async function runMultiAgentPipeline(goal, note, image, onProgress) {
   }
 
   // Phase 2: Master Full-Stack Builder Agent constructing complete playable/interactive app
-  setStep("Phase 2/3: Master Builder constructing complete application");
+  setStep(`Phase 2/3: Master Builder compiling project files (${archName})`);
   const builderMsg = [
     {
       role: "user",
-      content: `Build the complete, self-contained single-page application for this goal:\nGoal: ${goal}\n\nArchitect Blueprint:\n${JSON.stringify(blueprint, null, 2)}\n\nGuarantee all HTML, CSS, and JavaScript (including canvas game loops, physics, controls, and WebAudio sounds) are fully implemented in ONE file.`
+      content: `Build the complete application for this goal:\nGoal: ${goal}\n\nArchitect Blueprint:\n${JSON.stringify(blueprint, null, 2)}${archSpec}\n\nCRITICAL: You may output ONE self-contained HTML file OR a modular multi-file codebase using --- FILE: filename --- headers.\nGuarantee all HTML, CSS, and JavaScript (including 60fps canvas loop, physics, sound synthesis, and touch controls) are fully implemented with zero placeholders.`
     }
   ];
-  let fullApp = "";
+  let builderOut = "";
   try {
-    fullApp = await collect(builderMsg, BUILDER_PROMPT);
+    builderOut = await collect(builderMsg, BUILDER_PROMPT);
   } catch (err) {
-    fullApp = "";
+    builderOut = "";
   }
-  fullApp = extractHtml(fullApp);
+
+  // Phase 3: Multi-File Staging, Delimiter Balancing & Auto-Wiring
+  setStep("Phase 3/3: Auto-Wiring Critic auditing controls & safety");
+  let files = {};
+  let bundledHtml = "";
+
+  if (typeof parseFiles === "function" && /(?:^|\n)(?:---|===)\s*FILE:\s*/i.test(builderOut)) {
+    files = parseFiles(builderOut);
+    // Balance delimiters on all JS files
+    for (const [fn, content] of Object.entries(files)) {
+      if (fn.endsWith(".js") && typeof balanceDelimiters === "function") {
+        files[fn] = balanceDelimiters(content);
+      }
+    }
+    if (typeof bundleFiles === "function") {
+      bundledHtml = bundleFiles(files);
+    } else {
+      bundledHtml = files["index.html"] || "";
+    }
+  } else {
+    bundledHtml = extractHtml(builderOut);
+    files = { "index.html": bundledHtml };
+  }
 
   // If builder failed or returned unrenderable HTML, fall back to master BUILD prompt
-  if (!isRenderableHtml(fullApp)) {
+  if (!isRenderableHtml(bundledHtml)) {
     setStep("Synthesizing unified complete application...");
     try {
       const fallbackPrompt = typeof BUILD !== "undefined" ? BUILD : BUILDER_PROMPT;
-      const direct = await collect([{role: "user", content: "Build this: " + goal}], fallbackPrompt);
-      fullApp = extractHtml(direct);
+      const direct = await collect([{role: "user", content: "Build this: " + goal + (archSpec ? "\n" + archSpec : "")}], fallbackPrompt);
+      if (/(?:^|\n)(?:---|===)\s*FILE:\s*/i.test(direct) && typeof parseFiles === "function") {
+        files = parseFiles(direct);
+        bundledHtml = typeof bundleFiles === "function" ? bundleFiles(files) : (files["index.html"] || "");
+      } else {
+        bundledHtml = extractHtml(direct);
+        files = { "index.html": bundledHtml };
+      }
     } catch(e) {}
   }
 
-  // Phase 3: Self-Repair & Auto-Wiring Critic Agent
-  setStep("Phase 3/3: Auto-Wiring Critic verifying buttons & safety");
-  fullApp = repairHtml(fullApp);
-  fullApp = autoWireButtons(fullApp);
+  bundledHtml = repairHtml(bundledHtml);
+  bundledHtml = autoWireButtons(bundledHtml);
+  if (files["index.html"]) files["index.html"] = bundledHtml;
 
-  return fullApp;
+  return { html: bundledHtml, files };
 }
 
 if (typeof window !== "undefined") {

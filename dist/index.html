@@ -1652,9 +1652,9 @@ document.addEventListener("click",e=>{
   }
 },true);
 
-const rep=(t,m)=>{try{P.postMessage({poppy:1,report:{t,m:String(m).slice(0,400)}},"*")}catch(e){}};
-addEventListener("error",e=>rep("error",e.message+(e.lineno?" (line "+e.lineno+")":"")));
-addEventListener("unhandledrejection",e=>rep("promise",(e.reason&&e.reason.message)||e.reason));
+const rep=(t,m,fn,ln,stk)=>{try{P.postMessage({poppy:1,report:{t,m:String(m).slice(0,400),fn:fn||"",ln:ln||0,stk:String(stk||"").slice(0,500)}},"*")}catch(e){}};
+addEventListener("error",e=>{const stk=(e.error&&e.error.stack)?e.error.stack:"";rep("error",e.message+(e.lineno?" (line "+e.lineno+")":""),e.filename,e.lineno,stk);});
+addEventListener("unhandledrejection",e=>{const msg=(e.reason&&e.reason.message)||String(e.reason||"Unhandled rejection");const stk=(e.reason&&e.reason.stack)?e.reason.stack:"";rep("promise",msg,"",0,stk);});
 })();`;
 function inject(html, code = SDK){
   if (typeof repairHtml === "function") html = repairHtml(html);
@@ -2397,8 +2397,21 @@ function bundleFiles(files, assetMap = {}){
   const linkedJs = new Set();
   for (const m of html.matchAll(/data-file="([^"]+\.js)"/g)) linkedJs.add(m[1]);
   let extraJs = "";
-  for (const [name, content] of Object.entries(files)) {
-    if (name.endsWith(".js") && !linkedJs.has(name)) extraJs += "<scr" + "ipt data-file=\"" + name + "\">\n/* " + name + " */\n" + content + "\n</scr" + "ipt>\n";
+  const jsPriority = (name) => {
+    const n = name.toLowerCase();
+    if (n.includes("sound") || n.includes("audio")) return 1;
+    if (n.includes("util") || n.includes("physic") || n.includes("store") || n.includes("const")) return 2;
+    if (n.includes("engine") || n.includes("core")) return 3;
+    if (n.includes("level") || n.includes("data") || n.includes("component")) return 4;
+    if (n.includes("game") || n.includes("main") || n.includes("app")) return 5;
+    return 3;
+  };
+  const sortedJs = Object.entries(files)
+    .filter(([name]) => name.endsWith(".js") && !linkedJs.has(name))
+    .sort(([a], [b]) => jsPriority(a) - jsPriority(b));
+
+  for (const [name, content] of sortedJs) {
+    extraJs += "<scr" + "ipt data-file=\"" + name + "\">\n/* " + name + " */\n" + content + "\n</scr" + "ipt>\n";
   }
   if (extraJs) {
     if (/<\/body>/i.test(html)) html = html.replace(/<\/body>/i, extraJs + "</body>");
@@ -2543,7 +2556,15 @@ function probe(html, w = 390, scale){
     };
     const on = e => {
       if (e.source !== f.contentWindow) return; const m = e.data; if (!m || m.poppy !== 1) return;
-      if (m.report && m.report.m) { const t = String(m.report.m).slice(0, 200); if (!seen.has(t) && issues.length < 3) { seen.add(t); issues.push("Runtime error: " + t); } }
+      if (m.report && m.report.m) {
+        const t = String(m.report.m).slice(0, 200);
+        const loc = m.report.fn ? ` [${m.report.fn}:${m.report.ln || 0}]` : "";
+        const stk = m.report.stk ? `\nStack: ${String(m.report.stk).slice(0, 250)}` : "";
+        if (!seen.has(t) && issues.length < 3) {
+          seen.add(t);
+          issues.push(`Runtime error${loc}: ${t}${stk}`);
+        }
+      }
       else if (m.qa) { qa = m.qa; if (scale && !shotAsked) { shotAsked = true; f.contentWindow.postMessage({poppy: 1, cmd: "shot", scale}, "*"); clearTimeout(t1); } else if (!scale) end(); }
       else if ("shot" in m) { shot = typeof m.shot === "string" && m.shot.startsWith("data:image/jpeg;base64,") && m.shot.length < 2e6 ? m.shot : null; end(); }
       else if (typeof m.method === "string") f.contentWindow.postMessage({poppy: 1, id: m.id, ok: true, result: qaStub(m.method)}, "*");
@@ -2764,7 +2785,9 @@ async function build(text, auto){
   if (!auto && !current && multiAgentEnabled) {
     try {
       phase("building");
-      let html = await runMultiAgentPipeline(text, note, im, (step) => setNote(note, step));
+      let res = await runMultiAgentPipeline(text, note, im, (step) => setNote(note, step));
+      let html = typeof res === "object" && res.html ? res.html : res;
+      let files = typeof res === "object" && res.files ? res.files : { "index.html": html };
       if (peek) { peek.remove(); peek = null; }
       const isRenderable = typeof isRenderableHtml === "function" ? isRenderableHtml(html) : (html && html.length > 50 && /<[a-z!]/i.test(html));
       if (!isRenderable) throw new Error("Multi-agent build fell back.");
@@ -2772,7 +2795,7 @@ async function build(text, auto){
       if (typeof autoWireButtons === "function") html = autoWireButtons(html);
       if (!auto) html = await checkAndFix(html, note);
       current = html;
-      currentFiles = { "index.html": html };
+      currentFiles = files;
       activeFile = "index.html";
       if (!siteId) { siteId = crypto.randomUUID(); ls.set("poppy.site", siteId); meta = {}; }
       hist = hist.slice(0, hi + 1);
@@ -4733,6 +4756,195 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
   navigator.serviceWorker.register("sw.js").catch(() => {});
 }
 
+/* ===== Poppy Archetype Skeletons & Domain Engines =====
+   Pre-engineered, battle-tested foundations for:
+   1. 2D Platformer / Mario Canvas Engine (physics, tilemaps, Goombas, question blocks, sound, mobile controls)
+   2. 2D Arcade / Action Engine (particles, waves, collisions, sound FX)
+   3. Data-Driven CRUD & Analytics Engine (table sorting, search, modals, KPI metrics, CSV export)
+   4. Polyphonic WebAudio Studio Engine (ADSR, filters, oscillators, interactive keyboard, oscilloscope)
+====================================================== */
+
+const ARCHETYPES = {
+  platformer: {
+    type: "platformer",
+    name: "2D Platformer & Mario Engine",
+    spec: `Architecture Requirements for 2D Platformer / Mario:
+- Canvas: Responsive 800x450 virtual resolution, auto-scaled with CSS.
+- Physics: Player object with x, y, vx, vy, speed (4.5), gravity (0.55), jumpStrength (-12), grounded boolean, facing direction.
+- Collision: AABB box vs box detection for platforms, ground, question blocks, and enemies.
+- Interactive Blocks:
+  * Question Mark Blocks ([?]): When hit from below (player.vy < 0), block bumps up 6px, spawns a bouncing gold coin (+100 pts), plays coin sound, and turns into an empty solid block.
+  * Brick Blocks: Bump up when hit from below.
+  * Ground Tiles & Pipes: Solid collision on top and sides.
+- Enemies (Goombas):
+  * Patrol horizontally at speed 1.2.
+  * Reverse direction when hitting a pipe, block, or edge.
+  * If player lands on top (player.vy > 0 and player.y + player.h <= enemy.y + 12): stomp enemy (squash animation, +200 pts, play stomp sound, bounce player up with vy = -8).
+  * If enemy touches player from side/below: player loses a life and restarts position.
+- Finish: Flagpole / Castle at the end of the level to trigger victory fanfare and next level / victory screen.
+- Controls:
+  * Keyboard: ArrowLeft / ArrowRight / A / D to move, Space / ArrowUp / W to jump.
+  * Mobile Touch Controls: On-screen semi-transparent buttons (#btnLeft, #btnRight, #btnJump, #btnRestart).
+- WebAudio Sounds:
+  * Jump: Frequency ramp from 160Hz to 620Hz.
+  * Coin: Dual-tone chime (987Hz -> 1318Hz, B5 -> E6).
+  * Stomp: Low square impact (140Hz -> 35Hz).
+  * Game Over & Victory fanfare tunes.
+- HUD: Score, Coins, Lives (3), World (1-1), Time counter, Restart button.`,
+    fileTemplate: `Organize the project into modular files using this exact structure:
+--- FILE: index.html ---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Platformer Game</title>
+</head>
+<body>
+  <div id="game-container">
+    <div id="hud">
+      <div class="hud-item"><span class="hud-label">MARIO</span><span id="scoreVal">000000</span></div>
+      <div class="hud-item"><span class="hud-label">COINS</span><span id="coinVal">x00</span></div>
+      <div class="hud-item"><span class="hud-label">WORLD</span><span>1-1</span></div>
+      <div class="hud-item"><span class="hud-label">LIVES</span><span id="livesVal">3</span></div>
+    </div>
+    <canvas id="gameCanvas" width="800" height="450"></canvas>
+    <div id="touch-controls">
+      <div class="dpad">
+        <button type="button" id="btnLeft" class="touch-btn" aria-label="Left">&#9664;</button>
+        <button type="button" id="btnRight" class="touch-btn" aria-label="Right">&#9654;</button>
+      </div>
+      <div class="actions">
+        <button type="button" id="btnJump" class="touch-btn action-btn" aria-label="Jump">A</button>
+      </div>
+    </div>
+    <div id="overlay" class="game-overlay hidden">
+      <h1 id="overlayTitle">GAME OVER</h1>
+      <p id="overlaySub">Press Restart or Space to Play Again</p>
+      <button type="button" id="btnRestart" class="btn-primary">Restart Level</button>
+    </div>
+  </div>
+</body>
+</html>
+
+--- FILE: style.css ---
+/* Responsive pixel-art arcade layout, HUD styling, touch controls & canvas scaling */
+
+--- FILE: audio.js ---
+/* WebAudio oscillator sound synthesizer: playJump(), playCoin(), playStomp(), playGameOver(), playVictory() */
+
+--- FILE: engine.js ---
+/* 60fps delta-time requestAnimationFrame game loop, player physics, AABB collision engine, keyboard and touch event listeners */
+
+--- FILE: levels.js ---
+/* Level tilemap, question mark blocks with bouncing coins, patrolling Goombas, flagpole finish, rendering routines & game state management */`
+  },
+
+  arcade: {
+    type: "arcade",
+    name: "2D Arcade & Action Engine",
+    spec: `Architecture Requirements for 2D Arcade Game:
+- Responsive 60fps Canvas with high-DPI scaling.
+- Player entity with velocity, acceleration, screen wrapping / bounds clamping.
+- Projectiles engine with particle sparks on impact.
+- Enemy waves / obstacles spawning with health bars and attack patterns.
+- Explosions and score popup animations (+50, +100).
+- Dual Keyboard + Mobile Touch Joystick / buttons.
+- WebAudio laser shoot, explosion, and powerup sounds.
+- Game Over, High Score persistence via poppy.store or localStorage.`,
+    fileTemplate: `Organize into modular files:
+--- FILE: index.html ---
+...
+--- FILE: style.css ---
+...
+--- FILE: audio.js ---
+...
+--- FILE: engine.js ---
+...
+--- FILE: game.js ---
+...`
+  },
+
+  crud: {
+    type: "crud",
+    name: "Data-Driven CRUD & Table Studio",
+    spec: `Architecture Requirements for Data-Driven Application:
+- Clean responsive layout with modern design tokens (cards, tables, badges).
+- State store supporting Create, Read, Update, Delete with persistent storage.
+- Real-time search filter and multi-column sorting.
+- Modal dialog for adding and editing records with field validation.
+- Live KPI metric cards (Total Records, Active Status, Computed Values).
+- Export to CSV and JSON features.
+- Tactile feedback on all button clicks and form submissions.`,
+    fileTemplate: `Organize into modular files:
+--- FILE: index.html ---
+...
+--- FILE: style.css ---
+...
+--- FILE: store.js ---
+...
+--- FILE: app.js ---
+...`
+  },
+
+  audio: {
+    type: "audio",
+    name: "WebAudio Polyphonic Studio",
+    spec: `Architecture Requirements for WebAudio Studio:
+- Polyphonic oscillator synthesizer with waveform selection (sine, square, sawtooth, triangle).
+- ADSR envelope controls (Attack, Decay, Sustain, Release sliders).
+- Biquad filter with cutoff frequency and resonance control.
+- Interactive piano keyboard with mouse, touch, and computer keyboard mapping.
+- Real-time Canvas oscilloscope / frequency visualizer.
+- Preset selector (Synth Lead, Deep Bass, 8-Bit Chiptune, Ambient Pad).`,
+    fileTemplate: `Organize into modular files:
+--- FILE: index.html ---
+...
+--- FILE: style.css ---
+...
+--- FILE: audio-engine.js ---
+...
+--- FILE: visualizer.js ---
+...
+--- FILE: app.js ---
+...`
+  }
+};
+
+/**
+ * Detects the optimal domain archetype based on user prompt keywords.
+ */
+function detectArchetype(promptText = "") {
+  const p = promptText.toLowerCase();
+  
+  // Platformer / Mario / Sidescroller
+  if (/\b(mario|super mario|platformer|jump|sidescroll|sonic|metroid|platform|obstacle course|runner)\b/i.test(p)) {
+    return ARCHETYPES.platformer;
+  }
+  
+  // Arcade / Shooter / Action / Canvas Games
+  if (/\b(arcade|space invaders|shooter|asteroids|flappy|pong|breakout|snake|pacman|tetris|bullet|dodge|galaxy)\b/i.test(p)) {
+    return ARCHETYPES.arcade;
+  }
+  
+  // Audio / Synthesizer / Beats
+  if (/\b(synth|synthesizer|piano|audio|instrument|guitar|drum|beat|soundboard|daw|sequencer|oscillator)\b/i.test(p)) {
+    return ARCHETYPES.audio;
+  }
+  
+  // CRUD / Data / Table / Dashboard
+  if (/\b(crud|table|database|crm|inventory|contacts|records|tracker|budget|expenses|kanban|management)\b/i.test(p)) {
+    return ARCHETYPES.crud;
+  }
+  
+  return null;
+}
+
+if (typeof window !== "undefined") {
+  window.ARCHETYPES = ARCHETYPES;
+  window.detectArchetype = detectArchetype;
+}
+
 /* ===== Poppy Multi-Agent Engine =====
    Specialized 4-Agent Pipeline:
    1. Architect Agent: Defines formal state schema, game loop/canvas physics & interaction contract.
@@ -5343,7 +5555,7 @@ function autoWireButtons(html) {
  * Runs the Multi-Agent Generation Pipeline with White-Screen Guards
  */
 /**
- * Runs the Multi-Agent Generation Pipeline
+ * Runs the Multi-Agent Generation Pipeline with Archetype Injection & Staged Compilation
  */
 async function runMultiAgentPipeline(goal, note, image, onProgress) {
   const setStep = (text) => {
@@ -5351,12 +5563,16 @@ async function runMultiAgentPipeline(goal, note, image, onProgress) {
     if (typeof onProgress === "function") onProgress(text);
   };
 
+  const archetype = typeof detectArchetype === "function" ? detectArchetype(goal) : null;
+  const archName = archetype ? archetype.name : "Universal Web Application";
+  const archSpec = archetype ? `\nDomain Archetype (${archetype.name}):\n${archetype.spec}\n${archetype.fileTemplate}` : "";
+
   // Phase 1: Architect Agent drafting technical blueprint
-  setStep("Phase 1/3: Architect drafting technical blueprint & mechanics");
+  setStep(`Phase 1/3: Architect drafting technical blueprint (${archName})`);
   const architectMsg = [
     {
       role: "user",
-      content: `Architect a complete, production-grade technical specification for this goal:\n${goal}\n\nDeliver the exact state schema, game loop/canvas physics/controls if a game, interactive DOM elements with IDs, and data flow.`
+      content: `Architect a complete, production-grade technical specification for this goal:\n${goal}${archSpec}\n\nDeliver the exact state schema, game loop / canvas physics / controls if a game, interactive DOM elements with IDs, and data flow.`
     }
   ];
   let blueprintRaw = "";
@@ -5375,37 +5591,64 @@ async function runMultiAgentPipeline(goal, note, image, onProgress) {
   }
 
   // Phase 2: Master Full-Stack Builder Agent constructing complete playable/interactive app
-  setStep("Phase 2/3: Master Builder constructing complete application");
+  setStep(`Phase 2/3: Master Builder compiling project files (${archName})`);
   const builderMsg = [
     {
       role: "user",
-      content: `Build the complete, self-contained single-page application for this goal:\nGoal: ${goal}\n\nArchitect Blueprint:\n${JSON.stringify(blueprint, null, 2)}\n\nGuarantee all HTML, CSS, and JavaScript (including canvas game loops, physics, controls, and WebAudio sounds) are fully implemented in ONE file.`
+      content: `Build the complete application for this goal:\nGoal: ${goal}\n\nArchitect Blueprint:\n${JSON.stringify(blueprint, null, 2)}${archSpec}\n\nCRITICAL: You may output ONE self-contained HTML file OR a modular multi-file codebase using --- FILE: filename --- headers.\nGuarantee all HTML, CSS, and JavaScript (including 60fps canvas loop, physics, sound synthesis, and touch controls) are fully implemented with zero placeholders.`
     }
   ];
-  let fullApp = "";
+  let builderOut = "";
   try {
-    fullApp = await collect(builderMsg, BUILDER_PROMPT);
+    builderOut = await collect(builderMsg, BUILDER_PROMPT);
   } catch (err) {
-    fullApp = "";
+    builderOut = "";
   }
-  fullApp = extractHtml(fullApp);
+
+  // Phase 3: Multi-File Staging, Delimiter Balancing & Auto-Wiring
+  setStep("Phase 3/3: Auto-Wiring Critic auditing controls & safety");
+  let files = {};
+  let bundledHtml = "";
+
+  if (typeof parseFiles === "function" && /(?:^|\n)(?:---|===)\s*FILE:\s*/i.test(builderOut)) {
+    files = parseFiles(builderOut);
+    // Balance delimiters on all JS files
+    for (const [fn, content] of Object.entries(files)) {
+      if (fn.endsWith(".js") && typeof balanceDelimiters === "function") {
+        files[fn] = balanceDelimiters(content);
+      }
+    }
+    if (typeof bundleFiles === "function") {
+      bundledHtml = bundleFiles(files);
+    } else {
+      bundledHtml = files["index.html"] || "";
+    }
+  } else {
+    bundledHtml = extractHtml(builderOut);
+    files = { "index.html": bundledHtml };
+  }
 
   // If builder failed or returned unrenderable HTML, fall back to master BUILD prompt
-  if (!isRenderableHtml(fullApp)) {
+  if (!isRenderableHtml(bundledHtml)) {
     setStep("Synthesizing unified complete application...");
     try {
       const fallbackPrompt = typeof BUILD !== "undefined" ? BUILD : BUILDER_PROMPT;
-      const direct = await collect([{role: "user", content: "Build this: " + goal}], fallbackPrompt);
-      fullApp = extractHtml(direct);
+      const direct = await collect([{role: "user", content: "Build this: " + goal + (archSpec ? "\n" + archSpec : "")}], fallbackPrompt);
+      if (/(?:^|\n)(?:---|===)\s*FILE:\s*/i.test(direct) && typeof parseFiles === "function") {
+        files = parseFiles(direct);
+        bundledHtml = typeof bundleFiles === "function" ? bundleFiles(files) : (files["index.html"] || "");
+      } else {
+        bundledHtml = extractHtml(direct);
+        files = { "index.html": bundledHtml };
+      }
     } catch(e) {}
   }
 
-  // Phase 3: Self-Repair & Auto-Wiring Critic Agent
-  setStep("Phase 3/3: Auto-Wiring Critic verifying buttons & safety");
-  fullApp = repairHtml(fullApp);
-  fullApp = autoWireButtons(fullApp);
+  bundledHtml = repairHtml(bundledHtml);
+  bundledHtml = autoWireButtons(bundledHtml);
+  if (files["index.html"]) files["index.html"] = bundledHtml;
 
-  return fullApp;
+  return { html: bundledHtml, files };
 }
 
 if (typeof window !== "undefined") {

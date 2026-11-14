@@ -872,9 +872,9 @@ document.addEventListener("click",e=>{
   }
 },true);
 
-const rep=(t,m)=>{try{P.postMessage({poppy:1,report:{t,m:String(m).slice(0,400)}},"*")}catch(e){}};
-addEventListener("error",e=>rep("error",e.message+(e.lineno?" (line "+e.lineno+")":"")));
-addEventListener("unhandledrejection",e=>rep("promise",(e.reason&&e.reason.message)||e.reason));
+const rep=(t,m,fn,ln,stk)=>{try{P.postMessage({poppy:1,report:{t,m:String(m).slice(0,400),fn:fn||"",ln:ln||0,stk:String(stk||"").slice(0,500)}},"*")}catch(e){}};
+addEventListener("error",e=>{const stk=(e.error&&e.error.stack)?e.error.stack:"";rep("error",e.message+(e.lineno?" (line "+e.lineno+")":""),e.filename,e.lineno,stk);});
+addEventListener("unhandledrejection",e=>{const msg=(e.reason&&e.reason.message)||String(e.reason||"Unhandled rejection");const stk=(e.reason&&e.reason.stack)?e.reason.stack:"";rep("promise",msg,"",0,stk);});
 })();`;
 function inject(html, code = SDK){
   if (typeof repairHtml === "function") html = repairHtml(html);
@@ -1617,8 +1617,21 @@ function bundleFiles(files, assetMap = {}){
   const linkedJs = new Set();
   for (const m of html.matchAll(/data-file="([^"]+\.js)"/g)) linkedJs.add(m[1]);
   let extraJs = "";
-  for (const [name, content] of Object.entries(files)) {
-    if (name.endsWith(".js") && !linkedJs.has(name)) extraJs += "<scr" + "ipt data-file=\"" + name + "\">\n/* " + name + " */\n" + content + "\n</scr" + "ipt>\n";
+  const jsPriority = (name) => {
+    const n = name.toLowerCase();
+    if (n.includes("sound") || n.includes("audio")) return 1;
+    if (n.includes("util") || n.includes("physic") || n.includes("store") || n.includes("const")) return 2;
+    if (n.includes("engine") || n.includes("core")) return 3;
+    if (n.includes("level") || n.includes("data") || n.includes("component")) return 4;
+    if (n.includes("game") || n.includes("main") || n.includes("app")) return 5;
+    return 3;
+  };
+  const sortedJs = Object.entries(files)
+    .filter(([name]) => name.endsWith(".js") && !linkedJs.has(name))
+    .sort(([a], [b]) => jsPriority(a) - jsPriority(b));
+
+  for (const [name, content] of sortedJs) {
+    extraJs += "<scr" + "ipt data-file=\"" + name + "\">\n/* " + name + " */\n" + content + "\n</scr" + "ipt>\n";
   }
   if (extraJs) {
     if (/<\/body>/i.test(html)) html = html.replace(/<\/body>/i, extraJs + "</body>");
@@ -1763,7 +1776,15 @@ function probe(html, w = 390, scale){
     };
     const on = e => {
       if (e.source !== f.contentWindow) return; const m = e.data; if (!m || m.poppy !== 1) return;
-      if (m.report && m.report.m) { const t = String(m.report.m).slice(0, 200); if (!seen.has(t) && issues.length < 3) { seen.add(t); issues.push("Runtime error: " + t); } }
+      if (m.report && m.report.m) {
+        const t = String(m.report.m).slice(0, 200);
+        const loc = m.report.fn ? ` [${m.report.fn}:${m.report.ln || 0}]` : "";
+        const stk = m.report.stk ? `\nStack: ${String(m.report.stk).slice(0, 250)}` : "";
+        if (!seen.has(t) && issues.length < 3) {
+          seen.add(t);
+          issues.push(`Runtime error${loc}: ${t}${stk}`);
+        }
+      }
       else if (m.qa) { qa = m.qa; if (scale && !shotAsked) { shotAsked = true; f.contentWindow.postMessage({poppy: 1, cmd: "shot", scale}, "*"); clearTimeout(t1); } else if (!scale) end(); }
       else if ("shot" in m) { shot = typeof m.shot === "string" && m.shot.startsWith("data:image/jpeg;base64,") && m.shot.length < 2e6 ? m.shot : null; end(); }
       else if (typeof m.method === "string") f.contentWindow.postMessage({poppy: 1, id: m.id, ok: true, result: qaStub(m.method)}, "*");
@@ -1984,7 +2005,9 @@ async function build(text, auto){
   if (!auto && !current && multiAgentEnabled) {
     try {
       phase("building");
-      let html = await runMultiAgentPipeline(text, note, im, (step) => setNote(note, step));
+      let res = await runMultiAgentPipeline(text, note, im, (step) => setNote(note, step));
+      let html = typeof res === "object" && res.html ? res.html : res;
+      let files = typeof res === "object" && res.files ? res.files : { "index.html": html };
       if (peek) { peek.remove(); peek = null; }
       const isRenderable = typeof isRenderableHtml === "function" ? isRenderableHtml(html) : (html && html.length > 50 && /<[a-z!]/i.test(html));
       if (!isRenderable) throw new Error("Multi-agent build fell back.");
@@ -1992,7 +2015,7 @@ async function build(text, auto){
       if (typeof autoWireButtons === "function") html = autoWireButtons(html);
       if (!auto) html = await checkAndFix(html, note);
       current = html;
-      currentFiles = { "index.html": html };
+      currentFiles = files;
       activeFile = "index.html";
       if (!siteId) { siteId = crypto.randomUUID(); ls.set("poppy.site", siteId); meta = {}; }
       hist = hist.slice(0, hi + 1);
