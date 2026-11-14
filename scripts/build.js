@@ -11,6 +11,7 @@ console.log("Building Poppy from modular src/ files...");
 const cssFiles = [
   "src/css/base.css",
   "src/css/components.css",
+  "src/css/onboarding.css",
   "src/css/studio.css",
   "src/css/ecosystem.css"
 ];
@@ -46,6 +47,7 @@ const jsFiles = [
   "src/js/modules/db-studio.js",
   "src/js/templates/marketplace.js",
   "src/js/modules/automations.js",
+  "src/js/modules/onboarding.js",
   "src/js/app.js"
 ];
 const js = jsFiles.map(readFile).join("\n\n");
