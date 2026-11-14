@@ -1,67 +1,70 @@
 /* ===== Poppy Multi-Agent Engine =====
    Specialized 4-Agent Pipeline:
-   1. Architect Agent: Defines formal state schema, interactive elements & action contract.
-   2. UI Specialist Agent: Crafts semantic HTML5, accessible components & responsive CSS.
-   3. Logic Engineer Agent: Writes rock-solid JavaScript with state management & event delegation.
-   4. Auto-Wiring Critic Agent: Audits all clickable elements, repairs broken handlers, and auto-wires functional fallbacks.
+   1. Architect Agent: Defines formal state schema, game loop/canvas physics & interaction contract.
+   2. Master Full-Stack Builder Agent: Constructs the complete, self-contained single-page application with HTML, CSS & JavaScript.
+   3. Code Auditor & Self-Repair Agent: Balances delimiters, unclosed tags, and fixes syntax errors.
+   4. Auto-Wiring Critic Agent: Audits all controls, pre-wires missing handlers, unlocks WebAudio & provides tactile feedback.
 ====================================== */
 
 const ARCHITECT_PROMPT = `You are the Lead Software Architect in Poppy's multi-agent software engineering team.
-Analyze the user's request and output a structured, complete Interactive Application Blueprint in JSON.
-Your blueprint must eliminate any ambiguity about how the app functions.
+Analyze the user's request and output a structured, complete Technical Blueprint in JSON.
+Your blueprint must eliminate any ambiguity about how the app or game functions.
 
 You must respond with ONLY a valid JSON object in this format:
 \`\`\`json
 {
   "appName": "Short Name",
+  "category": "game | utility | creative-studio | dashboard | document",
   "summary": "1-2 sentence core purpose",
+  "gameOrAppLoop": {
+    "hasCanvas": true,
+    "canvasWidth": 800,
+    "canvasHeight": 450,
+    "physics": "gravity, velocity, jump impulse, collisions",
+    "entities": ["player / hero", "platforms / pipes", "question blocks with coins", "enemies / obstacles", "flagpole / goal"],
+    "controls": ["Arrow keys & WASD for desktop", "On-screen touch D-Pad and Jump button for mobile"],
+    "soundEffects": ["jump tone", "coin chime", "stomp sound", "game over"]
+  },
   "stateSchema": {
-    "keyName": "type (e.g. string, array of objects, number, boolean) and initial value"
+    "score": 0,
+    "lives": 3,
+    "level": 1,
+    "gameState": "ready | playing | gameover | victory"
   },
   "interactiveElements": [
     {
       "id": "exact-dom-id",
       "selector": "#exact-dom-id",
       "label": "Button / Control label",
-      "trigger": "click | input | change | submit",
-      "action": "Precise state mutation and DOM update",
-      "requiredFunction": "functionName"
+      "trigger": "click | touchstart | keydown",
+      "action": "Precise state mutation and visual update"
     }
-  ],
-  "dataFlow": "How data moves from inputs -> state -> DOM rendering",
-  "librariesNeeded": ["e.g. chart, confetti, marked, none"]
+  ]
 }
 \`\`\`
-Every single button, toggle, tab, modal opener, filter, or input MUST have an entry in interactiveElements.`;
+Every single button, keybinding, canvas control, or input MUST have an entry in interactiveElements.`;
 
-const DESIGNER_PROMPT = `You are the Senior UI & Design Systems Specialist in Poppy's multi-agent software engineering team.
-You receive the user's goal and the Architect's Interactive Blueprint.
-Your job is to generate the complete, responsive HTML markup and CSS styling.
+const BUILDER_PROMPT = `You are the Master Full-Stack Software Engineer in Poppy's multi-agent software engineering team.
+You receive the user's goal and the Lead Architect's Technical Blueprint.
+Your mission is to construct the COMPLETE, HIGH-FIDELITY, PLAYABLE/FUNCTIONAL SINGLE-PAGE APPLICATION.
 
-CRITICAL RULES:
-1. You MUST include EVERY DOM element and id defined in the Architect's interactiveElements list.
-2. Every <button> MUST have an explicit id and type="button".
-3. Use semantic HTML5 with accessible ARIA attributes.
-4. Style with a gorgeous, modern design system: crisp typography, subtle shadows, responsive flex/grid, and tactile micro-interactions.
-5. Do NOT write JavaScript logic here (the Logic Engineer will wire that) - provide clean markup and styling with containers for state rendering.
-6. Reply with the full HTML document containing <style> and <body>.`;
-
-const LOGIC_PROMPT = `You are the Senior Logic & Interaction Engineer in Poppy's multi-agent software engineering team.
-Your sole obsession is making EVERY SINGLE BUTTON AND INTERACTION 100% FUNCTIONAL, RESPONSIVE, AND ERROR-FREE.
-
-You receive:
-1. The Architect's Blueprint (with the exact state schema, DOM IDs, and required functions).
-2. The UI Specialist's HTML and CSS.
-
-CRITICAL RULES:
-1. DO NOT REPEAT THE HTML OR CSS.
-2. Return ONLY the complete JavaScript code inside a \`\`\`javascript ... \`\`\` block.
-3. BIND TO WINDOW: If any element uses an inline handler like onclick="fn()", you MUST explicitly assign window.fn = fn so it is globally accessible and never throws ReferenceError.
-4. EVENT LISTENERS: Wire event listeners for every single button, toggle, input, modal, and filter.
-5. PREVENT SUBMITS: Always call e.preventDefault() on forms so the page never navigates away or resets.
-6. COMPLETE IMPLEMENTATION: Implement 100% of the functions in the Blueprint. No placeholder stubs, no "console.log" placeholders.
-7. REACTIVE STATE: Initialize the state schema, update state on user action, and re-render the corresponding DOM container smoothly.
-8. PERSISTENCE: If appropriate, use poppy.store.get/set or localStorage to keep data across reloads.`;
+CRITICAL ARCHITECTURE RULES:
+1. Return ONE complete, self-contained HTML document with all <style> and <script> included. No external CDNs, fonts, or images.
+2. If it is a GAME or SIMULATION (e.g. Super Mario, platformer, arcade):
+   - Provide a vibrant, responsive <canvas> game container.
+   - Implement a real 60fps requestAnimationFrame game loop.
+   - Render the player character (Mario / hero) with physics: acceleration, friction, gravity, jumping, and collision detection against platforms and blocks.
+   - Add classic interactive elements: ground tiles, floating platforms, pipes, mystery question mark blocks with bouncing coins, and a finish flagpole.
+   - Include patrolling enemies (e.g. Goombas) that can be stomped or cause damage.
+   - Include WebAudio sound synthesis: pitch-bend jump sound, high-pitch coin chime, low stomp thud, and victory/defeat tunes.
+   - Support DUAL CONTROLS: Keyboard (Arrow keys, Space, WASD) AND clear, responsive on-screen mobile touch buttons (Left, Right, Jump, Restart).
+   - Display a clean HUD with Score, Coins, Lives, and World/Level.
+3. If it is an APPLICATION, CALCULATOR, or TOOL:
+   - Provide semantic HTML5 with a modern, tactile design system.
+   - Wire 100% of inputs, buttons, sliders, modals, and calculations so nothing is dead.
+4. Put all <script> tags at the very bottom of <body> (just before </body>) and wrap initialization in DOMContentLoaded or window.onload.
+5. Set type="button" on all interactive buttons.
+`;
 
 function balanceDelimiters(code) {
   let c = code.replace(/\s+$/, "");
@@ -190,13 +193,15 @@ function repairHtml(html) {
     h = h.slice(0, styleTagEnd + 1) + "\n" + cssCode + cssPatch + "\n</style>\n";
   }
 
-  // 2. Check for unclosed HTML attribute quotes
-  if (/<[a-z][^>]*"[^"]*$/i.test(h)) {
-    h += '">';
-  } else if (/<[a-z][^>]*'[^']*$/i.test(h)) {
-    h += "'>";
-  } else if (/<[a-z][^>]*$/i.test(h)) {
-    h += ">";
+  // 2. Check for genuinely unclosed HTML tags at the end of the document
+  const lastOpenTag = h.slice(Math.max(0, h.length - 250)).match(/<[a-z0-9-]+(?:\s+[^>]*?)?$/i);
+  if (lastOpenTag) {
+    const tagSnippet = lastOpenTag[0];
+    const doubleQuotes = (tagSnippet.match(/"/g) || []).length;
+    const singleQuotes = (tagSnippet.match(/'/g) || []).length;
+    if (doubleQuotes % 2 !== 0) h += '">';
+    else if (singleQuotes % 2 !== 0) h += "'>";
+    else h += ">";
   }
 
   // 3. Check for unclosed script tags
@@ -602,18 +607,21 @@ function autoWireButtons(html) {
 /**
  * Runs the Multi-Agent Generation Pipeline with White-Screen Guards
  */
+/**
+ * Runs the Multi-Agent Generation Pipeline
+ */
 async function runMultiAgentPipeline(goal, note, image, onProgress) {
   const setStep = (text) => {
     if (typeof setNote === "function" && note) setNote(note, text);
     if (typeof onProgress === "function") onProgress(text);
   };
 
-  // Phase 1: Architect Agent
-  setStep("Phase 1/4: Architect drafting interaction contract");
+  // Phase 1: Architect Agent drafting technical blueprint
+  setStep("Phase 1/3: Architect drafting technical blueprint & mechanics");
   const architectMsg = [
     {
       role: "user",
-      content: `Architect a complete web application for this goal:\n${goal}\n\nDeliver the exact state schema, all interactive DOM elements with IDs, and the interaction data flow.`
+      content: `Architect a complete, production-grade technical specification for this goal:\n${goal}\n\nDeliver the exact state schema, game loop/canvas physics/controls if a game, interactive DOM elements with IDs, and data flow.`
     }
   ];
   let blueprintRaw = "";
@@ -631,87 +639,36 @@ async function runMultiAgentPipeline(goal, note, image, onProgress) {
     blueprint = { appName: goal, interactiveElements: [] };
   }
 
-  // Phase 2: UI & Design Systems Agent
-  setStep("Phase 2/4: UI Specialist crafting responsive interface");
-  const designerMsg = [
+  // Phase 2: Master Full-Stack Builder Agent constructing complete playable/interactive app
+  setStep("Phase 2/3: Master Builder constructing complete application");
+  const builderMsg = [
     {
       role: "user",
-      content: `Build the complete HTML markup and modern responsive CSS for this app:\nGoal: ${goal}\n\nArchitect Blueprint:\n${JSON.stringify(blueprint, null, 2)}\n\nGuarantee every single ID from interactiveElements exists in the HTML.`
+      content: `Build the complete, self-contained single-page application for this goal:\nGoal: ${goal}\n\nArchitect Blueprint:\n${JSON.stringify(blueprint, null, 2)}\n\nGuarantee all HTML, CSS, and JavaScript (including canvas game loops, physics, controls, and WebAudio sounds) are fully implemented in ONE file.`
     }
   ];
-  let uiHtml = "";
+  let fullApp = "";
   try {
-    uiHtml = await collect(designerMsg, DESIGNER_PROMPT);
+    fullApp = await collect(builderMsg, BUILDER_PROMPT);
   } catch (err) {
-    uiHtml = "";
+    fullApp = "";
   }
-  uiHtml = extractHtml(uiHtml);
+  fullApp = extractHtml(fullApp);
 
-  // If UI HTML is not renderable or missing, synthesize a unified complete application
-  if (!isRenderableHtml(uiHtml)) {
+  // If builder failed or returned unrenderable HTML, fall back to master BUILD prompt
+  if (!isRenderableHtml(fullApp)) {
     setStep("Synthesizing unified complete application...");
     try {
-      const masterMsg = [
-        {
-          role: "user",
-          content: `Build a complete, responsive, and 100% functional web application for: ${goal}\n\nArchitect Blueprint:\n${JSON.stringify(blueprint, null, 2)}\n\nDeliver ONE complete, self-contained HTML document with all styles, markup, and working scripts included.`
-        }
-      ];
-      uiHtml = extractHtml(await collect(masterMsg, typeof BUILD !== "undefined" ? BUILD : ARCHITECT_PROMPT));
+      const fallbackPrompt = typeof BUILD !== "undefined" ? BUILD : BUILDER_PROMPT;
+      const direct = await collect([{role: "user", content: "Build this: " + goal}], fallbackPrompt);
+      fullApp = extractHtml(direct);
     } catch(e) {}
   }
 
-  // Phase 3: Logic & Interaction Engineer Agent (if script not already complete)
-  let fullApp = uiHtml;
-  const hasExistingScript = /<script\b[^>]*>[\s\S]{30,}<\/script>/i.test(uiHtml);
-  if (!hasExistingScript) {
-    setStep("Phase 3/4: Logic Engineer wiring state & handlers");
-    const logicMsg = [
-      {
-        role: "user",
-        content: `Wire 100% of the interactive logic for this application.\n\nArchitect Blueprint:\n${JSON.stringify(blueprint, null, 2)}\n\nUI Specialist Markup:\n${uiHtml}\n\nRULES:\n1. Return ONLY the JavaScript code inside a \`\`\`javascript ... \`\`\` block.\n2. Implement all functions and bind them to window.\n3. Ensure all buttons click and respond.\n4. Call e.preventDefault() on forms.`
-      }
-    ];
-    let logicOut = "";
-    try {
-      logicOut = await collect(logicMsg, LOGIC_PROMPT);
-    } catch (err) {
-      logicOut = "";
-    }
-    
-    // Safely extract pure JavaScript block
-    let cleanJs = "";
-    const sMatch = logicOut.match(/<script\b[^>]*>([\s\S]*?)<\/script>/i);
-    if (sMatch) {
-      cleanJs = sMatch[1].trim();
-    } else {
-      const blockMatch = logicOut.match(/```(?:javascript|js)?\s*[\r\n]+([\s\S]*?)(?:```|$)/i);
-      cleanJs = blockMatch ? blockMatch[1].trim() : "";
-    }
-
-    if (cleanJs) {
-      const repairedJs = balanceDelimiters(cleanJs);
-      const scriptBlock = "<scr" + "ipt>\n" + repairedJs + "\n</scr" + "ipt>";
-      if (/<\/body>/i.test(uiHtml)) {
-        fullApp = uiHtml.replace(/<\/body>/i, scriptBlock + "\n</body>");
-      } else {
-        fullApp = uiHtml + "\n" + scriptBlock;
-      }
-    }
-  }
-
-  // Phase 4: Auto-Wiring Critic Agent & Repair
-  setStep("Phase 4/4: Auto-Wiring Critic verifying buttons & safety");
+  // Phase 3: Self-Repair & Auto-Wiring Critic Agent
+  setStep("Phase 3/3: Auto-Wiring Critic verifying buttons & safety");
   fullApp = repairHtml(fullApp);
   fullApp = autoWireButtons(fullApp);
-
-  // Ultimate fallback to guarantee never a white screen
-  if (!isRenderableHtml(fullApp) && typeof BUILD !== "undefined") {
-    try {
-      const direct = await collect([{role: "user", content: "Build this: " + goal}], BUILD);
-      fullApp = autoWireButtons(repairHtml(extractHtml(direct)));
-    } catch(e) {}
-  }
 
   return fullApp;
 }
