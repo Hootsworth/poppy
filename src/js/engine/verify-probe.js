@@ -110,7 +110,35 @@ async function runProbe(opts) {
     }
     canvas.reactsToKeys = canvasHash(canvases[0]) !== h1;
   }
-  return { loadErrors, clickErrors, buttons: { total: els.length, dead }, canvas, render };
+
+  // --- verify explicit Architect assertions if provided
+  const assertionResults = [];
+  if (Array.isArray(opts.assertions) && opts.assertions.length) {
+    for (const a of opts.assertions) {
+      let passed = false, errorMsg = "";
+      try {
+        const target = a.selector ? document.querySelector(a.selector) : null;
+        if (a.expectedState === "dom-exists") {
+          passed = !!target;
+          if (!passed) errorMsg = `Element ${a.selector} not found in DOM`;
+        } else if (a.action === "click" && target) {
+          const before = sig();
+          target.click();
+          await sleep(60);
+          passed = (sig() !== before) || (a.expectedState === "no-unhandled-errors");
+          if (!passed) errorMsg = `Action on ${a.selector} produced no state mutation`;
+        } else {
+          passed = !!target;
+        }
+      } catch (e) {
+        passed = false;
+        errorMsg = e.message;
+      }
+      assertionResults.push({ id: a.id || a.description, description: a.description, passed, error: errorMsg });
+    }
+  }
+
+  return { loadErrors, clickErrors, buttons: { total: els.length, dead }, canvas, render, assertionResults };
 }
 
 function scoreProbe(r) {
@@ -120,6 +148,7 @@ function scoreProbe(r) {
   const render = r.render || { textLen: 0, visual: false, placeholder: false };
   const buttons = r.buttons || { total: 0, dead: [] };
   const canvas = r.canvas || { present: false, animating: false, reactsToKeys: false };
+  const assertions = Array.isArray(r.assertionResults) ? r.assertionResults : [];
 
   const load = loadErrors.length === 0;
   const rendered = !render.placeholder && (render.textLen >= 15 || render.visual);
@@ -127,8 +156,9 @@ function scoreProbe(r) {
   const judgeButtons = !(canvas.present && canvas.animating);
   const deadRatio = judgeButtons && buttons.total ? (buttons.dead || []).length / buttons.total : 0;
   const canvasOk = !canvas.present || canvas.animating || canvas.reactsToKeys;
-  const interaction = clickErrors.length === 0 && deadRatio <= 0.34 && canvasOk;
-  return { load, render: rendered, interaction, pass: load && rendered && interaction, deadRatio: +deadRatio.toFixed(2) };
+  const assertionsOk = assertions.length === 0 || assertions.every(a => a.passed);
+  const interaction = clickErrors.length === 0 && deadRatio <= 0.34 && canvasOk && assertionsOk;
+  return { load, render: rendered, interaction, pass: load && rendered && interaction, deadRatio: +deadRatio.toFixed(2), assertionsPassed: assertionsOk };
 }
 
 /* Feed this back to the model for ONE repair turn. */
@@ -140,11 +170,13 @@ function buildRepairPrompt(r) {
   const clickErrors = Array.isArray(r.clickErrors) ? r.clickErrors : [];
   const buttons = r.buttons || { dead: [] };
   const canvas = r.canvas || {};
+  const failedAsserts = (r.assertionResults || []).filter(a => !a.passed);
   if (render.placeholder) out.push("The page rendered only a generic placeholder; build the real UI.");
   if (loadErrors.length) out.push("Errors on load:\n- " + loadErrors.join("\n- "));
   if (clickErrors.length) out.push("Errors when clicking controls:\n- " + clickErrors.join("\n- "));
   if (buttons.dead && buttons.dead.length) out.push("Controls that did nothing when clicked (no DOM, input, storage or canvas change):\n- " + buttons.dead.join("\n- "));
   if (canvas.present && !canvas.animating && !canvas.reactsToKeys) out.push("The canvas never changes: no animation loop and no response to keyboard input.");
+  if (failedAsserts.length) out.push("Failed Architectural Assertions:\n- " + failedAsserts.map(a => `${a.description} (${a.error || "failed"})`).join("\n- "));
   return out.length ? "Your app was run in a browser sandbox and failed these checks. Fix exactly these problems and return the full corrected document.\n\n" + out.join("\n\n") : "";
 }
 

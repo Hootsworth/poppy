@@ -1723,9 +1723,10 @@ function applyPatches(src, out){
   return isObj ? files : files["index.html"];
 }
 /* ===== Phase 4: hidden check, design review, templates, evals ===== */
-function getQaJs() {
+function getQaJs(assertions = []) {
   const initStr = typeof initProbe === "function" ? initProbe.toString() : (typeof window !== "undefined" && typeof window.initProbe === "function" ? window.initProbe.toString() : "() => {}");
   const runStr = typeof runProbe === "function" ? runProbe.toString() : (typeof window !== "undefined" && typeof window.runProbe === "function" ? window.runProbe.toString() : "() => ({})");
+  const aJson = JSON.stringify(assertions || []);
   return `;(${initStr})();
 addEventListener("load", () => setTimeout(async () => {
   const b = document.body; if (!b) return;
@@ -1736,7 +1737,7 @@ addEventListener("load", () => setTimeout(async () => {
     iw: innerWidth
   };
   try {
-    const res = await (${runStr})({ settle: 200 });
+    const res = await (${runStr})({ settle: 200, assertions: ${aJson} });
     parent.postMessage({ poppy: 1, cmdRes: "probeResult", result: res, qa }, "*");
   } catch (err) {
     parent.postMessage({ poppy: 1, cmdRes: "probeResult", result: { loadErrors: [err.message], clickErrors: [], buttons: { total: 0, dead: [] }, canvas: { present: false }, render: { textLen: qa.t, visual: qa.v, placeholder: false } }, qa }, "*");
@@ -1745,11 +1746,11 @@ addEventListener("load", () => setTimeout(async () => {
 }
 const QA_JS = getQaJs();
 const qaStub = m => m === "ai" ? "" : m === "store.list" ? [] : m === "fetch" || m.startsWith("connect.") ? {ok: false, status: 0, text: "", json: null} : null;
-function probe(html, w = 390, scale){
+function probe(html, w = 390, scale = null, assertions = []){
   return new Promise(res => {
     const f = document.createElement("iframe");
     let probeRes = null, qa = null, shot = null, ended = false, shotAsked = false;
-    f.setAttribute("sandbox", "allow-scripts allow-forms allow-modals"); f.setAttribute("aria-hidden", "true"); f.tabIndex = -1; f.title = "Hidden check";
+    f.setAttribute("sandbox", "allow-scripts allow-forms allow-modals allow-popups"); f.setAttribute("aria-hidden", "true"); f.tabIndex = -1; f.title = "Hidden check";
     f.style.cssText = "position:fixed;left:-10000px;top:0;width:" + w + "px;height:800px;border:0;opacity:0;pointer-events:none";
     const end = () => {
       if (ended) return; ended = true; removeEventListener("message", on); clearTimeout(t1); clearTimeout(t2); f.remove();
@@ -1760,6 +1761,10 @@ function probe(html, w = 390, scale){
         }
         if (probeRes.clickErrors && probeRes.clickErrors.length) {
           issues.push(...probeRes.clickErrors.slice(0, 3));
+        }
+        if (probeRes.assertionResults && probeRes.assertionResults.length) {
+          const failed = probeRes.assertionResults.filter(a => !a.passed);
+          failed.forEach(a => issues.push(`Assertion failed: ${a.description} (${a.error || "did not meet condition"})`));
         }
       }
       if (qa) {
@@ -1794,7 +1799,7 @@ function probe(html, w = 390, scale){
       }
     };
     addEventListener("message", on); const t1 = setTimeout(end, 5000), t2 = setTimeout(end, scale ? 14000 : 5500);
-    f.srcdoc = inject(html, SDK + getQaJs()); document.body.append(f);
+    f.srcdoc = inject(html, SDK + getQaJs(assertions)); document.body.append(f);
   });
 }
 const REVIEW = 'You review website screenshots. The image shows the same page at phone (390px), tablet (820px) and desktop (1280px) widths, left to right. Reply with ONLY JSON: {"ok":true} when it looks good, or {"ok":false,"fixes":["short concrete fix", ...]} with at most 4 fixes. Only report real problems: overlapping or clipped content, unreadable contrast, tiny tap targets, broken layout, large empty areas.';
@@ -1832,10 +1837,10 @@ async function editDoc(cur, req, im){
   return bundleFiles(currentFiles, aMap);
 }
 const qaOn = () => ls.get("poppy.qa") !== "0", vrOn = () => ls.get("poppy.vr") === "1";
-async function checkAndFix(html, note, promptText = ""){
+async function checkAndFix(html, note, promptText = "", assertions = []){
   if (!qaOn()) return html;
   setNote(note, "Verifying app runtime...");
-  const q = await probe(html, 390);
+  const q = await probe(html, 390, null, assertions);
   if (q.pass && !q.issues.length) return html;
 
   const repairText = q.repairPrompt || (q.issues.length ? "An automated check found these problems. Fix them and change nothing else:\n- " + q.issues.join("\n- ") : "");
@@ -1854,7 +1859,7 @@ async function checkAndFix(html, note, promptText = ""){
     let cand = typeof repairHtml === "function" ? repairHtml(extractHtml(repaired)) : extractHtml(repaired);
     if (cand && cand.length > 50 && /<[a-z!]/i.test(cand)) {
       setNote(note, "Re-verifying repair...");
-      const q2 = await probe(cand, 390);
+      const q2 = await probe(cand, 390, null, assertions);
       if (q2.pass || q2.issues.length === 0) return cand;
       if (q2.issues.length < q.issues.length) return cand;
     }
@@ -2068,21 +2073,25 @@ async function build(text, auto){
       let res = await runMultiAgentPipeline(text, note, im, (step) => setNote(note, step), feats);
       let html = typeof res === "object" && res.html ? res.html : res;
       let files = typeof res === "object" && res.files ? res.files : { "index.html": html };
+      let manifest = typeof res === "object" && res.manifest ? res.manifest : null;
       if (peek) { peek.remove(); peek = null; }
       const isRenderable = typeof isRenderableHtml === "function" ? isRenderableHtml(html) : (html && html.length > 50 && /<[a-z!]/i.test(html));
       if (!isRenderable) throw new Error("Multi-agent build fell back.");
       if (typeof repairHtml === "function") html = repairHtml(html);
       if (typeof autoWireButtons === "function") html = autoWireButtons(html);
-      if (!auto) html = await checkAndFix(html, note, text);
+      if (!auto) html = await checkAndFix(html, note, text, manifest?.verification?.assertions);
       current = html;
       currentFiles = files;
       activeFile = "index.html";
       if (!siteId) { siteId = crypto.randomUUID(); ls.set("poppy.site", siteId); meta = {}; }
       hist = hist.slice(0, hi + 1);
-      hist.push({t: Date.now(), prompt: "Multi-Agent: " + text, html, files: {...currentFiles}, prov: prov()});
+      hist.push({t: Date.now(), prompt: "Multi-Agent: " + text, html, files: {...currentFiles}, manifest, prov: prov()});
       if (hist.length > 30) hist.splice(0, hist.length - 30);
       trimHist(hist); hi = hist.length - 1;
       await saveHist(); refreshVers(); setImg(null);
+      if (manifest && typeof RUNTIME_DISPATCHER !== "undefined") {
+        RUNTIME_DISPATCHER.dispatch(manifest);
+      }
       reveal(html, live);
       return;
     } catch (e) {
@@ -2141,7 +2150,13 @@ function reveal(html, wasLive){
 $("#homeForm").onsubmit = e => { e.preventDefault(); go($("#prompt")); };
 $("#tweakForm").onsubmit = e => { e.preventDefault(); go($("#tweak")); };
 if ($("#fab")) $("#fab").onclick = () => { $("#panel").classList.toggle("open"); if ($("#panel").classList.contains("open")) $("#tweak").focus(); };
-if ($("#newSite")) $("#newSite").onclick = () => { current = ""; currentFiles = { "index.html": "" }; activeFile = "index.html"; siteId = ""; hist = []; hi = -1; ls.set("poppy.site", ""); refreshVers(); $("#frame").srcdoc = ""; $("#log").replaceChildren(); meta = {}; $("#panel").classList.remove("open"); document.body.classList.remove("live"); $("#prompt").focus(); };
+if ($("#newSite")) $("#newSite").onclick = () => {
+  current = ""; currentFiles = { "index.html": "" }; activeFile = "index.html"; siteId = ""; hist = []; hi = -1; ls.set("poppy.site", ""); refreshVers();
+  if (typeof RUNTIME_DISPATCHER !== "undefined") RUNTIME_DISPATCHER.activeRuntime = "browser-app";
+  const docStage = $("#docStage"); if (docStage) docStage.style.display = "none";
+  const frame = $("#frame"); if (frame) { frame.style.display = "block"; frame.srcdoc = ""; }
+  $("#log").replaceChildren(); meta = {}; $("#panel").classList.remove("open"); document.body.classList.remove("live"); $("#prompt").focus();
+};
 const PLAN = "You plan small web apps. Reply with ONLY a JSON array of 4 to 8 short strings, each one concrete feature the site will have. No other text.";
 const vis = (p, m) => {
   if (!m.image) return {role: m.role, content: m.content};

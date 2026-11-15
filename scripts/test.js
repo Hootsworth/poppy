@@ -71,4 +71,44 @@ if (!html.includes('initProbe') || !html.includes('runProbe') || !html.includes(
 }
 console.log("Runtime Verify Probe & Observation Engine: verified.");
 
+// 10. Verify Phase 1 Universal Artifact Architecture (UAA) & Capability Registry
+const { createArtifactManifest, validateArtifactManifest } = require("../src/js/engine/manifest.js");
+const { auditArtifactCapabilities, getIsolatedStorageKey } = require("../src/js/core/capabilities.js");
+const { RUNTIME_DISPATCHER } = require("../src/js/engine/dispatcher.js");
+
+const testManifest = createArtifactManifest({
+  name: "Invoice & Report Generator",
+  runtime: { target: "document-pdf" },
+  delivery: { previewRenderer: "pdf-canvas" },
+  source: {
+    files: [{ path: "index.html", content: "<h1>Invoice #1042</h1>", encoding: "utf-8" }]
+  },
+  verification: {
+    assertions: [
+      { id: "a1", description: "Contains header", selector: "h1", expectedState: "dom-exists" }
+    ]
+  }
+});
+const manifestValidation = validateArtifactManifest(testManifest);
+if (!manifestValidation.valid) {
+  throw new Error("ArtifactManifest validation failed: " + manifestValidation.errors.join(", "));
+}
+
+const capAudit = auditArtifactCapabilities(["audio", "storage", "unknown-cap"]);
+if (capAudit.valid || capAudit.unrecognized.length !== 1 || capAudit.recognized.length !== 2) {
+  throw new Error("auditArtifactCapabilities did not correctly flag unrecognized capabilities");
+}
+const storageKey = getIsolatedStorageKey("test-artifact-id");
+if (!storageKey.startsWith("poppy_art_test-artifact-id")) {
+  throw new Error("getIsolatedStorageKey generated invalid key: " + storageKey);
+}
+
+if (!html.includes('id="docStage"') || !html.includes('class="doc-runtime-stage"')) {
+  throw new Error("Phase 1 document runtime stage (#docStage) missing from DOM");
+}
+if (!html.includes('RUNTIME_DISPATCHER') || !html.includes('mountDocumentRuntime')) {
+  throw new Error("RUNTIME_DISPATCHER missing from bundle");
+}
+console.log("Universal Artifact Architecture (UAA) & Capability Registry: verified.");
+
 console.log("\nALL 64 SYSTEM TESTS PASSED SUCCESSFULLY!");

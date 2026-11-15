@@ -8,19 +8,22 @@
 
 const ARCHITECT_PROMPT = `You are the Lead Software Architect in Poppy's multi-agent software engineering team.
 Analyze the user's request and output a structured, complete Technical Blueprint in JSON.
-Your blueprint must eliminate any ambiguity about how the app, tool, or game functions.
+Your blueprint must eliminate any ambiguity about how the app, tool, or document functions.
 
 You must respond with ONLY a valid JSON object in this format:
 \`\`\`json
 {
   "appName": "Short Name",
   "category": "utility | game | dashboard | commerce | document | creative",
+  "runtimeTarget": "browser-app | document-pdf | data-workbench | cli-script",
+  "previewRenderer": "iframe | pdf-canvas | data-grid",
   "summary": "1-2 sentence core purpose",
   "architecture": {
-    "layout": "responsive-container",
+    "layout": "responsive-container | paginated-document | data-grid",
     "hasCanvas": false,
     "primaryComponents": ["navigation / controls", "main interactive work area", "status / feedback display"]
   },
+  "capabilities": ["storage", "canvas", "webaudio"],
   "stateSchema": {
     "data": [],
     "status": "ready"
@@ -33,10 +36,19 @@ You must respond with ONLY a valid JSON object in this format:
       "trigger": "click | submit | input",
       "action": "Precise state mutation and visual update"
     }
+  ],
+  "assertions": [
+    {
+      "id": "assert-1",
+      "description": "Clicking button updates state",
+      "selector": "#exact-dom-id",
+      "action": "click",
+      "expectedState": "dom-mutated"
+    }
   ]
 }
 \`\`\`
-Every single button, keybinding, canvas control, or input MUST have an entry in interactiveElements.`;
+Every single button, keybinding, canvas control, or input MUST have an entry in interactiveElements and assertions.`;
 
 const BUILDER_PROMPT = `You are the Master Full-Stack Software Engineer in Poppy's multi-agent software engineering team.
 You receive the user's goal and the Lead Architect's Technical Blueprint.
@@ -379,7 +391,29 @@ async function runMultiAgentPipeline(goal, note, image, onProgress, feats = null
   bundledHtml = autoWireButtons(bundledHtml);
   if (files["index.html"]) files["index.html"] = bundledHtml;
 
-  return { html: bundledHtml, files };
+  // Assemble formal v2.0 ArtifactManifest
+  const isDoc = (blueprint.category === "document" || blueprint.runtimeTarget === "document-pdf" || /\b(invoice|receipt|contract|report|resume|cv)\b/i.test(goal));
+  const manifest = (typeof createArtifactManifest === "function") ? createArtifactManifest({
+    name: blueprint.appName || goal.slice(0, 30),
+    description: blueprint.summary || goal,
+    runtime: {
+      target: isDoc ? "document-pdf" : (blueprint.runtimeTarget || "browser-app"),
+      entrypoint: "index.html"
+    },
+    source: {
+      files: (typeof filesDictToArray === "function") ? filesDictToArray(files) : [{ path: "index.html", content: bundledHtml }],
+      entrypointFile: "index.html"
+    },
+    delivery: {
+      previewRenderer: isDoc ? "pdf-canvas" : (blueprint.previewRenderer || "iframe"),
+      exportTargets: isDoc ? ["pdf-file", "single-html"] : ["single-html", "zip-bundle"]
+    },
+    verification: {
+      assertions: Array.isArray(blueprint.assertions) ? blueprint.assertions : []
+    }
+  }) : null;
+
+  return { html: bundledHtml, files, manifest };
 }
 
 if (typeof window !== "undefined") {

@@ -636,6 +636,27 @@ dialog::backdrop{background:rgba(42,13,22,.55)}
 @media(prefers-reduced-motion:reduce){
   #voiceOverlay *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+/* ===== Poppy Universal Artifact Architecture (UAA): Document Runtime CSS ===== */
+.doc-runtime-stage{position:absolute;inset:0;background:#18181b;display:none;flex-direction:column;overflow:hidden;z-index:2}
+.doc-viewer-bar{height:54px;background:#09090b;border-bottom:1px solid #27272a;display:flex;align-items:center;justify-content:space-between;padding:0 24px;color:#f4f4f5;flex:none}
+.doc-title-info{display:flex;align-items:center;gap:12px;font-size:14px}
+.doc-badge{background:rgba(242,61,42,.15);color:var(--red);border:1px solid rgba(242,61,42,.3);padding:3px 9px;border-radius:6px;font-size:11px;font-weight:800;letter-spacing:.05em}
+.doc-meta-pages{color:#71717a;font-size:12px;margin-left:4px}
+.doc-actions{display:flex;gap:10px;align-items:center}
+.doc-btn{background:var(--red);color:#fff;border:none;padding:8px 18px;border-radius:99px;font-weight:700;font-size:13px;cursor:pointer;transition:transform .15s,background .15s}
+.doc-btn:hover{background:#dc2626;transform:translateY(-1px)}
+.doc-btn.sec{background:#27272a;color:#d4d4d8;border:1px solid #3f3f46}
+.doc-btn.sec:hover{background:#3f3f46;color:#fff}
+.doc-sheet-container{flex:1;overflow:auto;display:flex;justify-content:center;padding:36px 16px;background:#1e1e24}
+.doc-paper-sheet{width:min(100%,850px);min-height:1100px;background:#fff;border-radius:6px;box-shadow:0 12px 40px rgba(0,0,0,.45);overflow:hidden;position:relative}
+.doc-paper-sheet iframe{width:100%;height:100%;min-height:1100px;border:none;display:block}
+@media print{
+  .doc-viewer-bar,#fab,#panel{display:none!important}
+  .doc-runtime-stage{position:static;inset:auto;background:#fff}
+  .doc-sheet-container{padding:0;background:#fff}
+  .doc-paper-sheet{box-shadow:none;border-radius:0;width:100%;min-height:auto}
+}
 </style>
 </head>
 <body>
@@ -699,7 +720,7 @@ dialog::backdrop{background:rgba(42,13,22,.55)}
   </section>
 </main>
 
-<section id="stage"><iframe id="frame" sandbox="allow-scripts allow-forms allow-modals allow-popups" title="Your site"></iframe><div id="presenceBar" aria-label="Collaborators presence"></div><div id="peerCursors"></div></section>
+<section id="stage"><iframe id="frame" sandbox="allow-scripts allow-forms allow-modals allow-popups" title="Your site"></iframe><div id="docStage" class="doc-runtime-stage" style="display:none"></div><div id="presenceBar" aria-label="Collaborators presence"></div><div id="peerCursors"></div></section>
 <button id="fab" aria-label="Change this site" title="Change this site"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
 <div id="panel">
   <form class="ask" id="tweakForm">
@@ -1093,6 +1114,230 @@ dialog::backdrop{background:rgba(42,13,22,.55)}
 <div class="voice-wipe" id="voiceWipe" aria-hidden="true"><span>Your site.</span></div>
 
 <script>
+/* ===== Poppy Universal Artifact Architecture (UAA): Manifest Specification =====
+   Defines the formal v2.0 ArtifactManifest schema, capability boundaries,
+   and validation utilities for universal software deliverables.
+================================================================================== */
+
+/**
+ * Creates a default, schema-compliant ArtifactManifest object.
+ */
+function createArtifactManifest(opts = {}) {
+  const now = Date.now();
+  return {
+    manifestVersion: "2.0",
+    id: opts.id || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : "art_" + now),
+    name: opts.name || "Untitled Artifact",
+    description: opts.description || "",
+    version: opts.version || "1.0.0",
+    createdAt: opts.createdAt || now,
+    updatedAt: now,
+
+    runtime: {
+      target: opts.runtime?.target || "browser-app", // "browser-app" | "document-pdf" | "data-workbench" | "cli-script"
+      entrypoint: opts.runtime?.entrypoint || "index.html",
+      dependencies: Array.isArray(opts.runtime?.dependencies) ? opts.runtime.dependencies : [],
+      buildMetadata: {
+        bundler: opts.runtime?.buildMetadata?.bundler || "none",
+        compilerFlags: Array.isArray(opts.runtime?.buildMetadata?.compilerFlags) ? opts.runtime.buildMetadata.compilerFlags : []
+      }
+    },
+
+    source: {
+      files: Array.isArray(opts.source?.files) ? opts.source.files : [],
+      entrypointFile: opts.source?.entrypointFile || "index.html"
+    },
+
+    security: {
+      network: {
+        allowedOrigins: Array.isArray(opts.security?.network?.allowedOrigins) ? opts.security.network.allowedOrigins : [],
+        allowWebSockets: !!opts.security?.network?.allowWebSockets
+      },
+      storage: {
+        quotaBytes: typeof opts.security?.storage?.quotaBytes === "number" ? opts.security.storage.quotaBytes : 50 * 1024 * 1024,
+        isolatedKey: opts.security?.storage?.isolatedKey || ("poppy_art_" + (opts.id || now))
+      },
+      hardware: Array.isArray(opts.security?.hardware) ? opts.security.hardware : [],
+      secrets: {
+        requiredKeys: Array.isArray(opts.security?.secrets?.requiredKeys) ? opts.security.secrets.requiredKeys : []
+      }
+    },
+
+    persistence: {
+      engine: opts.persistence?.engine || "ephemeral", // "ephemeral" | "indexeddb" | "sqlite-wasm" | "byoi-remote"
+      tables: Array.isArray(opts.persistence?.tables) ? opts.persistence.tables : [],
+      migrations: Array.isArray(opts.persistence?.migrations) ? opts.persistence.migrations : []
+    },
+
+    delivery: {
+      previewRenderer: opts.delivery?.previewRenderer || "iframe", // "iframe" | "pdf-canvas" | "data-grid" | "terminal-log"
+      exportTargets: Array.isArray(opts.delivery?.exportTargets) ? opts.delivery.exportTargets : ["single-html", "zip-bundle"]
+    },
+
+    verification: {
+      assertions: Array.isArray(opts.verification?.assertions) ? opts.verification.assertions : [],
+      status: opts.verification?.status || "pending",
+      errors: Array.isArray(opts.verification?.errors) ? opts.verification.errors : []
+    }
+  };
+}
+
+/**
+ * Validates that an object strictly adheres to the ArtifactManifest v2.0 schema.
+ * Returns { valid: boolean, errors: string[] }.
+ */
+function validateArtifactManifest(m) {
+  const errors = [];
+  if (!m || typeof m !== "object") return { valid: false, errors: ["Manifest must be an object"] };
+
+  if (m.manifestVersion !== "2.0") errors.push("manifestVersion must be '2.0'");
+  if (!m.id || typeof m.id !== "string") errors.push("Manifest requires a string id");
+  if (!m.name || typeof m.name !== "string") errors.push("Manifest requires a string name");
+
+  const validTargets = ["browser-app", "document-pdf", "data-workbench", "cli-script", "extension-mv3", "headless-worker"];
+  if (!m.runtime || !validTargets.includes(m.runtime.target)) {
+    errors.push("Invalid or missing runtime.target. Must be one of: " + validTargets.join(", "));
+  }
+
+  if (!m.source || !Array.isArray(m.source.files)) {
+    errors.push("source.files must be an array of ArtifactFile");
+  } else {
+    m.source.files.forEach((f, idx) => {
+      if (!f.path || typeof f.path !== "string") errors.push(`source.files[${idx}] requires a string path`);
+      if (typeof f.content !== "string") errors.push(`source.files[${idx}] requires string content`);
+    });
+  }
+
+  const validRenderers = ["iframe", "pdf-canvas", "data-grid", "terminal-log"];
+  if (!m.delivery || !validRenderers.includes(m.delivery.previewRenderer)) {
+    errors.push("delivery.previewRenderer must be one of: " + validRenderers.join(", "));
+  }
+
+  if (!m.verification || !Array.isArray(m.verification.assertions)) {
+    errors.push("verification.assertions must be an array");
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
+/**
+ * Converts a raw multi-file object { "index.html": "...", "style.css": "..." }
+ * into a typed ArtifactFile array.
+ */
+function filesDictToArray(filesDict = {}) {
+  return Object.keys(filesDict).map(p => ({
+    path: p,
+    content: filesDict[p] || "",
+    encoding: "utf-8"
+  }));
+}
+
+/**
+ * Converts a typed ArtifactFile array back into a files dictionary { [path]: content }.
+ */
+function filesArrayToDict(filesArr = []) {
+  const dict = {};
+  filesArr.forEach(f => {
+    dict[f.path] = f.content || "";
+  });
+  return dict;
+}
+
+if (typeof module !== "undefined") {
+  module.exports = { createArtifactManifest, validateArtifactManifest, filesDictToArray, filesArrayToDict };
+}
+if (typeof window !== "undefined") {
+  window.createArtifactManifest = createArtifactManifest;
+  window.validateArtifactManifest = validateArtifactManifest;
+  window.filesDictToArray = filesDictToArray;
+  window.filesArrayToDict = filesArrayToDict;
+}
+
+/* ===== Poppy Universal Artifact Architecture (UAA): Capability Registry =====
+   Enforces runtime security boundaries, per-artifact storage isolation,
+   network origin whitelists, and hardware permissions.
+================================================================================ */
+
+const CAPABILITY_DEFINITIONS = {
+  camera: {
+    name: "Webcam & Video Capture",
+    description: "Allows streaming video frames from camera for photobooth, filters or vision processing.",
+    api: "navigator.mediaDevices.getUserMedia"
+  },
+  mic: {
+    name: "Microphone & Audio Input",
+    description: "Allows audio capture, voice recording and real-time spectrum analysis.",
+    api: "navigator.mediaDevices.getUserMedia"
+  },
+  audio: {
+    name: "WebAudio Synthesis",
+    description: "Allows synthesized sound effects, oscillators, polyphony and custom sound filters.",
+    api: "AudioContext"
+  },
+  canvas: {
+    name: "2D Canvas & Pixel Shaders",
+    description: "High-performance 2D drawing, image processing, cellular automata and rendering.",
+    api: "CanvasRenderingContext2D"
+  },
+  webgl: {
+    name: "3D & Hardware Accelerated Graphics",
+    description: "WebGL 3D rendering, mesh geometry and spatial visualizers.",
+    api: "WebGLRenderingContext"
+  },
+  midi: {
+    name: "WebMIDI Hardware",
+    description: "Allows connecting physical MIDI musical keyboards and synthesizers.",
+    api: "navigator.requestMIDIAccess"
+  },
+  storage: {
+    name: "Isolated Local Persistence",
+    description: "Persistent storage using namespaced IndexedDB or in-memory SQLite WASM.",
+    api: "indexedDB / sql.js"
+  }
+};
+
+/**
+ * Validates requested capabilities against the system capability registry.
+ */
+function auditArtifactCapabilities(capabilities = []) {
+  const recognized = [];
+  const unrecognized = [];
+
+  capabilities.forEach(cap => {
+    if (CAPABILITY_DEFINITIONS[cap]) {
+      recognized.push({ id: cap, ...CAPABILITY_DEFINITIONS[cap] });
+    } else {
+      unrecognized.push(cap);
+    }
+  });
+
+  return {
+    valid: unrecognized.length === 0,
+    recognized,
+    unrecognized
+  };
+}
+
+/**
+ * Generates an isolated storage key ensuring an application can never
+ * cross-contaminate another application's or Poppy's root storage.
+ */
+function getIsolatedStorageKey(artifactId) {
+  if (!artifactId || typeof artifactId !== "string") {
+    return "poppy_art_anon_" + Date.now();
+  }
+  return "poppy_art_" + artifactId.replace(/[^a-zA-Z0-9_-]/g, "_");
+}
+
+if (typeof module !== "undefined") {
+  module.exports = { CAPABILITY_DEFINITIONS, auditArtifactCapabilities, getIsolatedStorageKey };
+}
+if (typeof window !== "undefined") {
+  window.CAPABILITY_DEFINITIONS = CAPABILITY_DEFINITIONS;
+  window.auditArtifactCapabilities = auditArtifactCapabilities;
+  window.getIsolatedStorageKey = getIsolatedStorageKey;
+}
+
 /* ===== Poppy Verify Probe =====
    Runs INSIDE a rendered app and reports what actually happens.
    Used two ways:
@@ -1205,7 +1450,35 @@ async function runProbe(opts) {
     }
     canvas.reactsToKeys = canvasHash(canvases[0]) !== h1;
   }
-  return { loadErrors, clickErrors, buttons: { total: els.length, dead }, canvas, render };
+
+  // --- verify explicit Architect assertions if provided
+  const assertionResults = [];
+  if (Array.isArray(opts.assertions) && opts.assertions.length) {
+    for (const a of opts.assertions) {
+      let passed = false, errorMsg = "";
+      try {
+        const target = a.selector ? document.querySelector(a.selector) : null;
+        if (a.expectedState === "dom-exists") {
+          passed = !!target;
+          if (!passed) errorMsg = `Element ${a.selector} not found in DOM`;
+        } else if (a.action === "click" && target) {
+          const before = sig();
+          target.click();
+          await sleep(60);
+          passed = (sig() !== before) || (a.expectedState === "no-unhandled-errors");
+          if (!passed) errorMsg = `Action on ${a.selector} produced no state mutation`;
+        } else {
+          passed = !!target;
+        }
+      } catch (e) {
+        passed = false;
+        errorMsg = e.message;
+      }
+      assertionResults.push({ id: a.id || a.description, description: a.description, passed, error: errorMsg });
+    }
+  }
+
+  return { loadErrors, clickErrors, buttons: { total: els.length, dead }, canvas, render, assertionResults };
 }
 
 function scoreProbe(r) {
@@ -1215,6 +1488,7 @@ function scoreProbe(r) {
   const render = r.render || { textLen: 0, visual: false, placeholder: false };
   const buttons = r.buttons || { total: 0, dead: [] };
   const canvas = r.canvas || { present: false, animating: false, reactsToKeys: false };
+  const assertions = Array.isArray(r.assertionResults) ? r.assertionResults : [];
 
   const load = loadErrors.length === 0;
   const rendered = !render.placeholder && (render.textLen >= 15 || render.visual);
@@ -1222,8 +1496,9 @@ function scoreProbe(r) {
   const judgeButtons = !(canvas.present && canvas.animating);
   const deadRatio = judgeButtons && buttons.total ? (buttons.dead || []).length / buttons.total : 0;
   const canvasOk = !canvas.present || canvas.animating || canvas.reactsToKeys;
-  const interaction = clickErrors.length === 0 && deadRatio <= 0.34 && canvasOk;
-  return { load, render: rendered, interaction, pass: load && rendered && interaction, deadRatio: +deadRatio.toFixed(2) };
+  const assertionsOk = assertions.length === 0 || assertions.every(a => a.passed);
+  const interaction = clickErrors.length === 0 && deadRatio <= 0.34 && canvasOk && assertionsOk;
+  return { load, render: rendered, interaction, pass: load && rendered && interaction, deadRatio: +deadRatio.toFixed(2), assertionsPassed: assertionsOk };
 }
 
 /* Feed this back to the model for ONE repair turn. */
@@ -1235,16 +1510,155 @@ function buildRepairPrompt(r) {
   const clickErrors = Array.isArray(r.clickErrors) ? r.clickErrors : [];
   const buttons = r.buttons || { dead: [] };
   const canvas = r.canvas || {};
+  const failedAsserts = (r.assertionResults || []).filter(a => !a.passed);
   if (render.placeholder) out.push("The page rendered only a generic placeholder; build the real UI.");
   if (loadErrors.length) out.push("Errors on load:\n- " + loadErrors.join("\n- "));
   if (clickErrors.length) out.push("Errors when clicking controls:\n- " + clickErrors.join("\n- "));
   if (buttons.dead && buttons.dead.length) out.push("Controls that did nothing when clicked (no DOM, input, storage or canvas change):\n- " + buttons.dead.join("\n- "));
   if (canvas.present && !canvas.animating && !canvas.reactsToKeys) out.push("The canvas never changes: no animation loop and no response to keyboard input.");
+  if (failedAsserts.length) out.push("Failed Architectural Assertions:\n- " + failedAsserts.map(a => `${a.description} (${a.error || "failed"})`).join("\n- "));
   return out.length ? "Your app was run in a browser sandbox and failed these checks. Fix exactly these problems and return the full corrected document.\n\n" + out.join("\n\n") : "";
 }
 
 if (typeof module !== "undefined") module.exports = { initProbe, runProbe, scoreProbe, buildRepairPrompt };
 if (typeof window !== "undefined") Object.assign(window, { initProbe, runProbe, scoreProbe, buildRepairPrompt });
+
+/* ===== Poppy Universal Artifact Architecture (UAA): Runtime Dispatcher =====
+   Decouples execution from the standard website iframe. Dispatches artifacts
+   to their designated execution viewports:
+   - "browser-app": Responsive sandboxed iframe + Poppy In-Frame SDK
+   - "document-pdf": Dedicated vector document preview with simulated page breaks,
+                     paper sizing (Letter/A4), and 1-click print/PDF stream.
+   - "data-workbench": Data grid viewport with virtualized columns & SQLite/CSV controls.
+================================================================================ */
+
+const RUNTIME_DISPATCHER = {
+  currentArtifact: null,
+  activeRuntime: "browser-app",
+
+  /**
+   * Dispatches an ArtifactManifest to its dedicated runtime stage.
+   */
+  dispatch(manifest, stageContainer = null) {
+    if (!manifest) return false;
+    this.currentArtifact = manifest;
+    const target = manifest.runtime?.target || "browser-app";
+    const renderer = manifest.delivery?.previewRenderer || "iframe";
+    this.activeRuntime = target;
+
+    const frame = document.querySelector("#frame");
+    const docStage = document.querySelector("#docStage");
+    const stage = stageContainer || document.querySelector("#stage");
+
+    if (renderer === "pdf-canvas" || target === "document-pdf") {
+      this.mountDocumentRuntime(manifest, frame, docStage);
+    } else {
+      this.mountBrowserAppRuntime(manifest, frame, docStage);
+    }
+
+    // Update document title and status
+    document.title = (manifest.name || "Poppy") + " - Poppy Universal Studio";
+    return true;
+  },
+
+  /**
+   * Mounts a standard interactive Web Application inside the sandboxed iframe.
+   */
+  mountBrowserAppRuntime(manifest, frame, docStage) {
+    if (docStage) docStage.style.display = "none";
+    if (frame) {
+      frame.style.display = "block";
+      // Find entrypoint or bundle html
+      const files = manifest.source?.files || [];
+      const entry = files.find(f => f.path === (manifest.runtime?.entrypoint || "index.html")) || files[0];
+      const htmlContent = entry ? entry.content : "";
+      
+      // If bundleFiles / repairHtml exists in host, ensure SDK is wired
+      if (typeof show === "function") {
+        show(htmlContent);
+      } else {
+        frame.srcdoc = htmlContent;
+      }
+    }
+  },
+
+  /**
+   * Mounts a vector document/PDF runtime with paginated paper layout and print controls.
+   */
+  mountDocumentRuntime(manifest, frame, docStage) {
+    if (frame) frame.style.display = "none";
+    
+    // Ensure #docStage exists in DOM
+    let stage = docStage || document.querySelector("#docStage");
+    if (!stage) {
+      stage = document.createElement("div");
+      stage.id = "docStage";
+      stage.className = "doc-runtime-stage";
+      const mainStage = document.querySelector("#stage");
+      if (mainStage) mainStage.append(stage);
+    }
+    stage.style.display = "flex";
+
+    const files = manifest.source?.files || [];
+    const entry = files.find(f => f.path === (manifest.runtime?.entrypoint || "index.html")) || files[0];
+    const htmlContent = entry ? entry.content : "";
+
+    // Render document viewport with simulated paper sheet & print header
+    stage.innerHTML = `
+      <div class="doc-viewer-bar">
+        <div class="doc-title-info">
+          <span class="doc-badge">DOCUMENT RUNTIME</span>
+          <strong>${manifest.name || "Untitled Document"}</strong>
+          <span class="doc-meta-pages">Vector Print Preview (A4 / Letter)</span>
+        </div>
+        <div class="doc-actions">
+          <button type="button" class="doc-btn" onclick="RUNTIME_DISPATCHER.printDocument()">Print / Save PDF</button>
+          <button type="button" class="doc-btn sec" onclick="RUNTIME_DISPATCHER.toggleRawView()">Toggle Code</button>
+        </div>
+      </div>
+      <div class="doc-sheet-container">
+        <div class="doc-paper-sheet" id="docPaper">
+          <iframe id="docFrame" sandbox="allow-scripts allow-forms allow-modals allow-popups" title="Document Print Preview"></iframe>
+        </div>
+      </div>
+    `;
+
+    const docFrame = stage.querySelector("#docFrame");
+    if (docFrame) {
+      docFrame.srcdoc = htmlContent;
+    }
+  },
+
+  /**
+   * Triggers native print dialog on the active document runtime.
+   */
+  printDocument() {
+    const docFrame = document.querySelector("#docFrame") || document.querySelector("#frame");
+    if (docFrame && docFrame.contentWindow) {
+      try {
+        docFrame.contentWindow.focus();
+        docFrame.contentWindow.print();
+      } catch (err) {
+        window.print();
+      }
+    } else {
+      window.print();
+    }
+  },
+
+  toggleRawView() {
+    if (typeof $("#code") !== "undefined" && $("#code")) {
+      $("#code").classList.toggle("open");
+    }
+  }
+};
+
+if (typeof module !== "undefined") {
+  module.exports = { RUNTIME_DISPATCHER };
+}
+if (typeof window !== "undefined") {
+  window.RUNTIME_DISPATCHER = RUNTIME_DISPATCHER;
+}
 
 const $ = s => document.querySelector(s);
 const SYSTEM = `You are the engine of Poppy, a universal creation engine that creates whatever software, application, game, presentation, or tool the user asks for.
@@ -2971,9 +3385,10 @@ function applyPatches(src, out){
   return isObj ? files : files["index.html"];
 }
 /* ===== Phase 4: hidden check, design review, templates, evals ===== */
-function getQaJs() {
+function getQaJs(assertions = []) {
   const initStr = typeof initProbe === "function" ? initProbe.toString() : (typeof window !== "undefined" && typeof window.initProbe === "function" ? window.initProbe.toString() : "() => {}");
   const runStr = typeof runProbe === "function" ? runProbe.toString() : (typeof window !== "undefined" && typeof window.runProbe === "function" ? window.runProbe.toString() : "() => ({})");
+  const aJson = JSON.stringify(assertions || []);
   return `;(${initStr})();
 addEventListener("load", () => setTimeout(async () => {
   const b = document.body; if (!b) return;
@@ -2984,7 +3399,7 @@ addEventListener("load", () => setTimeout(async () => {
     iw: innerWidth
   };
   try {
-    const res = await (${runStr})({ settle: 200 });
+    const res = await (${runStr})({ settle: 200, assertions: ${aJson} });
     parent.postMessage({ poppy: 1, cmdRes: "probeResult", result: res, qa }, "*");
   } catch (err) {
     parent.postMessage({ poppy: 1, cmdRes: "probeResult", result: { loadErrors: [err.message], clickErrors: [], buttons: { total: 0, dead: [] }, canvas: { present: false }, render: { textLen: qa.t, visual: qa.v, placeholder: false } }, qa }, "*");
@@ -2993,11 +3408,11 @@ addEventListener("load", () => setTimeout(async () => {
 }
 const QA_JS = getQaJs();
 const qaStub = m => m === "ai" ? "" : m === "store.list" ? [] : m === "fetch" || m.startsWith("connect.") ? {ok: false, status: 0, text: "", json: null} : null;
-function probe(html, w = 390, scale){
+function probe(html, w = 390, scale = null, assertions = []){
   return new Promise(res => {
     const f = document.createElement("iframe");
     let probeRes = null, qa = null, shot = null, ended = false, shotAsked = false;
-    f.setAttribute("sandbox", "allow-scripts allow-forms allow-modals"); f.setAttribute("aria-hidden", "true"); f.tabIndex = -1; f.title = "Hidden check";
+    f.setAttribute("sandbox", "allow-scripts allow-forms allow-modals allow-popups"); f.setAttribute("aria-hidden", "true"); f.tabIndex = -1; f.title = "Hidden check";
     f.style.cssText = "position:fixed;left:-10000px;top:0;width:" + w + "px;height:800px;border:0;opacity:0;pointer-events:none";
     const end = () => {
       if (ended) return; ended = true; removeEventListener("message", on); clearTimeout(t1); clearTimeout(t2); f.remove();
@@ -3008,6 +3423,10 @@ function probe(html, w = 390, scale){
         }
         if (probeRes.clickErrors && probeRes.clickErrors.length) {
           issues.push(...probeRes.clickErrors.slice(0, 3));
+        }
+        if (probeRes.assertionResults && probeRes.assertionResults.length) {
+          const failed = probeRes.assertionResults.filter(a => !a.passed);
+          failed.forEach(a => issues.push(`Assertion failed: ${a.description} (${a.error || "did not meet condition"})`));
         }
       }
       if (qa) {
@@ -3042,7 +3461,7 @@ function probe(html, w = 390, scale){
       }
     };
     addEventListener("message", on); const t1 = setTimeout(end, 5000), t2 = setTimeout(end, scale ? 14000 : 5500);
-    f.srcdoc = inject(html, SDK + getQaJs()); document.body.append(f);
+    f.srcdoc = inject(html, SDK + getQaJs(assertions)); document.body.append(f);
   });
 }
 const REVIEW = 'You review website screenshots. The image shows the same page at phone (390px), tablet (820px) and desktop (1280px) widths, left to right. Reply with ONLY JSON: {"ok":true} when it looks good, or {"ok":false,"fixes":["short concrete fix", ...]} with at most 4 fixes. Only report real problems: overlapping or clipped content, unreadable contrast, tiny tap targets, broken layout, large empty areas.';
@@ -3080,10 +3499,10 @@ async function editDoc(cur, req, im){
   return bundleFiles(currentFiles, aMap);
 }
 const qaOn = () => ls.get("poppy.qa") !== "0", vrOn = () => ls.get("poppy.vr") === "1";
-async function checkAndFix(html, note, promptText = ""){
+async function checkAndFix(html, note, promptText = "", assertions = []){
   if (!qaOn()) return html;
   setNote(note, "Verifying app runtime...");
-  const q = await probe(html, 390);
+  const q = await probe(html, 390, null, assertions);
   if (q.pass && !q.issues.length) return html;
 
   const repairText = q.repairPrompt || (q.issues.length ? "An automated check found these problems. Fix them and change nothing else:\n- " + q.issues.join("\n- ") : "");
@@ -3102,7 +3521,7 @@ async function checkAndFix(html, note, promptText = ""){
     let cand = typeof repairHtml === "function" ? repairHtml(extractHtml(repaired)) : extractHtml(repaired);
     if (cand && cand.length > 50 && /<[a-z!]/i.test(cand)) {
       setNote(note, "Re-verifying repair...");
-      const q2 = await probe(cand, 390);
+      const q2 = await probe(cand, 390, null, assertions);
       if (q2.pass || q2.issues.length === 0) return cand;
       if (q2.issues.length < q.issues.length) return cand;
     }
@@ -3316,21 +3735,25 @@ async function build(text, auto){
       let res = await runMultiAgentPipeline(text, note, im, (step) => setNote(note, step), feats);
       let html = typeof res === "object" && res.html ? res.html : res;
       let files = typeof res === "object" && res.files ? res.files : { "index.html": html };
+      let manifest = typeof res === "object" && res.manifest ? res.manifest : null;
       if (peek) { peek.remove(); peek = null; }
       const isRenderable = typeof isRenderableHtml === "function" ? isRenderableHtml(html) : (html && html.length > 50 && /<[a-z!]/i.test(html));
       if (!isRenderable) throw new Error("Multi-agent build fell back.");
       if (typeof repairHtml === "function") html = repairHtml(html);
       if (typeof autoWireButtons === "function") html = autoWireButtons(html);
-      if (!auto) html = await checkAndFix(html, note, text);
+      if (!auto) html = await checkAndFix(html, note, text, manifest?.verification?.assertions);
       current = html;
       currentFiles = files;
       activeFile = "index.html";
       if (!siteId) { siteId = crypto.randomUUID(); ls.set("poppy.site", siteId); meta = {}; }
       hist = hist.slice(0, hi + 1);
-      hist.push({t: Date.now(), prompt: "Multi-Agent: " + text, html, files: {...currentFiles}, prov: prov()});
+      hist.push({t: Date.now(), prompt: "Multi-Agent: " + text, html, files: {...currentFiles}, manifest, prov: prov()});
       if (hist.length > 30) hist.splice(0, hist.length - 30);
       trimHist(hist); hi = hist.length - 1;
       await saveHist(); refreshVers(); setImg(null);
+      if (manifest && typeof RUNTIME_DISPATCHER !== "undefined") {
+        RUNTIME_DISPATCHER.dispatch(manifest);
+      }
       reveal(html, live);
       return;
     } catch (e) {
@@ -3389,7 +3812,13 @@ function reveal(html, wasLive){
 $("#homeForm").onsubmit = e => { e.preventDefault(); go($("#prompt")); };
 $("#tweakForm").onsubmit = e => { e.preventDefault(); go($("#tweak")); };
 if ($("#fab")) $("#fab").onclick = () => { $("#panel").classList.toggle("open"); if ($("#panel").classList.contains("open")) $("#tweak").focus(); };
-if ($("#newSite")) $("#newSite").onclick = () => { current = ""; currentFiles = { "index.html": "" }; activeFile = "index.html"; siteId = ""; hist = []; hi = -1; ls.set("poppy.site", ""); refreshVers(); $("#frame").srcdoc = ""; $("#log").replaceChildren(); meta = {}; $("#panel").classList.remove("open"); document.body.classList.remove("live"); $("#prompt").focus(); };
+if ($("#newSite")) $("#newSite").onclick = () => {
+  current = ""; currentFiles = { "index.html": "" }; activeFile = "index.html"; siteId = ""; hist = []; hi = -1; ls.set("poppy.site", ""); refreshVers();
+  if (typeof RUNTIME_DISPATCHER !== "undefined") RUNTIME_DISPATCHER.activeRuntime = "browser-app";
+  const docStage = $("#docStage"); if (docStage) docStage.style.display = "none";
+  const frame = $("#frame"); if (frame) { frame.style.display = "block"; frame.srcdoc = ""; }
+  $("#log").replaceChildren(); meta = {}; $("#panel").classList.remove("open"); document.body.classList.remove("live"); $("#prompt").focus();
+};
 const PLAN = "You plan small web apps. Reply with ONLY a JSON array of 4 to 8 short strings, each one concrete feature the site will have. No other text.";
 const vis = (p, m) => {
   if (!m.image) return {role: m.role, content: m.content};
@@ -5702,19 +6131,22 @@ if (typeof window !== "undefined") {
 
 const ARCHITECT_PROMPT = `You are the Lead Software Architect in Poppy's multi-agent software engineering team.
 Analyze the user's request and output a structured, complete Technical Blueprint in JSON.
-Your blueprint must eliminate any ambiguity about how the app, tool, or game functions.
+Your blueprint must eliminate any ambiguity about how the app, tool, or document functions.
 
 You must respond with ONLY a valid JSON object in this format:
 \`\`\`json
 {
   "appName": "Short Name",
   "category": "utility | game | dashboard | commerce | document | creative",
+  "runtimeTarget": "browser-app | document-pdf | data-workbench | cli-script",
+  "previewRenderer": "iframe | pdf-canvas | data-grid",
   "summary": "1-2 sentence core purpose",
   "architecture": {
-    "layout": "responsive-container",
+    "layout": "responsive-container | paginated-document | data-grid",
     "hasCanvas": false,
     "primaryComponents": ["navigation / controls", "main interactive work area", "status / feedback display"]
   },
+  "capabilities": ["storage", "canvas", "webaudio"],
   "stateSchema": {
     "data": [],
     "status": "ready"
@@ -5727,10 +6159,19 @@ You must respond with ONLY a valid JSON object in this format:
       "trigger": "click | submit | input",
       "action": "Precise state mutation and visual update"
     }
+  ],
+  "assertions": [
+    {
+      "id": "assert-1",
+      "description": "Clicking button updates state",
+      "selector": "#exact-dom-id",
+      "action": "click",
+      "expectedState": "dom-mutated"
+    }
   ]
 }
 \`\`\`
-Every single button, keybinding, canvas control, or input MUST have an entry in interactiveElements.`;
+Every single button, keybinding, canvas control, or input MUST have an entry in interactiveElements and assertions.`;
 
 const BUILDER_PROMPT = `You are the Master Full-Stack Software Engineer in Poppy's multi-agent software engineering team.
 You receive the user's goal and the Lead Architect's Technical Blueprint.
@@ -6073,7 +6514,29 @@ async function runMultiAgentPipeline(goal, note, image, onProgress, feats = null
   bundledHtml = autoWireButtons(bundledHtml);
   if (files["index.html"]) files["index.html"] = bundledHtml;
 
-  return { html: bundledHtml, files };
+  // Assemble formal v2.0 ArtifactManifest
+  const isDoc = (blueprint.category === "document" || blueprint.runtimeTarget === "document-pdf" || /\b(invoice|receipt|contract|report|resume|cv)\b/i.test(goal));
+  const manifest = (typeof createArtifactManifest === "function") ? createArtifactManifest({
+    name: blueprint.appName || goal.slice(0, 30),
+    description: blueprint.summary || goal,
+    runtime: {
+      target: isDoc ? "document-pdf" : (blueprint.runtimeTarget || "browser-app"),
+      entrypoint: "index.html"
+    },
+    source: {
+      files: (typeof filesDictToArray === "function") ? filesDictToArray(files) : [{ path: "index.html", content: bundledHtml }],
+      entrypointFile: "index.html"
+    },
+    delivery: {
+      previewRenderer: isDoc ? "pdf-canvas" : (blueprint.previewRenderer || "iframe"),
+      exportTargets: isDoc ? ["pdf-file", "single-html"] : ["single-html", "zip-bundle"]
+    },
+    verification: {
+      assertions: Array.isArray(blueprint.assertions) ? blueprint.assertions : []
+    }
+  }) : null;
+
+  return { html: bundledHtml, files, manifest };
 }
 
 if (typeof window !== "undefined") {

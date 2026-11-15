@@ -14,7 +14,8 @@ const cssFiles = [
   "src/css/onboarding.css",
   "src/css/studio.css",
   "src/css/ecosystem.css",
-  "src/css/voice.css"
+  "src/css/voice.css",
+  "src/css/document.css"
 ];
 cssFiles.forEach(file => {
   const content = readFile(file);
@@ -51,7 +52,10 @@ const html = htmlFiles.map(readFile).join("\n\n");
 
 // 3. Gather JavaScript Modules
 const jsFiles = [
+  "src/js/engine/manifest.js",
+  "src/js/core/capabilities.js",
   "src/js/engine/verify-probe.js",
+  "src/js/engine/dispatcher.js",
   "src/js/core/core-engine.js",
   "src/js/tests/selftest.js",
   "src/js/engine/exporters.js",
