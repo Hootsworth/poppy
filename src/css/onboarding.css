@@ -1,7 +1,8 @@
 /* ===== Onboarding: Seven Interactive Slides ===== */
-#ob{--fg:#2a0d16;--bg:#f23d2a;--ease2:cubic-bezier(.2,.9,.3,1);position:fixed;inset:0;z-index:80;background:var(--bg);color:var(--fg);overflow:hidden;--px:0;--py:0;transition:color .5s}
+#ob{--fg:#2a0d16;--bg:#f23d2a;--ease2:cubic-bezier(.2,.9,.3,1);position:fixed;inset:0;z-index:9999;background:var(--bg);color:var(--fg);overflow:hidden;--px:0;--py:0;transition:color .5s}
 #ob .obStage{position:absolute;inset:0;z-index:1;isolation:isolate}
 .sl{position:absolute;inset:0;background:var(--bg);color:var(--fg);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:clamp(16px,4vw,64px);padding:clamp(84px,12vh,120px) clamp(20px,6vw,88px) clamp(100px,15vh,136px);overflow:hidden}
+.sl[hidden]{display:none!important}
 .sl .tx{position:relative;z-index:2}
 .sl .sc{position:relative;z-index:2;display:grid;place-items:center;min-height:0;height:100%;transform:translate(calc(var(--px)*-12px),calc(var(--py)*-9px));transition:transform .5s ease-out}
 .kick{font-weight:800;letter-spacing:.14em;text-transform:uppercase;font-size:.78rem;opacity:.75;margin:0 0 14px;display:flex;align-items:center;gap:10px}

@@ -15,6 +15,17 @@ const cssFiles = [
   "src/css/studio.css",
   "src/css/ecosystem.css"
 ];
+cssFiles.forEach(file => {
+  const content = readFile(file);
+  let open = 0;
+  for (let i = 0; i < content.length; i++) {
+    if (content[i] === "{") open++;
+    else if (content[i] === "}") open--;
+  }
+  if (open !== 0) {
+    throw new Error(`CRITICAL BUILD ERROR: CSS file ${file} has unbalanced braces (open: ${open})`);
+  }
+});
 const css = cssFiles.map(readFile).join("\n\n");
 
 // 2. Gather HTML Components
