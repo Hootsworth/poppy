@@ -528,7 +528,275 @@ dialog::backdrop{background:rgba(42,13,22,.55)}
 @media (max-height:640px){.sl .sc{display:none}.sl{grid-template-rows:auto}}
 @media (prefers-reduced-motion:reduce){.s4r,.s7f svg{animation:none!important}}
 
+/* Poppy IDE & Universal Document Attachment Studio Styles */
 
+/* 1. Attachment Chip & Document Badges */
+#imgchip {
+  position: fixed;
+  left: 16px;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 25;
+  background: var(--white, #ffffff);
+  border: 2px solid var(--ink, #111827);
+  border-radius: 14px;
+  padding: 6px 10px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  box-shadow: 0 4px 0 var(--ink, #111827);
+  max-width: 320px;
+}
+
+#imgchip img {
+  height: 44px;
+  width: 44px;
+  object-fit: cover;
+  border-radius: 6px;
+  display: block;
+}
+
+.doc-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  width: 44px;
+  border-radius: 6px;
+  background: #0f172a;
+  color: #38bdf8;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  border: 1px solid #334155;
+  flex-shrink: 0;
+}
+
+.att-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.att-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink, #111827);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.att-size {
+  font-size: 10px;
+  color: #64748b;
+  font-family: ui-monospace, Menlo, monospace;
+}
+
+/* 2. Full IDE Layout & Topbar */
+.ide-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #334155;
+  padding-bottom: 8px;
+}
+
+.ide-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.ide-logo {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #f43f5e;
+  background: #3f1422;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #881337;
+}
+
+.ide-file-badge {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #38bdf8;
+  background: #0c4a6e;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.ide-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+/* 3. IDE Body & Panes */
+.ide-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 10px;
+}
+
+.ide-sidebar {
+  width: 200px;
+  background: #090d16;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.ide-sidebar-head {
+  padding: 10px 12px;
+  background: #0f172a;
+  border-bottom: 1px solid #1e293b;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+}
+
+.ide-count {
+  font-size: 10px;
+  background: #1e293b;
+  color: #38bdf8;
+  padding: 2px 6px;
+  border-radius: 99px;
+}
+
+.ide-file-list {
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.ide-file-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: ui-monospace, Menlo, monospace;
+  color: #cbd5e1;
+  transition: background 0.15s, color 0.15s;
+}
+
+.ide-file-item:hover {
+  background: #1e293b;
+  color: #ffffff;
+}
+
+.ide-file-item.active {
+  background: #0284c7;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.ide-file-type {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 2px 4px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.ide-editor-container {
+  flex: 1;
+  min-width: 0;
+}
+
+.ide-preview-pane {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #020617;
+}
+
+.ide-preview-bar {
+  padding: 8px 12px;
+  background: #0f172a;
+  border-bottom: 1px solid #1e293b;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #94a3b8;
+}
+
+.ide-preview-pane iframe {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #ffffff;
+}
+
+/* 4. IDE Footer & In-Editor AI Copilot */
+.ide-bottom-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid #334155;
+  padding-top: 8px;
+  flex-wrap: wrap;
+}
+
+.ide-ai-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 280px;
+}
+
+.ide-ai-input {
+  flex: 1;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #f8fafc;
+  font-size: 13px;
+  outline: none;
+}
+
+.ide-ai-input:focus {
+  border-color: #38bdf8;
+}
+
+.ide-main-acts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
 
 /* Ecosystem & Pipeline CSS (Poppy 5.0) */
 
@@ -986,7 +1254,54 @@ dialog::backdrop{background:rgba(42,13,22,.55)}
   <div class="row"><button class="sq" id="undo" aria-label="Undo" disabled>&#8630;</button><button class="sq" id="redo" aria-label="Redo" disabled>&#8631;</button><button class="sq" id="inspectBtn" aria-label="Inspect element" title="Inspect & Edit Element"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/></svg></button><button class="sq" id="blocksBtn" aria-label="UI Blocks" title="Pre-Built UI Blocks"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></button><button class="sq" id="dbStudioBtn" aria-label="Database Studio" title="Database & Store Studio"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></button><select id="vers" aria-label="Version history"></select><button class="sq" id="moreBtn" aria-label="More actions" aria-expanded="false">&#8943;</button></div>
   <div id="menu" hidden><span class="g">Site</span><button id="inspectMenuBtn">Inspect</button><button id="blocksMenuBtn">Blocks</button><button id="codeBtn">Code</button><button id="assetsBtn">Assets</button><button id="galBtn2">Library</button><button id="newSite">New</button><span class="g">Share</span><button id="shareBtn">Link</button><button id="expBtn">Export</button><button id="pubBtn">Publish</button><button id="pwaBtn">App</button><span class="g">Tools</span><button id="cmpBtn">Compare</button><button id="dbStudioMenuBtn">Database</button><button id="roomMenuBtn">Collaborate</button><button id="autoBtn">Automations</button><button id="ecoMenuBtn">Ecosystem &amp; Plugins</button><button id="secBtn">Security</button><button id="syncBtn">Backup & Sync</button><button id="changelogBtn">What's New</button><button class="connOpen">Connectors</button><button id="settingsBtn2">Switch AI</button><span id="usage"></span></div>
 </div>
-<section id="code"><div class="code-bar"><div class="file-tabs" id="fileTabs"></div><button class="link sm" id="newFileBtn" type="button">+ File</button><button class="link sm" id="delFileBtn" type="button" style="display:none">&times; Delete</button></div><div class="ed"><pre id="gut" aria-hidden="true"></pre><textarea id="src" wrap="off" spellcheck="false" aria-label="Page source"></textarea></div><div class="bar"><button class="go" id="codeApply">Apply</button><button class="link" id="expZipBtn" type="button">Export Zip</button><button class="link" id="codeClose">Close</button></div></section>
+<section id="code">
+  <div class="code-bar ide-topbar">
+    <div class="ide-title-group">
+      <span class="ide-logo">POPPY IDE</span>
+      <span id="ideActiveFileBadge" class="ide-file-badge">index.html</span>
+    </div>
+    <div class="file-tabs" id="fileTabs"></div>
+    <div class="ide-actions-group">
+      <button class="link sm" id="newFileBtn" type="button">+ File</button>
+      <button class="link sm" id="uploadFileBtn" type="button">Upload File</button>
+      <input type="file" id="ideFileInput" multiple hidden>
+      <button class="link sm" id="ideRenameBtn" type="button">Rename</button>
+      <button class="link sm" id="delFileBtn" type="button" style="display:none">&times; Delete</button>
+      <button class="link sm" id="ideToggleSplit" type="button">Split Preview</button>
+    </div>
+  </div>
+  <div class="ide-body">
+    <aside class="ide-sidebar" id="ideSidebar">
+      <div class="ide-sidebar-head">
+        <span>PROJECT FILES</span>
+        <span id="ideFileCount" class="ide-count">1</span>
+      </div>
+      <div class="ide-file-list" id="ideFileList"></div>
+    </aside>
+    <div class="ed ide-editor-container">
+      <pre id="gut" aria-hidden="true"></pre>
+      <textarea id="src" wrap="off" spellcheck="false" aria-label="Page source"></textarea>
+    </div>
+    <div class="ide-preview-pane" id="idePreviewPane" style="display:none">
+      <div class="ide-preview-bar">
+        <span>LIVE RUNTIME PREVIEW</span>
+        <button class="link sm" id="ideRefreshPreview" type="button">Refresh</button>
+      </div>
+      <iframe id="idePreviewFrame" sandbox="allow-scripts allow-forms allow-modals allow-popups" title="IDE Preview"></iframe>
+    </div>
+  </div>
+  <div class="bar ide-bottom-bar">
+    <div class="ide-ai-group">
+      <input type="text" id="ideAiInput" class="ide-ai-input" placeholder="Ask AI to modify active file or project (e.g. 'Add a search bar and dark mode CSS')...">
+      <button class="go sm" id="ideAiBtn" type="button">AI Refactor</button>
+    </div>
+    <div class="ide-main-acts">
+      <button class="go" id="codeApply">Apply &amp; Run</button>
+      <button class="link" id="expZipBtn" type="button">Export Zip</button>
+      <button class="link" id="codeClose">Close</button>
+    </div>
+  </div>
+</section>
 <div class="toast" id="toast" role="status"></div>
 
 <dialog id="dlg" aria-labelledby="dlgT"><div class="dh"><h2 id="dlgT">Pick your AI</h2><button class="x" type="button" aria-label="Close">&times;</button></div><div class="db"><p class="hint" id="dlgNote" style="margin-top:0;margin-bottom:12px">Runs in your browser. Needs an AI key. Nothing is stored on our servers.</p><div class="tabs" id="tabs"><button class="tab" data-p="anthropic">Anthropic</button><button class="tab" data-p="openai">OpenAI</button><button class="tab" data-p="gemini">Gemini</button><button class="tab" data-p="meta">Meta</button></div>
@@ -1385,8 +1700,8 @@ dialog::backdrop{background:rgba(42,13,22,.55)}
 <dialog id="conn" aria-labelledby="connT" style="width:min(560px,calc(100vw - 24px))"><div class="dh"><h2 id="connT">Connectors</h2><button class="x" type="button" aria-label="Close">&times;</button></div><div class="db"><p class="hint">Connect a service once and any site you build can use it, after you allow that site. Keys stay in this browser and never reach the sites.</p><input class="in cs" id="connQ" type="search" placeholder="Search services" aria-label="Search connectors" autocomplete="off"><div id="connList"></div><div class="cf" style="margin-top:14px;border-top:2px dashed var(--line);padding-top:14px"><h3 style="margin:0 0 6px;font-size:1.05rem">Poppy Relay</h3><p class="hint">Adds CORS support and secret proxying for Notion, Stripe, Resend, and Slack. Deploy the Cloudflare Worker script, then paste your worker URL below.</p><label class="fld"><span>Relay Worker URL</span><input id="relayUrl" placeholder="https://my-relay.workers.dev" autocomplete="off"></label><label class="fld"><span>Relay Shared Secret</span><input id="relaySec" type="password" placeholder="Shared secret passphrase" autocomplete="off"></label><div class="row2"><button class="go sm" id="saveRelayBtn" type="button">Save Relay</button><button class="link sm" id="testRelayBtn" type="button">Test Relay</button><button class="link sm" id="copyWorkerBtn" type="button">Copy Worker Script</button></div><p class="hint st" id="relayStatus"></p></div></div><div class="acts"><button class="link" id="permOff" type="button">Forget site permissions</button><button class="go sp" id="connClose">Done</button></div></dialog>
 <dialog id="perm" aria-labelledby="permT"><div class="dh"><h2 id="permT"></h2></div><div class="db"><p class="hint" id="permP"></p><input class="in" id="permIn" hidden aria-label="Value"></div><div class="acts"><button class="go" id="permYes" type="button"></button><button class="link" id="permNo" type="button"></button></div></dialog>
 <dialog id="creq" aria-labelledby="creqT"><div class="dh"><h2 id="creqT">Connect</h2><button class="x" type="button" aria-label="Close">&times;</button></div><div class="db" id="creqB"></div></dialog>
-<input type="file" id="imgIn" accept="image/*" hidden>
-<div id="imgchip" hidden><img alt="Attached image"><button class="link" type="button" id="imgX" aria-label="Remove image">&times;</button></div>
+<input type="file" id="imgIn" accept="image/*,.pdf,.txt,.md,.markdown,.js,.jsx,.ts,.tsx,.py,.json,.csv,.sql,.html,.css,.xml,.yaml,.yml,.docx,.pptx" hidden>
+<div id="imgchip" hidden><img alt="Attached image" style="display:none"><div id="docBadge" class="doc-badge" style="display:none">DOC</div><div class="att-meta"><div id="attName" class="att-name"></div><div id="attSize" class="att-size"></div></div><button class="link" type="button" id="imgX" aria-label="Remove attachment">&times;</button></div>
 <dialog id="plan" aria-labelledby="planT"><div class="dh"><h2 id="planT">Here is the plan</h2></div><div class="db"><div id="planList"></div><p class="hint">Edit or untick anything, then build.</p></div><div class="acts"><button class="go" id="planOk">Build it</button><button class="link" id="planNo">Cancel</button></div></dialog>
 <dialog id="onb" aria-labelledby="onbT"><div class="dh"><h2 id="onbT"></h2><button class="x" type="button" aria-label="Close">&times;</button></div><div class="db" id="onbB"></div><div class="acts" id="onbA"></div></dialog>
 
@@ -4154,6 +4469,9 @@ async function build(text, auto){
   if (cap && !auto && meterGet().n >= cap && !(await dlgAsk({title: "Daily limit reached", text: "You've used about " + fmtTok(meterGet().n) + " tokens today, past your limit of " + fmtTok(cap) + ". Keep going?", yes: "Keep going", no: "Stop"}))) return;
   busy = true; if (!auto) repairs = 0;
   const im = auto ? null : img; if (!auto) lastText = text;
+  if (!auto && docAttachment && docAttachment.text) {
+    text += "\n\n[Attached Reference File: " + docAttachment.name + "]\n" + docAttachment.text.slice(0, 50000) + "\n[End Attached File]";
+  }
   const live = document.body.classList.contains("live");
   ["#go", "#tweakGo"].forEach(s => $(s).disabled = true);
   let note;
@@ -4298,18 +4616,94 @@ const vis = (p, m) => {
     : {role: m.role, content: [{type: "text", text: m.content}, {type: "image_url", image_url: {url: "data:" + mime + ";base64," + b64}}]};
 };
 let img = null;
+let docAttachment = null;
+
 async function setImg(file){
-  if (!file) { img = null; $("#imgchip").hidden = true; return; }
-  if (!file.type.startsWith("image/")) { toast("That file isn't an image."); return; }
-  try {
-    const bm = await createImageBitmap(file), k = Math.min(1, 1600 / Math.max(bm.width, bm.height)), c = document.createElement("canvas");
-    c.width = Math.round(bm.width * k); c.height = Math.round(bm.height * k); c.getContext("2d").drawImage(bm, 0, 0, c.width, c.height);
-    const url = c.toDataURL("image/jpeg", .85); img = {mime: "image/jpeg", b64: url.split(",")[1]};
-    $("#imgchip img").src = url; $("#imgchip").hidden = false;
-  } catch { toast("Couldn't read that image."); }
+  if (!file) {
+    img = null;
+    docAttachment = null;
+    if ($("#imgchip")) $("#imgchip").hidden = true;
+    return;
+  }
+  const imgEl = $("#imgchip img");
+  const badgeEl = $("#docBadge");
+  const nameEl = $("#attName");
+  const sizeEl = $("#attSize");
+
+  const fmtSize = sz => sz > 1048576 ? (sz / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(sz / 1024)) + " KB";
+
+  if (file.type && file.type.startsWith("image/")) {
+    try {
+      const bm = await createImageBitmap(file), k = Math.min(1, 1600 / Math.max(bm.width, bm.height)), c = document.createElement("canvas");
+      c.width = Math.round(bm.width * k); c.height = Math.round(bm.height * k); c.getContext("2d").drawImage(bm, 0, 0, c.width, c.height);
+      const url = c.toDataURL("image/jpeg", .85);
+      img = {mime: "image/jpeg", b64: url.split(",")[1]};
+      docAttachment = null;
+      if (imgEl) { imgEl.src = url; imgEl.style.display = "block"; }
+      if (badgeEl) badgeEl.style.display = "none";
+      if (nameEl) nameEl.textContent = file.name;
+      if (sizeEl) sizeEl.textContent = fmtSize(file.size);
+      if ($("#imgchip")) $("#imgchip").hidden = false;
+    } catch {
+      toast("Couldn't read that image.");
+    }
+  } else {
+    try {
+      let textContent = "";
+      const ext = (file.name.split(".").pop() || "doc").toLowerCase();
+      let badgeLabel = ext.toUpperCase().slice(0, 4);
+
+      if (file.type === "application/pdf" || ext === "pdf") {
+        badgeLabel = "PDF";
+        const buf = await file.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        const raw = new TextDecoder("latin1").decode(bytes);
+        const matches = raw.match(/\(([^()]{2,})\)/g) || [];
+        const extracted = matches.map(m => m.slice(1, -1)).filter(s => /[a-zA-Z0-9]/.test(s)).join(" ");
+        textContent = extracted.length > 50 ? extracted : `[Binary PDF: ${file.name}, size: ${fmtSize(file.size)}]`;
+      } else if (ext === "pptx" || ext === "docx") {
+        badgeLabel = ext.toUpperCase();
+        const buf = await file.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        const raw = new TextDecoder("latin1").decode(bytes);
+        const xmlStrings = raw.match(/<a:t>([^<]+)<\/a:t>|<w:t[^>]*>([^<]+)<\/w:t>/g) || [];
+        const clean = xmlStrings.map(s => s.replace(/<[^>]+>/g, "").trim()).filter(Boolean).join(" ");
+        textContent = clean.length > 30 ? clean : `[Office Document: ${file.name}, size: ${fmtSize(file.size)}]`;
+      } else {
+        textContent = await file.text();
+      }
+
+      img = null;
+      docAttachment = {
+        name: file.name,
+        type: ext,
+        text: textContent,
+        size: file.size
+      };
+
+      if (imgEl) imgEl.style.display = "none";
+      if (badgeEl) { badgeEl.textContent = badgeLabel; badgeEl.style.display = "flex"; }
+      if (nameEl) nameEl.textContent = file.name;
+      if (sizeEl) sizeEl.textContent = fmtSize(file.size);
+      if ($("#imgchip")) $("#imgchip").hidden = false;
+      toast(`Attached ${file.name} (${fmtSize(file.size)})`);
+    } catch (err) {
+      toast("Couldn't read file: " + err.message);
+    }
+  }
 }
 document.addEventListener("dragover", e => e.preventDefault());
-document.addEventListener("drop", async e => { e.preventDefault(); const f = e.dataTransfer && e.dataTransfer.files[0]; if (f) { if (f.name.endsWith(".zip") || f.type === "application/zip") { try { await reopenZip(f); } catch (err) { toast(err.message); } } else setImg(f); } });
+document.addEventListener("drop", async e => {
+  e.preventDefault();
+  const f = e.dataTransfer && e.dataTransfer.files[0];
+  if (f) {
+    if (f.name.endsWith(".zip") || f.type === "application/zip") {
+      try { await reopenZip(f); } catch (err) { toast(err.message); }
+    } else {
+      setImg(f);
+    }
+  }
+});
 document.addEventListener("paste", e => { const it = [...(e.clipboardData ? e.clipboardData.items : [])].find(i => i.type.startsWith("image/")); if (it) { e.preventDefault(); setImg(it.getAsFile()); } });
 document.querySelectorAll(".att").forEach(b => b.onclick = () => $("#imgIn").click());
 if ($("#imgIn")) $("#imgIn").onchange = e => { setImg(e.target.files[0]); e.target.value = ""; };
@@ -7753,22 +8147,64 @@ if ($("#btnExpElectron")) $("#btnExpElectron").onclick = exportElectronZip;
 if ($("#btnExpExpo")) $("#btnExpExpo").onclick = exportExpoZip;
 
 function renderFileTabs(){
-  const box = $("#fileTabs"); box.replaceChildren();
-  Object.keys(currentFiles).forEach(fn => {
-    const b = el("button", "file-tab" + (fn === activeFile ? " active" : ""), fn);
-    b.type = "button";
-    b.onclick = () => switchFile(fn);
-    box.append(b);
+  const box = $("#fileTabs"); if (box) box.replaceChildren();
+  const list = $("#ideFileList"); if (list) list.replaceChildren();
+  const fileKeys = Object.keys(currentFiles);
+
+  if ($("#ideFileCount")) $("#ideFileCount").textContent = fileKeys.length;
+  if ($("#ideActiveFileBadge")) $("#ideActiveFileBadge").textContent = activeFile;
+
+  fileKeys.forEach(fn => {
+    // Top tab
+    if (box) {
+      const b = el("button", "file-tab" + (fn === activeFile ? " active" : ""), fn);
+      b.type = "button";
+      b.onclick = () => switchFile(fn);
+      box.append(b);
+    }
+    // Sidebar item
+    if (list) {
+      const item = el("div", "ide-file-item" + (fn === activeFile ? " active" : ""));
+      const ext = (fn.split(".").pop() || "txt").toUpperCase().slice(0, 4);
+      const typeBadge = el("span", "ide-file-type", ext);
+      const nameSpan = el("span", "", fn);
+      item.append(typeBadge, nameSpan);
+      item.onclick = () => switchFile(fn);
+      list.append(item);
+    }
   });
-  $("#delFileBtn").style.display = activeFile !== "index.html" ? "inline-flex" : "none";
+
+  if ($("#delFileBtn")) $("#delFileBtn").style.display = activeFile !== "index.html" ? "inline-flex" : "none";
+  if ($("#ideRenameBtn")) $("#ideRenameBtn").style.display = activeFile !== "index.html" ? "inline-flex" : "none";
 }
+
 function switchFile(fn){
-  if (currentFiles[activeFile] !== undefined) currentFiles[activeFile] = $("#src").value;
+  if (currentFiles[activeFile] !== undefined && $("#src")) currentFiles[activeFile] = $("#src").value;
   activeFile = fn;
-  $("#src").value = currentFiles[fn] || "";
+  if ($("#src")) $("#src").value = currentFiles[fn] || "";
   gut();
   renderFileTabs();
+  updateIdePreview();
 }
+
+function updateIdePreview(){
+  const frame = $("#idePreviewFrame");
+  const pane = $("#idePreviewPane");
+  if (!frame || !pane || pane.style.display === "none") return;
+  if (currentFiles[activeFile] !== undefined && $("#src")) currentFiles[activeFile] = $("#src").value;
+  const aMap = {};
+  if (typeof assetList === "function") {
+    assetList().then(assets => {
+      assets.forEach(a => aMap[a.name] = a.data);
+      frame.srcdoc = bundleFiles(currentFiles, aMap);
+    }).catch(() => {
+      frame.srcdoc = bundleFiles(currentFiles, aMap);
+    });
+  } else {
+    frame.srcdoc = bundleFiles(currentFiles, aMap);
+  }
+}
+
 if ($("#newFileBtn")) $("#newFileBtn").onclick = async () => {
   const n = await dlgAsk({title: "New file name", input: "style.css", yes: "Create", no: "Cancel"});
   if (!n) return;
@@ -7777,6 +8213,47 @@ if ($("#newFileBtn")) $("#newFileBtn").onclick = async () => {
   if (!currentFiles[fn]) currentFiles[fn] = "";
   switchFile(fn);
 };
+
+if ($("#ideRenameBtn")) $("#ideRenameBtn").onclick = async () => {
+  if (activeFile === "index.html") { toast("Cannot rename index.html"); return; }
+  const n = await dlgAsk({title: "Rename file", input: activeFile, yes: "Rename", no: "Cancel"});
+  if (!n) return;
+  const newName = n.trim().replace(/^[./\\]+/, "");
+  if (!newName || newName === activeFile) return;
+  if (currentFiles[newName]) { toast(`File ${newName} already exists`); return; }
+  currentFiles[newName] = currentFiles[activeFile];
+  delete currentFiles[activeFile];
+  switchFile(newName);
+  toast(`Renamed to ${newName}`);
+};
+
+if ($("#uploadFileBtn")) $("#uploadFileBtn").onclick = () => $("#ideFileInput").click();
+if ($("#ideFileInput")) $("#ideFileInput").onchange = async e => {
+  const files = Array.from(e.target.files || []);
+  if (!files.length) return;
+  for (const f of files) {
+    try {
+      const text = await f.text();
+      currentFiles[f.name] = text;
+    } catch {}
+  }
+  renderFileTabs();
+  updateIdePreview();
+  toast(`Imported ${files.length} file(s) into project`);
+  e.target.value = "";
+};
+
+if ($("#ideToggleSplit")) $("#ideToggleSplit").onclick = () => {
+  const pane = $("#idePreviewPane");
+  if (!pane) return;
+  const isHidden = pane.style.display === "none";
+  pane.style.display = isHidden ? "flex" : "none";
+  $("#ideToggleSplit").textContent = isHidden ? "Hide Preview" : "Split Preview";
+  if (isHidden) updateIdePreview();
+};
+
+if ($("#ideRefreshPreview")) $("#ideRefreshPreview").onclick = () => updateIdePreview();
+
 if ($("#delFileBtn")) $("#delFileBtn").onclick = async () => {
   if (activeFile === "index.html") return;
   if (await dlgAsk({title: "Delete " + activeFile + "?", text: "This file will be removed from the project.", yes: "Delete", no: "Cancel"})) {
@@ -7795,9 +8272,21 @@ if ($("#codeBtn")) $("#codeBtn").onclick = () => {
   $("#code").classList.add("open");
   $("#panel").classList.remove("open");
   $("#src").focus();
+  updateIdePreview();
 };
+
 if ($("#codeClose")) $("#codeClose").onclick = () => $("#code").classList.remove("open");
-$("#src").onkeydown = e => { if (e.key === "Tab") { e.preventDefault(); e.target.setRangeText("  ", e.target.selectionStart, e.target.selectionEnd, "end"); } };
+
+$("#src").onkeydown = e => {
+  if (e.key === "Tab") {
+    e.preventDefault();
+    e.target.setRangeText("  ", e.target.selectionStart, e.target.selectionEnd, "end");
+  } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+    e.preventDefault();
+    if ($("#codeApply")) $("#codeApply").click();
+  }
+};
+
 if ($("#codeApply")) $("#codeApply").onclick = async () => {
   currentFiles[activeFile] = $("#src").value;
   const aMap = {}; (await assetList()).forEach(a => aMap[a.name] = a.data);
@@ -7808,6 +8297,51 @@ if ($("#codeApply")) $("#codeApply").onclick = async () => {
   hist.push({ t: Date.now(), prompt: "Manual edit (" + activeFile + ")", html: bundled, files: {...currentFiles} });
   trimHist(hist); hi = hist.length - 1;
   saveHist(); refreshVers(); show(bundled);
+};
+
+// In-IDE AI Copilot
+if ($("#ideAiBtn")) $("#ideAiBtn").onclick = async () => {
+  const inp = $("#ideAiInput");
+  const instruction = (inp && inp.value.trim()) || "";
+  if (!instruction) { toast("Enter an instruction for AI Refactor"); return; }
+  if (typeof collect !== "function") { toast("AI model is not ready."); return; }
+
+  const origBtnText = $("#ideAiBtn").textContent;
+  $("#ideAiBtn").disabled = true;
+  $("#ideAiBtn").textContent = "Refactoring...";
+
+  try {
+    const curContent = $("#src").value;
+    const prompt = `You are an expert software engineer inside the Poppy IDE.
+We are editing the file: ${activeFile}
+Here is the current content of ${activeFile}:
+\`\`\`
+${curContent}
+\`\`\`
+
+User instruction:
+${instruction}
+
+Output ONLY the complete, updated content of ${activeFile}. Do not wrap in conversational markdown prose. Just output the clean file code.`;
+
+    const out = await collect([{ role: "user", content: prompt }], "You are a code refactoring engine. Return only the raw file content.");
+    let cleanCode = out.trim();
+    if (cleanCode.startsWith("```") && cleanCode.endsWith("```")) {
+      cleanCode = cleanCode.replace(/^```[a-z]*\n?/i, "").replace(/\n?```$/, "");
+    }
+
+    $("#src").value = cleanCode;
+    currentFiles[activeFile] = cleanCode;
+    gut();
+    updateIdePreview();
+    toast(`AI Refactored ${activeFile}`);
+    inp.value = "";
+  } catch (err) {
+    toast(`AI Refactor error: ${err.message}`);
+  } finally {
+    $("#ideAiBtn").disabled = false;
+    $("#ideAiBtn").textContent = origBtnText;
+  }
 };
 
 async function renderAssets(){

@@ -2022,6 +2022,9 @@ async function build(text, auto){
   if (cap && !auto && meterGet().n >= cap && !(await dlgAsk({title: "Daily limit reached", text: "You've used about " + fmtTok(meterGet().n) + " tokens today, past your limit of " + fmtTok(cap) + ". Keep going?", yes: "Keep going", no: "Stop"}))) return;
   busy = true; if (!auto) repairs = 0;
   const im = auto ? null : img; if (!auto) lastText = text;
+  if (!auto && docAttachment && docAttachment.text) {
+    text += "\n\n[Attached Reference File: " + docAttachment.name + "]\n" + docAttachment.text.slice(0, 50000) + "\n[End Attached File]";
+  }
   const live = document.body.classList.contains("live");
   ["#go", "#tweakGo"].forEach(s => $(s).disabled = true);
   let note;
@@ -2166,18 +2169,94 @@ const vis = (p, m) => {
     : {role: m.role, content: [{type: "text", text: m.content}, {type: "image_url", image_url: {url: "data:" + mime + ";base64," + b64}}]};
 };
 let img = null;
+let docAttachment = null;
+
 async function setImg(file){
-  if (!file) { img = null; $("#imgchip").hidden = true; return; }
-  if (!file.type.startsWith("image/")) { toast("That file isn't an image."); return; }
-  try {
-    const bm = await createImageBitmap(file), k = Math.min(1, 1600 / Math.max(bm.width, bm.height)), c = document.createElement("canvas");
-    c.width = Math.round(bm.width * k); c.height = Math.round(bm.height * k); c.getContext("2d").drawImage(bm, 0, 0, c.width, c.height);
-    const url = c.toDataURL("image/jpeg", .85); img = {mime: "image/jpeg", b64: url.split(",")[1]};
-    $("#imgchip img").src = url; $("#imgchip").hidden = false;
-  } catch { toast("Couldn't read that image."); }
+  if (!file) {
+    img = null;
+    docAttachment = null;
+    if ($("#imgchip")) $("#imgchip").hidden = true;
+    return;
+  }
+  const imgEl = $("#imgchip img");
+  const badgeEl = $("#docBadge");
+  const nameEl = $("#attName");
+  const sizeEl = $("#attSize");
+
+  const fmtSize = sz => sz > 1048576 ? (sz / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(sz / 1024)) + " KB";
+
+  if (file.type && file.type.startsWith("image/")) {
+    try {
+      const bm = await createImageBitmap(file), k = Math.min(1, 1600 / Math.max(bm.width, bm.height)), c = document.createElement("canvas");
+      c.width = Math.round(bm.width * k); c.height = Math.round(bm.height * k); c.getContext("2d").drawImage(bm, 0, 0, c.width, c.height);
+      const url = c.toDataURL("image/jpeg", .85);
+      img = {mime: "image/jpeg", b64: url.split(",")[1]};
+      docAttachment = null;
+      if (imgEl) { imgEl.src = url; imgEl.style.display = "block"; }
+      if (badgeEl) badgeEl.style.display = "none";
+      if (nameEl) nameEl.textContent = file.name;
+      if (sizeEl) sizeEl.textContent = fmtSize(file.size);
+      if ($("#imgchip")) $("#imgchip").hidden = false;
+    } catch {
+      toast("Couldn't read that image.");
+    }
+  } else {
+    try {
+      let textContent = "";
+      const ext = (file.name.split(".").pop() || "doc").toLowerCase();
+      let badgeLabel = ext.toUpperCase().slice(0, 4);
+
+      if (file.type === "application/pdf" || ext === "pdf") {
+        badgeLabel = "PDF";
+        const buf = await file.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        const raw = new TextDecoder("latin1").decode(bytes);
+        const matches = raw.match(/\(([^()]{2,})\)/g) || [];
+        const extracted = matches.map(m => m.slice(1, -1)).filter(s => /[a-zA-Z0-9]/.test(s)).join(" ");
+        textContent = extracted.length > 50 ? extracted : `[Binary PDF: ${file.name}, size: ${fmtSize(file.size)}]`;
+      } else if (ext === "pptx" || ext === "docx") {
+        badgeLabel = ext.toUpperCase();
+        const buf = await file.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        const raw = new TextDecoder("latin1").decode(bytes);
+        const xmlStrings = raw.match(/<a:t>([^<]+)<\/a:t>|<w:t[^>]*>([^<]+)<\/w:t>/g) || [];
+        const clean = xmlStrings.map(s => s.replace(/<[^>]+>/g, "").trim()).filter(Boolean).join(" ");
+        textContent = clean.length > 30 ? clean : `[Office Document: ${file.name}, size: ${fmtSize(file.size)}]`;
+      } else {
+        textContent = await file.text();
+      }
+
+      img = null;
+      docAttachment = {
+        name: file.name,
+        type: ext,
+        text: textContent,
+        size: file.size
+      };
+
+      if (imgEl) imgEl.style.display = "none";
+      if (badgeEl) { badgeEl.textContent = badgeLabel; badgeEl.style.display = "flex"; }
+      if (nameEl) nameEl.textContent = file.name;
+      if (sizeEl) sizeEl.textContent = fmtSize(file.size);
+      if ($("#imgchip")) $("#imgchip").hidden = false;
+      toast(`Attached ${file.name} (${fmtSize(file.size)})`);
+    } catch (err) {
+      toast("Couldn't read file: " + err.message);
+    }
+  }
 }
 document.addEventListener("dragover", e => e.preventDefault());
-document.addEventListener("drop", async e => { e.preventDefault(); const f = e.dataTransfer && e.dataTransfer.files[0]; if (f) { if (f.name.endsWith(".zip") || f.type === "application/zip") { try { await reopenZip(f); } catch (err) { toast(err.message); } } else setImg(f); } });
+document.addEventListener("drop", async e => {
+  e.preventDefault();
+  const f = e.dataTransfer && e.dataTransfer.files[0];
+  if (f) {
+    if (f.name.endsWith(".zip") || f.type === "application/zip") {
+      try { await reopenZip(f); } catch (err) { toast(err.message); }
+    } else {
+      setImg(f);
+    }
+  }
+});
 document.addEventListener("paste", e => { const it = [...(e.clipboardData ? e.clipboardData.items : [])].find(i => i.type.startsWith("image/")); if (it) { e.preventDefault(); setImg(it.getAsFile()); } });
 document.querySelectorAll(".att").forEach(b => b.onclick = () => $("#imgIn").click());
 if ($("#imgIn")) $("#imgIn").onchange = e => { setImg(e.target.files[0]); e.target.value = ""; };

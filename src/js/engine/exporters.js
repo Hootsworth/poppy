@@ -313,22 +313,64 @@ if ($("#btnExpElectron")) $("#btnExpElectron").onclick = exportElectronZip;
 if ($("#btnExpExpo")) $("#btnExpExpo").onclick = exportExpoZip;
 
 function renderFileTabs(){
-  const box = $("#fileTabs"); box.replaceChildren();
-  Object.keys(currentFiles).forEach(fn => {
-    const b = el("button", "file-tab" + (fn === activeFile ? " active" : ""), fn);
-    b.type = "button";
-    b.onclick = () => switchFile(fn);
-    box.append(b);
+  const box = $("#fileTabs"); if (box) box.replaceChildren();
+  const list = $("#ideFileList"); if (list) list.replaceChildren();
+  const fileKeys = Object.keys(currentFiles);
+
+  if ($("#ideFileCount")) $("#ideFileCount").textContent = fileKeys.length;
+  if ($("#ideActiveFileBadge")) $("#ideActiveFileBadge").textContent = activeFile;
+
+  fileKeys.forEach(fn => {
+    // Top tab
+    if (box) {
+      const b = el("button", "file-tab" + (fn === activeFile ? " active" : ""), fn);
+      b.type = "button";
+      b.onclick = () => switchFile(fn);
+      box.append(b);
+    }
+    // Sidebar item
+    if (list) {
+      const item = el("div", "ide-file-item" + (fn === activeFile ? " active" : ""));
+      const ext = (fn.split(".").pop() || "txt").toUpperCase().slice(0, 4);
+      const typeBadge = el("span", "ide-file-type", ext);
+      const nameSpan = el("span", "", fn);
+      item.append(typeBadge, nameSpan);
+      item.onclick = () => switchFile(fn);
+      list.append(item);
+    }
   });
-  $("#delFileBtn").style.display = activeFile !== "index.html" ? "inline-flex" : "none";
+
+  if ($("#delFileBtn")) $("#delFileBtn").style.display = activeFile !== "index.html" ? "inline-flex" : "none";
+  if ($("#ideRenameBtn")) $("#ideRenameBtn").style.display = activeFile !== "index.html" ? "inline-flex" : "none";
 }
+
 function switchFile(fn){
-  if (currentFiles[activeFile] !== undefined) currentFiles[activeFile] = $("#src").value;
+  if (currentFiles[activeFile] !== undefined && $("#src")) currentFiles[activeFile] = $("#src").value;
   activeFile = fn;
-  $("#src").value = currentFiles[fn] || "";
+  if ($("#src")) $("#src").value = currentFiles[fn] || "";
   gut();
   renderFileTabs();
+  updateIdePreview();
 }
+
+function updateIdePreview(){
+  const frame = $("#idePreviewFrame");
+  const pane = $("#idePreviewPane");
+  if (!frame || !pane || pane.style.display === "none") return;
+  if (currentFiles[activeFile] !== undefined && $("#src")) currentFiles[activeFile] = $("#src").value;
+  const aMap = {};
+  if (typeof assetList === "function") {
+    assetList().then(assets => {
+      assets.forEach(a => aMap[a.name] = a.data);
+      frame.srcdoc = bundleFiles(currentFiles, aMap);
+    }).catch(() => {
+      frame.srcdoc = bundleFiles(currentFiles, aMap);
+    });
+  } else {
+    frame.srcdoc = bundleFiles(currentFiles, aMap);
+  }
+}
+
 if ($("#newFileBtn")) $("#newFileBtn").onclick = async () => {
   const n = await dlgAsk({title: "New file name", input: "style.css", yes: "Create", no: "Cancel"});
   if (!n) return;
@@ -337,6 +379,47 @@ if ($("#newFileBtn")) $("#newFileBtn").onclick = async () => {
   if (!currentFiles[fn]) currentFiles[fn] = "";
   switchFile(fn);
 };
+
+if ($("#ideRenameBtn")) $("#ideRenameBtn").onclick = async () => {
+  if (activeFile === "index.html") { toast("Cannot rename index.html"); return; }
+  const n = await dlgAsk({title: "Rename file", input: activeFile, yes: "Rename", no: "Cancel"});
+  if (!n) return;
+  const newName = n.trim().replace(/^[./\\]+/, "");
+  if (!newName || newName === activeFile) return;
+  if (currentFiles[newName]) { toast(`File ${newName} already exists`); return; }
+  currentFiles[newName] = currentFiles[activeFile];
+  delete currentFiles[activeFile];
+  switchFile(newName);
+  toast(`Renamed to ${newName}`);
+};
+
+if ($("#uploadFileBtn")) $("#uploadFileBtn").onclick = () => $("#ideFileInput").click();
+if ($("#ideFileInput")) $("#ideFileInput").onchange = async e => {
+  const files = Array.from(e.target.files || []);
+  if (!files.length) return;
+  for (const f of files) {
+    try {
+      const text = await f.text();
+      currentFiles[f.name] = text;
+    } catch {}
+  }
+  renderFileTabs();
+  updateIdePreview();
+  toast(`Imported ${files.length} file(s) into project`);
+  e.target.value = "";
+};
+
+if ($("#ideToggleSplit")) $("#ideToggleSplit").onclick = () => {
+  const pane = $("#idePreviewPane");
+  if (!pane) return;
+  const isHidden = pane.style.display === "none";
+  pane.style.display = isHidden ? "flex" : "none";
+  $("#ideToggleSplit").textContent = isHidden ? "Hide Preview" : "Split Preview";
+  if (isHidden) updateIdePreview();
+};
+
+if ($("#ideRefreshPreview")) $("#ideRefreshPreview").onclick = () => updateIdePreview();
+
 if ($("#delFileBtn")) $("#delFileBtn").onclick = async () => {
   if (activeFile === "index.html") return;
   if (await dlgAsk({title: "Delete " + activeFile + "?", text: "This file will be removed from the project.", yes: "Delete", no: "Cancel"})) {
@@ -355,9 +438,21 @@ if ($("#codeBtn")) $("#codeBtn").onclick = () => {
   $("#code").classList.add("open");
   $("#panel").classList.remove("open");
   $("#src").focus();
+  updateIdePreview();
 };
+
 if ($("#codeClose")) $("#codeClose").onclick = () => $("#code").classList.remove("open");
-$("#src").onkeydown = e => { if (e.key === "Tab") { e.preventDefault(); e.target.setRangeText("  ", e.target.selectionStart, e.target.selectionEnd, "end"); } };
+
+$("#src").onkeydown = e => {
+  if (e.key === "Tab") {
+    e.preventDefault();
+    e.target.setRangeText("  ", e.target.selectionStart, e.target.selectionEnd, "end");
+  } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+    e.preventDefault();
+    if ($("#codeApply")) $("#codeApply").click();
+  }
+};
+
 if ($("#codeApply")) $("#codeApply").onclick = async () => {
   currentFiles[activeFile] = $("#src").value;
   const aMap = {}; (await assetList()).forEach(a => aMap[a.name] = a.data);
@@ -368,6 +463,51 @@ if ($("#codeApply")) $("#codeApply").onclick = async () => {
   hist.push({ t: Date.now(), prompt: "Manual edit (" + activeFile + ")", html: bundled, files: {...currentFiles} });
   trimHist(hist); hi = hist.length - 1;
   saveHist(); refreshVers(); show(bundled);
+};
+
+// In-IDE AI Copilot
+if ($("#ideAiBtn")) $("#ideAiBtn").onclick = async () => {
+  const inp = $("#ideAiInput");
+  const instruction = (inp && inp.value.trim()) || "";
+  if (!instruction) { toast("Enter an instruction for AI Refactor"); return; }
+  if (typeof collect !== "function") { toast("AI model is not ready."); return; }
+
+  const origBtnText = $("#ideAiBtn").textContent;
+  $("#ideAiBtn").disabled = true;
+  $("#ideAiBtn").textContent = "Refactoring...";
+
+  try {
+    const curContent = $("#src").value;
+    const prompt = `You are an expert software engineer inside the Poppy IDE.
+We are editing the file: ${activeFile}
+Here is the current content of ${activeFile}:
+\`\`\`
+${curContent}
+\`\`\`
+
+User instruction:
+${instruction}
+
+Output ONLY the complete, updated content of ${activeFile}. Do not wrap in conversational markdown prose. Just output the clean file code.`;
+
+    const out = await collect([{ role: "user", content: prompt }], "You are a code refactoring engine. Return only the raw file content.");
+    let cleanCode = out.trim();
+    if (cleanCode.startsWith("```") && cleanCode.endsWith("```")) {
+      cleanCode = cleanCode.replace(/^```[a-z]*\n?/i, "").replace(/\n?```$/, "");
+    }
+
+    $("#src").value = cleanCode;
+    currentFiles[activeFile] = cleanCode;
+    gut();
+    updateIdePreview();
+    toast(`AI Refactored ${activeFile}`);
+    inp.value = "";
+  } catch (err) {
+    toast(`AI Refactor error: ${err.message}`);
+  } finally {
+    $("#ideAiBtn").disabled = false;
+    $("#ideAiBtn").textContent = origBtnText;
+  }
 };
 
 async function renderAssets(){
