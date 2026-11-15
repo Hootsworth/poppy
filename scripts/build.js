@@ -43,7 +43,7 @@ const jsFiles = [
   "src/js/engine/exporters.js",
   "src/js/engine/archetypes.js",
   "src/js/engine/multi-agent.js",
-  "src/js/engine/universal-runtime.js",
+  "src/js/engine/verify-probe.js",
   "src/js/modules/inspector.js",
   "src/js/modules/db-studio.js",
   "src/js/templates/marketplace.js",

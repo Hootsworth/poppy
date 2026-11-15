@@ -162,23 +162,23 @@ const ARCHETYPES = {
 function detectArchetype(promptText = "") {
   const p = promptText.toLowerCase();
   
-  // Platformer / Mario / Sidescroller
-  if (/\b(mario|super mario|platformer|jump|sidescroll|sonic|metroid|platform|obstacle course|runner)\b/i.test(p)) {
+  // Platformer: only match explicit platformer or mario games (not "e-commerce platform" or "task runner")
+  if (/\b(super mario|mario game|2d platformer|platformer game|sidescroller)\b/i.test(p)) {
     return ARCHETYPES.platformer;
   }
   
-  // Arcade / Shooter / Action / Canvas Games
-  if (/\b(arcade|space invaders|shooter|asteroids|flappy|pong|breakout|snake|pacman|tetris|bullet|dodge|galaxy)\b/i.test(p)) {
+  // Arcade: only match explicit arcade games
+  if (/\b(space invaders|asteroids game|flappy bird|pong game|breakout game|arcade shooter)\b/i.test(p)) {
     return ARCHETYPES.arcade;
   }
   
-  // Audio / Synthesizer / Beats
-  if (/\b(synth|synthesizer|piano|audio|instrument|guitar|drum|beat|soundboard|daw|sequencer|oscillator)\b/i.test(p)) {
+  // Audio: only match explicit synthesizer / DAW / audio sequencers (not "guitar shop")
+  if (/\b(polyphonic synth|synthesizer with adsr|audio sequencer|drum machine|digital audio workstation)\b/i.test(p)) {
     return ARCHETYPES.audio;
   }
   
-  // CRUD / Data / Table / Dashboard
-  if (/\b(crud|table|database|crm|inventory|contacts|records|tracker|budget|expenses|kanban|management)\b/i.test(p)) {
+  // CRUD: only match explicit database management systems (not "table booking")
+  if (/\b(crud app|database management studio|inventory management system|crm database)\b/i.test(p)) {
     return ARCHETYPES.crud;
   }
   

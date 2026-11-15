@@ -784,134 +784,6 @@ const wireButtons=()=>{
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",wireButtons);
 else wireButtons();
 
-document.addEventListener("click",e=>{
-  const btn=e.target.closest("button, [role='button'], a.btn, a.button, .btn, .cta, .tab-btn, .nav-btn, .accordion-btn, input[type='button'], input[type='submit']");
-  if(!btn)return;
-  if(btn.tagName==="A"&&(!btn.getAttribute("href")||btn.getAttribute("href")==="#"))e.preventDefault();
-  
-  // 1. Tactile click feedback: audio + physical spring
-  playClickAudio();
-  btn.style.transition="transform .1s ease, filter .1s ease";
-  btn.style.transform="scale(0.96)";
-  setTimeout(()=>{btn.style.transform="";},120);
-
-  const txt=(btn.innerText||btn.textContent||btn.value||"").trim().toLowerCase();
-  const cls=(btn.className||"").toLowerCase();
-  const id=(btn.id||"").toLowerCase();
-
-  // 2. Tab switching
-  if(btn.classList.contains("tab")||cls.includes("tab")||btn.getAttribute("role")==="tab"){
-    const p=btn.parentElement;
-    if(p){
-      p.querySelectorAll(".tab, [role='tab']").forEach(t=>{t.classList.remove("active","selected");t.setAttribute("aria-selected","false");});
-      btn.classList.add("active");btn.setAttribute("aria-selected","true");
-      const target=btn.getAttribute("data-tab")||btn.getAttribute("href");
-      if(target&&target.startsWith("#")){
-        document.querySelectorAll(".tab-pane, .tab-content").forEach(el=>el.style.display="none");
-        const pane=document.querySelector(target);if(pane)pane.style.display="block";
-      }
-    }
-  }
-
-  // 3. Modals & Dialogs (Open & Close)
-  if(txt.includes("open")||txt.includes("modal")||txt.includes("dialog")||txt.includes("details")||btn.dataset.modal||id.includes("modal")){
-    const tId=btn.dataset.target||btn.dataset.modal||id.replace("btn","")||"dialog";
-    const dlg=document.querySelector(tId.startsWith("#")?tId:"#"+tId)||document.querySelector("dialog, .modal");
-    if(dlg){
-      if(typeof dlg.showModal==="function")dlg.showModal();
-      else dlg.classList.add("open","active");
-    }
-  }
-  if(txt==="x"||txt==="close"||txt==="cancel"||txt==="dismiss"||cls.includes("close")||id.includes("close")){
-    const dlg=btn.closest("dialog, .modal, .popup");
-    if(dlg){
-      if(typeof dlg.close==="function")dlg.close();
-      else dlg.classList.remove("open","active");
-    }
-  }
-
-  // 4. Steppers & Counters (+, -)
-  if(txt==="+"||txt==="inc"||txt.includes("increase")||txt==="&plus;"){
-    const wrap=btn.closest(".counter, .stepper, .card, div")||btn.parentElement;
-    const inp=wrap?wrap.querySelector("input[type='number'], .count, .quantity"):null;
-    if(inp){
-      if(inp.tagName==="INPUT"){inp.value=(parseFloat(inp.value)||0)+1;inp.dispatchEvent(new Event("change",{bubbles:true}));}
-      else inp.textContent=(parseFloat(inp.textContent)||0)+1;
-    }
-  }
-  if(txt==="-"||txt==="dec"||txt.includes("decrease")||txt==="&minus;"){
-    const wrap=btn.closest(".counter, .stepper, .card, div")||btn.parentElement;
-    const inp=wrap?wrap.querySelector("input[type='number'], .count, .quantity"):null;
-    if(inp){
-      if(inp.tagName==="INPUT"){inp.value=Math.max(0,(parseFloat(inp.value)||0)-1);inp.dispatchEvent(new Event("change",{bubbles:true}));}
-      else inp.textContent=Math.max(0,(parseFloat(inp.textContent)||0)-1);
-    }
-  }
-
-  // 5. Calculators & Math
-  if(txt.includes("calculate")||txt.includes("compute")||txt.includes("convert")||id.includes("calc")){
-    const card=btn.closest(".card, form, section, div")||document.body;
-    const nums=[...card.querySelectorAll("input[type='number'], input[type='range']")].map(i=>parseFloat(i.value)||0);
-    const out=card.querySelector(".result, #result, .output, output, .calc-res");
-    if(out&&nums.length){
-      const sum=nums.reduce((a,b)=>a+b,0);
-      out.textContent=(out.textContent.includes("$")?"$":"")+sum.toLocaleString();
-    }
-  }
-
-  // 6. Copy to clipboard
-  if(txt.includes("copy")||id.includes("copy")||cls.includes("copy")){
-    const card=btn.closest(".card, section, div")||document.body;
-    const target=card.querySelector("pre, code, input[type='text'], textarea, .copy-target");
-    const val=target?(target.value||target.innerText):window.location.href;
-    if(val&&navigator.clipboard){
-      navigator.clipboard.writeText(val).then(()=>{
-        const old=btn.innerText;btn.innerText="Copied!";
-        setTimeout(()=>{btn.innerText=old;},1600);
-      }).catch(()=>{});
-    }
-  }
-
-  // 7. Dark Mode & Theme toggle
-  if(txt.includes("theme")||txt.includes("dark")||txt.includes("light")||id.includes("theme")){
-    document.body.classList.toggle("dark");
-    if(document.documentElement)document.documentElement.classList.toggle("dark");
-  }
-
-  // 8. Mobile Navigation Hamburger
-  if(txt.includes("menu")||cls.includes("menu")||cls.includes("nav-toggle")||cls.includes("hamburger")){
-    const nav=document.querySelector("nav, .nav, .nav-menu, .menu-links, #nav, #menu");
-    if(nav){
-      nav.classList.toggle("open");
-      if(nav.style.display==="none"||!nav.style.display)nav.style.display="flex";
-      else nav.style.display="none";
-    }
-  }
-
-  // 9. Accordion / FAQ
-  if(btn.classList.contains("accordion-btn")||cls.includes("faq")||cls.includes("accordion")){
-    const panel=btn.nextElementSibling;
-    if(panel)panel.style.display=panel.style.display==="block"?"none":"block";
-  }
-
-  // 10. Cart increment
-  if(txt.includes("cart")||txt.includes("buy")||cls.includes("cart")){
-    const b=document.querySelector("#cart, .cart-count, #cartCount, .badge");
-    if(b){const c=parseInt(b.textContent.replace(/[^0-9]/g,""))||0;b.textContent="Cart ("+(c+1)+")";}
-  }
-
-  // 11. Delete / Remove item
-  if(txt.includes("delete")||txt.includes("remove")||cls.includes("delete")||id.includes("del")){
-    const row=btn.closest("li, tr, .item, .card, .list-item");
-    if(row&&row!==document.body){
-      row.style.transition="opacity .2s ease, transform .2s ease";
-      row.style.opacity="0";
-      row.style.transform="scale(0.95)";
-      setTimeout(()=>{row.remove();},200);
-    }
-  }
-},true);
-
 const rep=(t,m,fn,ln,stk)=>{try{P.postMessage({poppy:1,report:{t,m:String(m).slice(0,400),fn:fn||"",ln:ln||0,stk:String(stk||"").slice(0,500)}},"*")}catch(e){}};
 addEventListener("error",e=>{const stk=(e.error&&e.error.stack)?e.error.stack:"";rep("error",e.message+(e.lineno?" (line "+e.lineno+")":""),e.filename,e.lineno,stk);});
 addEventListener("unhandledrejection",e=>{const msg=(e.reason&&e.reason.message)||String(e.reason||"Unhandled rejection");const stk=(e.reason&&e.reason.stack)?e.reason.stack:"";rep("promise",msg,"",0,stk);});
@@ -919,14 +791,12 @@ addEventListener("unhandledrejection",e=>{const msg=(e.reason&&e.reason.message)
 function inject(html, code = SDK){
   if (typeof repairHtml === "function") html = repairHtml(html);
   if (typeof autoWireButtons === "function") html = autoWireButtons(html);
-  if (typeof injectUniversalRuntime === "function") html = injectUniversalRuntime(html);
   const tag = "<scr" + "ipt>" + code + "</scr" + "ipt>";
   return /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, m => m + tag) : tag + html;
 }
 function show(html){
   if (typeof repairHtml === "function") html = repairHtml(html);
   if (typeof autoWireButtons === "function") html = autoWireButtons(html);
-  if (typeof injectUniversalRuntime === "function") html = injectUniversalRuntime(html);
   shownAt = Date.now();
   $("#frame").srcdoc = inject(html);
   thumbLater();
@@ -1795,47 +1665,72 @@ function applyPatches(src, out){
   return isObj ? files : files["index.html"];
 }
 /* ===== Phase 4: hidden check, design review, templates, evals ===== */
-const QA_JS = `;addEventListener("load",()=>setTimeout(()=>{
-  const b=document.body;if(!b)return;
+const QA_JS = `;(${typeof initProbe === "function" ? initProbe.toString() : "() => {}"})();
+addEventListener("load", () => setTimeout(async () => {
+  const b = document.body; if (!b) return;
+  const qa = {
+    t: (b.innerText || "").trim().length,
+    v: !!document.querySelector("canvas,svg,img,video,input,button,textarea,select"),
+    w: document.documentElement.scrollWidth,
+    iw: innerWidth
+  };
   try {
-    const btns=[...document.querySelectorAll("button:not([disabled])")].slice(0, 10);
-    btns.forEach(btn=>{
-      try {
-        btn.dispatchEvent(new MouseEvent("click", {bubbles: true, cancelable: true}));
-      } catch(err) {
-        window.dispatchEvent(new ErrorEvent("error", {message: "Button click failed: " + (err.message || err)}));
-      }
-    });
-  } catch(e) {}
-  parent.postMessage({poppy:1,qa:{t:(b.innerText||"").trim().length,v:!!document.querySelector("canvas,svg,img,video,input,button,textarea,select"),w:document.documentElement.scrollWidth,iw:innerWidth}},"*");
-},1200));`;
+    const res = await (${typeof runProbe === "function" ? runProbe.toString() : "() => ({})" })({ settle: 200 });
+    parent.postMessage({ poppy: 1, cmdRes: "probeResult", result: res, qa }, "*");
+  } catch (err) {
+    parent.postMessage({ poppy: 1, cmdRes: "probeResult", result: { loadErrors: [err.message], clickErrors: [], buttons: { total: 0, dead: [] }, canvas: { present: false }, render: { textLen: qa.t, visual: qa.v, placeholder: false } }, qa }, "*");
+  }
+}, 300));`;
 const qaStub = m => m === "ai" ? "" : m === "store.list" ? [] : m === "fetch" || m.startsWith("connect.") ? {ok: false, status: 0, text: "", json: null} : null;
 function probe(html, w = 390, scale){
   return new Promise(res => {
-    const f = document.createElement("iframe"), issues = [], seen = new Set(); let qa, shot = null, ended = false, shotAsked = false;
+    const f = document.createElement("iframe");
+    let probeRes = null, qa = null, shot = null, ended = false, shotAsked = false;
     f.setAttribute("sandbox", "allow-scripts allow-forms allow-modals"); f.setAttribute("aria-hidden", "true"); f.tabIndex = -1; f.title = "Hidden check";
     f.style.cssText = "position:fixed;left:-10000px;top:0;width:" + w + "px;height:800px;border:0;opacity:0;pointer-events:none";
     const end = () => {
       if (ended) return; ended = true; removeEventListener("message", on); clearTimeout(t1); clearTimeout(t2); f.remove();
-      if (qa) { if (qa.t < 15 && !qa.v) issues.push("The page renders blank: no visible text or controls after load."); if (w <= 480 && qa.w > qa.iw + 6) issues.push("The content is wider than a " + w + "px phone screen (" + qa.w + "px), so it scrolls sideways."); }
-      res({issues: issues.slice(0, 4), shot});
+      const issues = [];
+      if (probeRes) {
+        if (probeRes.loadErrors && probeRes.loadErrors.length) {
+          issues.push(...probeRes.loadErrors.slice(0, 3));
+        }
+        if (probeRes.clickErrors && probeRes.clickErrors.length) {
+          issues.push(...probeRes.clickErrors.slice(0, 3));
+        }
+      }
+      if (qa) {
+        if (qa.t < 15 && !qa.v) issues.push("The page renders blank: no visible text or controls after load.");
+        if (w <= 480 && qa.w > qa.iw + 6) issues.push("The content is wider than a " + w + "px phone screen (" + qa.w + "px), so it scrolls sideways.");
+      }
+      const score = probeRes && typeof scoreProbe === "function" ? scoreProbe(probeRes) : { pass: issues.length === 0, load: true, render: true, interaction: true, deadRatio: 0 };
+      const prompt = probeRes && typeof buildRepairPrompt === "function" ? buildRepairPrompt(probeRes) : (issues.length ? issues.join("\n") : "");
+      res({
+        pass: score.pass && (!qa || (qa.t >= 15 || qa.v)),
+        score,
+        repairPrompt: prompt,
+        issues: issues.slice(0, 4),
+        result: probeRes,
+        shot
+      });
     };
     const on = e => {
       if (e.source !== f.contentWindow) return; const m = e.data; if (!m || m.poppy !== 1) return;
-      if (m.report && m.report.m) {
-        const t = String(m.report.m).slice(0, 200);
-        const loc = m.report.fn ? ` [${m.report.fn}:${m.report.ln || 0}]` : "";
-        const stk = m.report.stk ? `\nStack: ${String(m.report.stk).slice(0, 250)}` : "";
-        if (!seen.has(t) && issues.length < 3) {
-          seen.add(t);
-          issues.push(`Runtime error${loc}: ${t}${stk}`);
-        }
+      if (m.cmdRes === "probeResult") {
+        probeRes = m.result;
+        qa = m.qa;
+        if (scale && !shotAsked) {
+          shotAsked = true; f.contentWindow.postMessage({poppy: 1, cmd: "shot", scale}, "*"); clearTimeout(t1);
+        } else if (!scale) end();
       }
-      else if (m.qa) { qa = m.qa; if (scale && !shotAsked) { shotAsked = true; f.contentWindow.postMessage({poppy: 1, cmd: "shot", scale}, "*"); clearTimeout(t1); } else if (!scale) end(); }
-      else if ("shot" in m) { shot = typeof m.shot === "string" && m.shot.startsWith("data:image/jpeg;base64,") && m.shot.length < 2e6 ? m.shot : null; end(); }
-      else if (typeof m.method === "string") f.contentWindow.postMessage({poppy: 1, id: m.id, ok: true, result: qaStub(m.method)}, "*");
+      else if ("shot" in m) {
+        shot = typeof m.shot === "string" && m.shot.startsWith("data:image/jpeg;base64,") && m.shot.length < 2e6 ? m.shot : null; end();
+      }
+      else if (typeof m.method === "string") {
+        f.contentWindow.postMessage({poppy: 1, id: m.id, ok: true, result: qaStub(m.method)}, "*");
+      }
     };
-    addEventListener("message", on); const t1 = setTimeout(end, 4500), t2 = setTimeout(end, scale ? 14000 : 5000);
+    addEventListener("message", on); const t1 = setTimeout(end, 5000), t2 = setTimeout(end, scale ? 14000 : 5500);
     f.srcdoc = inject(html, SDK + QA_JS); document.body.append(f);
   });
 }
@@ -1875,24 +1770,29 @@ async function editDoc(cur, req, im){
 }
 const qaOn = () => ls.get("poppy.qa") !== "0", vrOn = () => ls.get("poppy.vr") === "1";
 async function checkAndFix(html, note){
-  const apply = async (req, label) => { setNote(note, label); if (!note) toast(label); try { const n = await editDoc(html, req); if (n && n.length > 40 && /<[a-z!]/i.test(n)) html = n; } catch {} };
-  if (qaOn()) for (let k = 0; k < 2; k++) {
-    setNote(note, k ? "Checking again" : "Testing the site");
-    const q = await probe(html, 390); if (!q.issues.length) break;
-    if (q.issues.some(i => i.toLowerCase().includes("blank"))) {
-      setNote(note, "Rebuilding complete interface...");
-      try {
-        const full = await collect([{role: "user", content: "The previous code rendered completely blank with no controls or visible text. Rebuild a complete, self-contained single-page application from scratch for this goal:\n" + (lastText || "interactive web app") + "\nEnsure all HTML structure, interactive buttons, styles, and scripts are present in one complete HTML document."}], BUILD);
-        const cand = typeof repairHtml === "function" ? repairHtml(extractHtml(full)) : extractHtml(full);
-        if (typeof isRenderableHtml === "function" ? isRenderableHtml(cand) : (cand && cand.length > 80)) {
-          html = cand;
-          break;
-        }
-      } catch (err) {}
+  if (!qaOn()) return html;
+  setNote(note, "Verifying app runtime...");
+  const q = await probe(html, 390);
+  if (q.pass && !q.issues.length) return html;
+
+  const repairText = q.repairPrompt || (q.issues.length ? "An automated check found these problems. Fix them and change nothing else:\n- " + q.issues.join("\n- ") : "");
+  if (!repairText) return html;
+
+  setNote(note, "Repairing runtime issues...");
+  try {
+    const repaired = await collect([
+      { role: "user", content: repairText }
+    ], BUILD);
+    let cand = typeof repairHtml === "function" ? repairHtml(extractHtml(repaired)) : extractHtml(repaired);
+    if (cand && cand.length > 50 && /<[a-z!]/i.test(cand)) {
+      setNote(note, "Re-verifying repair...");
+      const q2 = await probe(cand, 390);
+      if (q2.pass || q2.issues.length === 0) return cand;
+      if (q2.issues.length < q.issues.length) return cand;
     }
-    await apply("An automated check found these problems. Fix them and change nothing else:\n- " + q.issues.join("\n- "), "Fixing " + q.issues.length + " problem" + (q.issues.length > 1 ? "s" : ""));
+  } catch (err) {
+    console.warn("Automated repair notice:", err);
   }
-  if (vrOn()) { setNote(note, "Reviewing the design"); const fx = await visualReview(html); if (fx.length) await apply("A design review of screenshots found these problems. Fix them and change nothing else:\n- " + fx.join("\n- "), "Polishing the layout"); }
   return html;
 }
 const TPL = [["Dashboard", "a dashboard with a left nav, summary cards, an SVG or canvas chart and a data table"], ["Landing page", "a landing page with a hero, features, social proof, pricing and a call to action"], ["Game", "a playable game with score, levels or lives, keyboard and touch controls and a restart button"], ["Tracker", "a tracker with an add form, a list with edit and delete, streaks or totals and a chart"], ["Notes app", "a notes app with a sidebar of notes, a editor, search and tags"], ["Calculator tool", "a focused calculator or converter with live results, history and copy buttons"], ["Portfolio", "a personal portfolio with an about section, project cards and a contact form"], ["Quiz", "a quiz with questions, instant feedback, a score screen and retry"], ["Timer", "a timer or stopwatch with presets, laps, sound and notifications"], ["Kanban board", "a kanban board with draggable cards, columns you can rename and saved state"], ["Reader", "a blog or reader with article list, reading view, search and a dark mode"], ["Store front", "a store front with a product grid, filters, a cart and a checkout summary"]];

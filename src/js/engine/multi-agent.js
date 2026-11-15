@@ -8,35 +8,29 @@
 
 const ARCHITECT_PROMPT = `You are the Lead Software Architect in Poppy's multi-agent software engineering team.
 Analyze the user's request and output a structured, complete Technical Blueprint in JSON.
-Your blueprint must eliminate any ambiguity about how the app or game functions.
+Your blueprint must eliminate any ambiguity about how the app, tool, or game functions.
 
 You must respond with ONLY a valid JSON object in this format:
 \`\`\`json
 {
   "appName": "Short Name",
-  "category": "game | utility | creative-studio | dashboard | document",
+  "category": "utility | game | dashboard | commerce | document | creative",
   "summary": "1-2 sentence core purpose",
-  "gameOrAppLoop": {
-    "hasCanvas": true,
-    "canvasWidth": 800,
-    "canvasHeight": 450,
-    "physics": "gravity, velocity, jump impulse, collisions",
-    "entities": ["player / hero", "platforms / pipes", "question blocks with coins", "enemies / obstacles", "flagpole / goal"],
-    "controls": ["Arrow keys & WASD for desktop", "On-screen touch D-Pad and Jump button for mobile"],
-    "soundEffects": ["jump tone", "coin chime", "stomp sound", "game over"]
+  "architecture": {
+    "layout": "responsive-container",
+    "hasCanvas": false,
+    "primaryComponents": ["navigation / controls", "main interactive work area", "status / feedback display"]
   },
   "stateSchema": {
-    "score": 0,
-    "lives": 3,
-    "level": 1,
-    "gameState": "ready | playing | gameover | victory"
+    "data": [],
+    "status": "ready"
   },
   "interactiveElements": [
     {
       "id": "exact-dom-id",
       "selector": "#exact-dom-id",
       "label": "Button / Control label",
-      "trigger": "click | touchstart | keydown",
+      "trigger": "click | submit | input",
       "action": "Precise state mutation and visual update"
     }
   ]
@@ -259,361 +253,34 @@ function repairHtml(html) {
   // 5. Ensure body and html tags are closed
   if (!/<\/body>/i.test(h)) h += "\n</body>";
   if (!/<\/html>/i.test(h)) h += "\n</html>";
-
-  // 6. Blank Render Guard: Ensure page has visible elements
-  if (!isRenderableHtml(h)) {
-    const titleMatch = h.match(/<title[^>]*>(.*?)<\/title>/i);
-    const title = titleMatch ? titleMatch[1] : "Interactive App";
-    const recoveryMarkup = `
-<div style="font-family:system-ui,-apple-system,sans-serif;max-width:800px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.08);text-align:center">
-  <h1 style="font-size:2.2rem;margin-bottom:12px;color:#18181b">${title}</h1>
-  <p style="color:#71717a;font-size:1.1rem;margin-bottom:28px">Interactive application loaded. All controls and modules are active.</p>
-  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-    <button type="button" id="startBtn" style="background:#f23d2a;color:#fff;border:none;padding:12px 28px;border-radius:99px;font-weight:700;font-size:1rem;cursor:pointer;box-shadow:0 4px 12px rgba(242,61,42,0.3)">Get Started</button>
-    <button type="button" id="demoBtn" style="background:#f4f4f5;color:#18181b;border:1px solid #e4e4e7;padding:12px 28px;border-radius:99px;font-weight:700;font-size:1rem;cursor:pointer">Explore Demo</button>
-  </div>
-</div>`;
-    if (/<\/body>/i.test(h)) {
-      h = h.replace(/<\/body>/i, recoveryMarkup + "\n</body>");
-    } else {
-      h += "\n<body>" + recoveryMarkup + "\n</body>\n</html>";
-    }
-  }
   
   return h;
 }
 
 /**
- * Auto-Wiring Critic: Statically parses HTML and scripts to detect
- * buttons missing handlers or calling undefined functions, then auto-injects
- * functional fallback scripts directly into the document.
+ * Ensures WebAudio contexts unlock smoothly on the first user interaction.
+ * Does not intercept clicks or inject fake behavior.
  */
 function autoWireButtons(html) {
   if (!html || typeof html !== "string") return html;
-  
-  // Prevent duplicate auto-wiring
-  if (html.includes("__poppy_auto_wire__")) return html;
+  if (html.includes("__poppy_audio_unlock__")) return html;
 
-  // Extract inline onclick function calls
-  const onclickRegex = /on[a-z]+\s*=\s*["']([a-zA-Z0-9_$]+)\s*\(/gi;
-  const inlineFnNames = new Set();
-  let m;
-  while ((m = onclickRegex.exec(html)) !== null) {
-    if (m[1]) inlineFnNames.add(m[1]);
-  }
-  const detectedFns = JSON.stringify([...inlineFnNames]);
-
-  // Build an active auto-wiring script to guarantee 100% button functionality
-  const autoWireScript = "<scr" + "ipt id=\"__poppy_auto_wire__\">\n" +
+  const autoWireScript = "<scr" + "ipt id=\"__poppy_audio_unlock__\">\n" +
 `(() => {
-  // Poppy Auto-Wiring Safety Engine
-  const safeRun = (fn, desc) => {
-    try { return fn(); }
-    catch(err) {
-      console.warn("[Poppy Auto-Wire] Notice for " + desc + ":", err);
-    }
-  };
-
-  // 1. Tactile sound synthesis & WebAudio Autoplay Unlocking
-  let userInteracted = false;
-  const unlockAudio = () => {
-    userInteracted = true;
+  // WebAudio Autoplay Safety & User Gesture Unlocker
+  const unlock = () => {
     try {
-      if (window.__poppyAudioCtx && window.__poppyAudioCtx.state === "suspended") {
-        window.__poppyAudioCtx.resume().catch(()=>{});
-      }
-      if (window.Tone && window.Tone.context && window.Tone.context.state === "suspended") {
-        window.Tone.start().catch(()=>{});
-      }
-      if (window.audioCtx && window.audioCtx.state === "suspended") {
-        window.audioCtx.resume().catch(()=>{});
-      }
-      if (window.audioContext && window.audioContext.state === "suspended") {
-        window.audioContext.resume().catch(()=>{});
-      }
+      if (window.__poppyAudioCtx && window.__poppyAudioCtx.state === "suspended") window.__poppyAudioCtx.resume().catch(()=>{});
+      if (window.Tone && window.Tone.context && window.Tone.context.state === "suspended") window.Tone.start().catch(()=>{});
+      if (window.audioCtx && window.audioCtx.state === "suspended") window.audioCtx.resume().catch(()=>{});
+      if (window.audioContext && window.audioContext.state === "suspended") window.audioContext.resume().catch(()=>{});
     } catch(e) {}
   };
   ["click", "keydown", "touchstart", "pointerdown", "mousedown"].forEach(ev => {
-    window.addEventListener(ev, unlockAudio, { capture: true, once: true });
+    window.addEventListener(ev, unlock, { capture: true, once: true });
   });
-
-  const playClickSfx = () => {
-    if (!userInteracted) return;
-    try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = window.__poppyAudioCtx || (window.__poppyAudioCtx = new AudioCtx());
-      unlockAudio();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(320, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.05);
-      gain.gain.setValueAtTime(0.08, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.05);
-    } catch(e) {}
-  };
-
-  const playInstrumentSound = (param) => {
-    if (!userInteracted) return;
-    try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      const actx = window.__poppyAudioCtx || (window.__poppyAudioCtx = new AudioCtx());
-      unlockAudio();
-      const t0 = actx.currentTime;
-
-      const noteFreqs = {
-        "e2": 82.41, "f2": 87.31, "g2": 98.00, "a2": 110.00, "b2": 123.47,
-        "c3": 130.81, "d3": 146.83, "e3": 164.81, "f3": 174.61, "g3": 196.00, "a3": 220.00, "b3": 246.94,
-        "c4": 261.63, "d4": 293.66, "e4": 329.63, "f4": 349.23, "g4": 392.00, "a4": 440.00, "b4": 493.88,
-        "c5": 523.25, "d5": 587.33, "e5": 659.25,
-        "string 6": 82.41, "string 5": 110.00, "string 4": 146.83, "string 3": 196.00, "string 2": 246.94, "string 1": 329.63,
-        "6": 82.41, "5": 110.00, "4": 146.83, "3": 196.00, "2": 246.94, "1": 329.63,
-        "c": 261.63, "d": 293.66, "e": 329.63, "f": 349.23, "g": 392.00, "a": 440.00, "b": 493.88
-      };
-
-      let freq = 220;
-      const strVal = String(param || "").toLowerCase().trim();
-      if (typeof param === "number") {
-        freq = [82.41, 110.00, 146.83, 196.00, 246.94, 329.63][Math.min(5, Math.max(0, param - 1))] || (100 * param);
-      } else if (noteFreqs[strVal]) {
-        freq = noteFreqs[strVal];
-      } else {
-        const found = Object.keys(noteFreqs).find(k => strVal.includes(k));
-        if (found) freq = noteFreqs[found];
-      }
-
-      const osc1 = actx.createOscillator();
-      const osc2 = actx.createOscillator();
-      const gain = actx.createGain();
-      const filter = actx.createBiquadFilter();
-
-      osc1.type = "sawtooth";
-      osc1.frequency.setValueAtTime(freq, t0);
-      osc2.type = "triangle";
-      osc2.frequency.setValueAtTime(freq * 1.002, t0);
-
-      filter.type = "lowpass";
-      filter.frequency.setValueAtTime(freq * 5.0, t0);
-      filter.frequency.exponentialRampToValueAtTime(freq * 0.9, t0 + 1.2);
-
-      gain.gain.setValueAtTime(0.3, t0);
-      gain.gain.exponentialRampToValueAtTime(0.001, t0 + 1.4);
-
-      osc1.connect(filter);
-      osc2.connect(filter);
-      filter.connect(gain);
-      gain.connect(actx.destination);
-
-      osc1.start(t0);
-      osc2.start(t0);
-      osc1.stop(t0 + 1.4);
-      osc2.stop(t0 + 1.4);
-    } catch(e) {}
-  };
-
-  // 2. Pre-wire detected and standard global functions
-  const prewireList = Array.from(new Set([
-    ...${detectedFns},
-    "playNote", "playChord", "playString", "strum", "tune", "pluck",
-    "calculate", "calc", "compute", "convert",
-    "reset", "clear", "submitForm",
-    "openModal", "closeModal", "toggleTheme", "toggleTab", "selectTab"
-  ]));
-
-  prewireList.forEach(fn => {
-    if (typeof window[fn] === "undefined") {
-      window[fn] = function(...args) {
-        if (/play|strum|note|string|chord|sound|audio|tune|pluck/i.test(fn)) {
-          playInstrumentSound(args[0] || fn);
-        } else if (/calc|compute|sum|convert/i.test(fn)) {
-          const out = document.querySelector(".result, #result, .output, output, .calc-res, #output");
-          if (out) out.textContent = "Calculated: " + (Math.floor(Math.random() * 900) + 100);
-        } else if (/theme|dark|mode/i.test(fn)) {
-          document.body.classList.toggle("dark");
-        } else if (/modal|dialog/i.test(fn)) {
-          const dlg = document.querySelector("dialog, .modal");
-          if (dlg) {
-            if (typeof dlg.showModal === "function") dlg.showModal();
-            else dlg.classList.toggle("open");
-          }
-        }
-      };
-    }
-  });
-
-  // Global Scope Resolver for dynamically called missing functions
-  window.addEventListener("error", (e) => {
-    if (e.message && e.message.includes("is not defined")) {
-      const match = e.message.match(/([a-zA-Z0-9_$]+) is not defined/);
-      if (match && match[1]) {
-        const fnName = match[1];
-        window[fnName] = function(...args) {
-          if (/play|strum|note|string|chord|audio/i.test(fnName)) {
-            playInstrumentSound(args[0] || fnName);
-          }
-        };
-      }
-    }
-  });
-
-  // 3. Form submit handler with auto-feedback
-  document.querySelectorAll("form").forEach(f => {
-    f.addEventListener("submit", e => {
-      e.preventDefault();
-      const sBtn = f.querySelector("button[type='submit'], input[type='submit'], button:not([type])");
-      if (sBtn) {
-        const old = sBtn.innerText || sBtn.value;
-        sBtn.innerText = "Submitted!";
-        setTimeout(() => { sBtn.innerText = old; }, 1800);
-      }
-    });
-  });
-
-  // 4. Global Action Engine for tactile clicks and semantic fallbacks
-  document.addEventListener("click", (e) => {
-    unlockAudio();
-    const btn = e.target.closest("button, [role='button'], a.btn, a.button, input[type='button'], input[type='submit'], .key, .fret, .string");
-    if (!btn) return;
-
-    // Trigger physical click sound
-    playClickSfx();
-
-    // Prevent dead link navigation
-    if (btn.tagName === "A" && (!btn.getAttribute("href") || btn.getAttribute("href") === "#")) {
-      e.preventDefault();
-    }
-
-    const text = (btn.innerText || btn.textContent || btn.value || "").trim().toLowerCase();
-    const id = (btn.id || "").toLowerCase();
-    const cls = (btn.className || "").toLowerCase();
-
-    // Musical Instrument & Guitar / Synth Engine
-    const isInstrument = text.includes("string") || text.includes("strum") || text.includes("fret") || text.includes("chord") ||
-      text.includes("guitar") || text.includes("note") || text.includes("tune") || text.includes("pick") ||
-      /^[a-g][#b]?[0-8]?$/i.test(text) || btn.dataset.note || btn.dataset.string || btn.dataset.chord ||
-      cls.includes("string") || cls.includes("fret") || cls.includes("key") || id.includes("string") || id.includes("fret");
-
-    if (isInstrument) {
-      playInstrumentSound(btn.dataset.note || btn.dataset.string || btn.dataset.chord || text);
-      btn.style.transition = "transform .06s ease";
-      btn.style.transform = "scale(0.96) translateY(2px)";
-      setTimeout(() => { btn.style.transform = ""; }, 120);
-      return;
-    }
-
-    // Calculator / Converter / Math
-    if (text.includes("calculate") || text.includes("compute") || text.includes("convert") || id.includes("calc")) {
-      const card = btn.closest(".card, form, section, div") || document.body;
-      const inputs = [...card.querySelectorAll("input:not([type='submit']):not([type='button']), select")];
-      const vals = inputs.map(i => parseFloat(i.value) || i.value || 0);
-      const nums = vals.filter(v => typeof v === "number" && !isNaN(v));
-      const out = card.querySelector(".result, #result, .output, output, .calc-res, #output");
-      if (out) {
-        if (nums.length) {
-          const sum = nums.reduce((a, b) => a + b, 0);
-          out.textContent = (out.textContent.includes("$") ? "$" : "") + sum.toLocaleString();
-        } else {
-          out.textContent = "Calculation complete";
-        }
-        out.style.transition = "transform .2s ease";
-        out.style.transform = "scale(1.04)";
-        setTimeout(() => { out.style.transform = ""; }, 250);
-      }
-    }
-
-    // Copy action
-    if (text.includes("copy") || id.includes("copy") || cls.includes("copy")) {
-      const container = btn.closest(".card, .box, section, div") || document.body;
-      const codeOrInput = container.querySelector("pre, code, input[type='text'], textarea, .code");
-      const val = codeOrInput ? (codeOrInput.value || codeOrInput.innerText) : window.location.href;
-      if (val && navigator.clipboard) {
-        navigator.clipboard.writeText(val).then(() => {
-          const oldTxt = btn.innerText;
-          btn.innerText = "Copied!";
-          setTimeout(() => { btn.innerText = oldTxt; }, 1800);
-        }).catch(() => {});
-      }
-    }
-
-    // Modal / Dialog Open
-    if (text.includes("open") || text.includes("modal") || text.includes("view") || btn.dataset.modal || id.includes("modal") || id.includes("dialog")) {
-      const targetId = btn.dataset.target || btn.dataset.modal || id.replace("btn", "") || "dialog";
-      const dlg = document.querySelector(targetId.startsWith("#") ? targetId : "#" + targetId) || document.querySelector("dialog, .modal");
-      if (dlg) {
-        if (typeof dlg.showModal === "function") dlg.showModal();
-        else dlg.classList.add("open", "active");
-      }
-    }
-
-    // Modal / Dialog Close
-    if (text === "x" || text === "close" || text === "cancel" || text === "dismiss" || cls.includes("close") || id.includes("close")) {
-      const dlg = btn.closest("dialog, .modal, .popup");
-      if (dlg) {
-        if (typeof dlg.close === "function") dlg.close();
-        else dlg.classList.remove("open", "active");
-      }
-    }
-
-    // Stepper / Counter (+, -)
-    if (text === "+" || text === "inc" || text.includes("increase") || text === "&plus;") {
-      const wrap = btn.closest(".counter, .stepper, .card, div") || btn.parentElement;
-      const numInput = wrap ? wrap.querySelector("input[type='number'], .count, .quantity") : null;
-      if (numInput) {
-        if (numInput.tagName === "INPUT") {
-          numInput.value = (parseFloat(numInput.value) || 0) + 1;
-          numInput.dispatchEvent(new Event("change", { bubbles: true }));
-        } else {
-          numInput.textContent = (parseFloat(numInput.textContent) || 0) + 1;
-        }
-      }
-    }
-    if (text === "-" || text === "dec" || text.includes("decrease") || text === "&minus;") {
-      const wrap = btn.closest(".counter, .stepper, .card, div") || btn.parentElement;
-      const numInput = wrap ? wrap.querySelector("input[type='number'], .count, .quantity") : null;
-      if (numInput) {
-        if (numInput.tagName === "INPUT") {
-          numInput.value = Math.max(0, (parseFloat(numInput.value) || 0) - 1);
-          numInput.dispatchEvent(new Event("change", { bubbles: true }));
-        } else {
-          numInput.textContent = Math.max(0, (parseFloat(numInput.textContent) || 0) - 1);
-        }
-      }
-    }
-
-    // Dark Mode / Theme Toggle
-    if (text.includes("theme") || text.includes("dark") || text.includes("light") || id.includes("theme")) {
-      document.body.classList.toggle("dark");
-      if (document.documentElement) document.documentElement.classList.toggle("dark");
-    }
-
-    // Reset / Clear
-    if (text.includes("clear") || text.includes("reset") || id.includes("reset") || id.includes("clear")) {
-      const form = btn.closest("form") || document.body;
-      form.querySelectorAll("input, textarea").forEach(i => {
-        if (i.type !== "submit" && i.type !== "button") i.value = "";
-      });
-    }
-
-    // Delete / Remove Item
-    if (text.includes("delete") || text.includes("remove") || cls.includes("delete") || id.includes("del")) {
-      const row = btn.closest("li, tr, .item, .card, .list-group-item");
-      if (row && row !== document.body) {
-        row.style.transition = "opacity .2s ease, transform .2s ease";
-        row.style.opacity = "0";
-        row.style.transform = "scale(0.95)";
-        setTimeout(() => { row.remove(); }, 200);
-      }
-    }
-  }, true);
 })();\n` + "</scr" + "ipt>";
 
-  // Insert before </body> if present, or append
   if (/<\/body>/i.test(html)) {
     return html.replace(/<\/body>/i, autoWireScript + "\n</body>");
   }

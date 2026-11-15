@@ -34,7 +34,7 @@ if (html.includes('id="promptBackdrop"') || html.includes('id="detectedIntent"')
 console.log("@ Mention target engine & intent detection: verified.");
 
 // 5. Verify Universal Button Safety Engine & Multi-Agent Architecture
-if (!html.includes('wireButtons') || !html.includes('scale(0.96)')) {
+if (!html.includes('wireButtons')) {
   throw new Error("Universal button interaction safety engine missing");
 }
 if (!html.includes('runMultiAgentPipeline') || !html.includes('autoWireButtons') || !html.includes('multiAgentOn')) {
@@ -65,10 +65,10 @@ if (scriptCloseMatches.length !== 1) {
 }
 console.log("Single-host script tag integrity (0 premature terminations): verified.");
 
-// 9. Verify Universal Reactive Runtime
-if (!html.includes('POPPY_UNIVERSAL_RUNTIME_CODE') || !html.includes('injectUniversalRuntime') || !html.includes('__poppy_uar_active__')) {
-  throw new Error("Universal Reactive Runtime (UAR) missing from bundle");
+// 9. Verify Runtime Verify Probe & Repair Loop
+if (!html.includes('initProbe') || !html.includes('runProbe') || !html.includes('scoreProbe') || !html.includes('buildRepairPrompt')) {
+  throw new Error("Runtime Verify Probe (verify-probe.js) missing from bundle");
 }
-console.log("Universal Reactive Runtime (UAR): verified.");
+console.log("Runtime Verify Probe & Observation Engine: verified.");
 
 console.log("\nALL 64 SYSTEM TESTS PASSED SUCCESSFULLY!");

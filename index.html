@@ -1721,134 +1721,6 @@ const wireButtons=()=>{
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",wireButtons);
 else wireButtons();
 
-document.addEventListener("click",e=>{
-  const btn=e.target.closest("button, [role='button'], a.btn, a.button, .btn, .cta, .tab-btn, .nav-btn, .accordion-btn, input[type='button'], input[type='submit']");
-  if(!btn)return;
-  if(btn.tagName==="A"&&(!btn.getAttribute("href")||btn.getAttribute("href")==="#"))e.preventDefault();
-  
-  // 1. Tactile click feedback: audio + physical spring
-  playClickAudio();
-  btn.style.transition="transform .1s ease, filter .1s ease";
-  btn.style.transform="scale(0.96)";
-  setTimeout(()=>{btn.style.transform="";},120);
-
-  const txt=(btn.innerText||btn.textContent||btn.value||"").trim().toLowerCase();
-  const cls=(btn.className||"").toLowerCase();
-  const id=(btn.id||"").toLowerCase();
-
-  // 2. Tab switching
-  if(btn.classList.contains("tab")||cls.includes("tab")||btn.getAttribute("role")==="tab"){
-    const p=btn.parentElement;
-    if(p){
-      p.querySelectorAll(".tab, [role='tab']").forEach(t=>{t.classList.remove("active","selected");t.setAttribute("aria-selected","false");});
-      btn.classList.add("active");btn.setAttribute("aria-selected","true");
-      const target=btn.getAttribute("data-tab")||btn.getAttribute("href");
-      if(target&&target.startsWith("#")){
-        document.querySelectorAll(".tab-pane, .tab-content").forEach(el=>el.style.display="none");
-        const pane=document.querySelector(target);if(pane)pane.style.display="block";
-      }
-    }
-  }
-
-  // 3. Modals & Dialogs (Open & Close)
-  if(txt.includes("open")||txt.includes("modal")||txt.includes("dialog")||txt.includes("details")||btn.dataset.modal||id.includes("modal")){
-    const tId=btn.dataset.target||btn.dataset.modal||id.replace("btn","")||"dialog";
-    const dlg=document.querySelector(tId.startsWith("#")?tId:"#"+tId)||document.querySelector("dialog, .modal");
-    if(dlg){
-      if(typeof dlg.showModal==="function")dlg.showModal();
-      else dlg.classList.add("open","active");
-    }
-  }
-  if(txt==="x"||txt==="close"||txt==="cancel"||txt==="dismiss"||cls.includes("close")||id.includes("close")){
-    const dlg=btn.closest("dialog, .modal, .popup");
-    if(dlg){
-      if(typeof dlg.close==="function")dlg.close();
-      else dlg.classList.remove("open","active");
-    }
-  }
-
-  // 4. Steppers & Counters (+, -)
-  if(txt==="+"||txt==="inc"||txt.includes("increase")||txt==="&plus;"){
-    const wrap=btn.closest(".counter, .stepper, .card, div")||btn.parentElement;
-    const inp=wrap?wrap.querySelector("input[type='number'], .count, .quantity"):null;
-    if(inp){
-      if(inp.tagName==="INPUT"){inp.value=(parseFloat(inp.value)||0)+1;inp.dispatchEvent(new Event("change",{bubbles:true}));}
-      else inp.textContent=(parseFloat(inp.textContent)||0)+1;
-    }
-  }
-  if(txt==="-"||txt==="dec"||txt.includes("decrease")||txt==="&minus;"){
-    const wrap=btn.closest(".counter, .stepper, .card, div")||btn.parentElement;
-    const inp=wrap?wrap.querySelector("input[type='number'], .count, .quantity"):null;
-    if(inp){
-      if(inp.tagName==="INPUT"){inp.value=Math.max(0,(parseFloat(inp.value)||0)-1);inp.dispatchEvent(new Event("change",{bubbles:true}));}
-      else inp.textContent=Math.max(0,(parseFloat(inp.textContent)||0)-1);
-    }
-  }
-
-  // 5. Calculators & Math
-  if(txt.includes("calculate")||txt.includes("compute")||txt.includes("convert")||id.includes("calc")){
-    const card=btn.closest(".card, form, section, div")||document.body;
-    const nums=[...card.querySelectorAll("input[type='number'], input[type='range']")].map(i=>parseFloat(i.value)||0);
-    const out=card.querySelector(".result, #result, .output, output, .calc-res");
-    if(out&&nums.length){
-      const sum=nums.reduce((a,b)=>a+b,0);
-      out.textContent=(out.textContent.includes("$")?"$":"")+sum.toLocaleString();
-    }
-  }
-
-  // 6. Copy to clipboard
-  if(txt.includes("copy")||id.includes("copy")||cls.includes("copy")){
-    const card=btn.closest(".card, section, div")||document.body;
-    const target=card.querySelector("pre, code, input[type='text'], textarea, .copy-target");
-    const val=target?(target.value||target.innerText):window.location.href;
-    if(val&&navigator.clipboard){
-      navigator.clipboard.writeText(val).then(()=>{
-        const old=btn.innerText;btn.innerText="Copied!";
-        setTimeout(()=>{btn.innerText=old;},1600);
-      }).catch(()=>{});
-    }
-  }
-
-  // 7. Dark Mode & Theme toggle
-  if(txt.includes("theme")||txt.includes("dark")||txt.includes("light")||id.includes("theme")){
-    document.body.classList.toggle("dark");
-    if(document.documentElement)document.documentElement.classList.toggle("dark");
-  }
-
-  // 8. Mobile Navigation Hamburger
-  if(txt.includes("menu")||cls.includes("menu")||cls.includes("nav-toggle")||cls.includes("hamburger")){
-    const nav=document.querySelector("nav, .nav, .nav-menu, .menu-links, #nav, #menu");
-    if(nav){
-      nav.classList.toggle("open");
-      if(nav.style.display==="none"||!nav.style.display)nav.style.display="flex";
-      else nav.style.display="none";
-    }
-  }
-
-  // 9. Accordion / FAQ
-  if(btn.classList.contains("accordion-btn")||cls.includes("faq")||cls.includes("accordion")){
-    const panel=btn.nextElementSibling;
-    if(panel)panel.style.display=panel.style.display==="block"?"none":"block";
-  }
-
-  // 10. Cart increment
-  if(txt.includes("cart")||txt.includes("buy")||cls.includes("cart")){
-    const b=document.querySelector("#cart, .cart-count, #cartCount, .badge");
-    if(b){const c=parseInt(b.textContent.replace(/[^0-9]/g,""))||0;b.textContent="Cart ("+(c+1)+")";}
-  }
-
-  // 11. Delete / Remove item
-  if(txt.includes("delete")||txt.includes("remove")||cls.includes("delete")||id.includes("del")){
-    const row=btn.closest("li, tr, .item, .card, .list-item");
-    if(row&&row!==document.body){
-      row.style.transition="opacity .2s ease, transform .2s ease";
-      row.style.opacity="0";
-      row.style.transform="scale(0.95)";
-      setTimeout(()=>{row.remove();},200);
-    }
-  }
-},true);
-
 const rep=(t,m,fn,ln,stk)=>{try{P.postMessage({poppy:1,report:{t,m:String(m).slice(0,400),fn:fn||"",ln:ln||0,stk:String(stk||"").slice(0,500)}},"*")}catch(e){}};
 addEventListener("error",e=>{const stk=(e.error&&e.error.stack)?e.error.stack:"";rep("error",e.message+(e.lineno?" (line "+e.lineno+")":""),e.filename,e.lineno,stk);});
 addEventListener("unhandledrejection",e=>{const msg=(e.reason&&e.reason.message)||String(e.reason||"Unhandled rejection");const stk=(e.reason&&e.reason.stack)?e.reason.stack:"";rep("promise",msg,"",0,stk);});
@@ -1856,14 +1728,12 @@ addEventListener("unhandledrejection",e=>{const msg=(e.reason&&e.reason.message)
 function inject(html, code = SDK){
   if (typeof repairHtml === "function") html = repairHtml(html);
   if (typeof autoWireButtons === "function") html = autoWireButtons(html);
-  if (typeof injectUniversalRuntime === "function") html = injectUniversalRuntime(html);
   const tag = "<scr" + "ipt>" + code + "</scr" + "ipt>";
   return /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, m => m + tag) : tag + html;
 }
 function show(html){
   if (typeof repairHtml === "function") html = repairHtml(html);
   if (typeof autoWireButtons === "function") html = autoWireButtons(html);
-  if (typeof injectUniversalRuntime === "function") html = injectUniversalRuntime(html);
   shownAt = Date.now();
   $("#frame").srcdoc = inject(html);
   thumbLater();
@@ -2732,47 +2602,72 @@ function applyPatches(src, out){
   return isObj ? files : files["index.html"];
 }
 /* ===== Phase 4: hidden check, design review, templates, evals ===== */
-const QA_JS = `;addEventListener("load",()=>setTimeout(()=>{
-  const b=document.body;if(!b)return;
+const QA_JS = `;(${typeof initProbe === "function" ? initProbe.toString() : "() => {}"})();
+addEventListener("load", () => setTimeout(async () => {
+  const b = document.body; if (!b) return;
+  const qa = {
+    t: (b.innerText || "").trim().length,
+    v: !!document.querySelector("canvas,svg,img,video,input,button,textarea,select"),
+    w: document.documentElement.scrollWidth,
+    iw: innerWidth
+  };
   try {
-    const btns=[...document.querySelectorAll("button:not([disabled])")].slice(0, 10);
-    btns.forEach(btn=>{
-      try {
-        btn.dispatchEvent(new MouseEvent("click", {bubbles: true, cancelable: true}));
-      } catch(err) {
-        window.dispatchEvent(new ErrorEvent("error", {message: "Button click failed: " + (err.message || err)}));
-      }
-    });
-  } catch(e) {}
-  parent.postMessage({poppy:1,qa:{t:(b.innerText||"").trim().length,v:!!document.querySelector("canvas,svg,img,video,input,button,textarea,select"),w:document.documentElement.scrollWidth,iw:innerWidth}},"*");
-},1200));`;
+    const res = await (${typeof runProbe === "function" ? runProbe.toString() : "() => ({})" })({ settle: 200 });
+    parent.postMessage({ poppy: 1, cmdRes: "probeResult", result: res, qa }, "*");
+  } catch (err) {
+    parent.postMessage({ poppy: 1, cmdRes: "probeResult", result: { loadErrors: [err.message], clickErrors: [], buttons: { total: 0, dead: [] }, canvas: { present: false }, render: { textLen: qa.t, visual: qa.v, placeholder: false } }, qa }, "*");
+  }
+}, 300));`;
 const qaStub = m => m === "ai" ? "" : m === "store.list" ? [] : m === "fetch" || m.startsWith("connect.") ? {ok: false, status: 0, text: "", json: null} : null;
 function probe(html, w = 390, scale){
   return new Promise(res => {
-    const f = document.createElement("iframe"), issues = [], seen = new Set(); let qa, shot = null, ended = false, shotAsked = false;
+    const f = document.createElement("iframe");
+    let probeRes = null, qa = null, shot = null, ended = false, shotAsked = false;
     f.setAttribute("sandbox", "allow-scripts allow-forms allow-modals"); f.setAttribute("aria-hidden", "true"); f.tabIndex = -1; f.title = "Hidden check";
     f.style.cssText = "position:fixed;left:-10000px;top:0;width:" + w + "px;height:800px;border:0;opacity:0;pointer-events:none";
     const end = () => {
       if (ended) return; ended = true; removeEventListener("message", on); clearTimeout(t1); clearTimeout(t2); f.remove();
-      if (qa) { if (qa.t < 15 && !qa.v) issues.push("The page renders blank: no visible text or controls after load."); if (w <= 480 && qa.w > qa.iw + 6) issues.push("The content is wider than a " + w + "px phone screen (" + qa.w + "px), so it scrolls sideways."); }
-      res({issues: issues.slice(0, 4), shot});
+      const issues = [];
+      if (probeRes) {
+        if (probeRes.loadErrors && probeRes.loadErrors.length) {
+          issues.push(...probeRes.loadErrors.slice(0, 3));
+        }
+        if (probeRes.clickErrors && probeRes.clickErrors.length) {
+          issues.push(...probeRes.clickErrors.slice(0, 3));
+        }
+      }
+      if (qa) {
+        if (qa.t < 15 && !qa.v) issues.push("The page renders blank: no visible text or controls after load.");
+        if (w <= 480 && qa.w > qa.iw + 6) issues.push("The content is wider than a " + w + "px phone screen (" + qa.w + "px), so it scrolls sideways.");
+      }
+      const score = probeRes && typeof scoreProbe === "function" ? scoreProbe(probeRes) : { pass: issues.length === 0, load: true, render: true, interaction: true, deadRatio: 0 };
+      const prompt = probeRes && typeof buildRepairPrompt === "function" ? buildRepairPrompt(probeRes) : (issues.length ? issues.join("\n") : "");
+      res({
+        pass: score.pass && (!qa || (qa.t >= 15 || qa.v)),
+        score,
+        repairPrompt: prompt,
+        issues: issues.slice(0, 4),
+        result: probeRes,
+        shot
+      });
     };
     const on = e => {
       if (e.source !== f.contentWindow) return; const m = e.data; if (!m || m.poppy !== 1) return;
-      if (m.report && m.report.m) {
-        const t = String(m.report.m).slice(0, 200);
-        const loc = m.report.fn ? ` [${m.report.fn}:${m.report.ln || 0}]` : "";
-        const stk = m.report.stk ? `\nStack: ${String(m.report.stk).slice(0, 250)}` : "";
-        if (!seen.has(t) && issues.length < 3) {
-          seen.add(t);
-          issues.push(`Runtime error${loc}: ${t}${stk}`);
-        }
+      if (m.cmdRes === "probeResult") {
+        probeRes = m.result;
+        qa = m.qa;
+        if (scale && !shotAsked) {
+          shotAsked = true; f.contentWindow.postMessage({poppy: 1, cmd: "shot", scale}, "*"); clearTimeout(t1);
+        } else if (!scale) end();
       }
-      else if (m.qa) { qa = m.qa; if (scale && !shotAsked) { shotAsked = true; f.contentWindow.postMessage({poppy: 1, cmd: "shot", scale}, "*"); clearTimeout(t1); } else if (!scale) end(); }
-      else if ("shot" in m) { shot = typeof m.shot === "string" && m.shot.startsWith("data:image/jpeg;base64,") && m.shot.length < 2e6 ? m.shot : null; end(); }
-      else if (typeof m.method === "string") f.contentWindow.postMessage({poppy: 1, id: m.id, ok: true, result: qaStub(m.method)}, "*");
+      else if ("shot" in m) {
+        shot = typeof m.shot === "string" && m.shot.startsWith("data:image/jpeg;base64,") && m.shot.length < 2e6 ? m.shot : null; end();
+      }
+      else if (typeof m.method === "string") {
+        f.contentWindow.postMessage({poppy: 1, id: m.id, ok: true, result: qaStub(m.method)}, "*");
+      }
     };
-    addEventListener("message", on); const t1 = setTimeout(end, 4500), t2 = setTimeout(end, scale ? 14000 : 5000);
+    addEventListener("message", on); const t1 = setTimeout(end, 5000), t2 = setTimeout(end, scale ? 14000 : 5500);
     f.srcdoc = inject(html, SDK + QA_JS); document.body.append(f);
   });
 }
@@ -2812,24 +2707,29 @@ async function editDoc(cur, req, im){
 }
 const qaOn = () => ls.get("poppy.qa") !== "0", vrOn = () => ls.get("poppy.vr") === "1";
 async function checkAndFix(html, note){
-  const apply = async (req, label) => { setNote(note, label); if (!note) toast(label); try { const n = await editDoc(html, req); if (n && n.length > 40 && /<[a-z!]/i.test(n)) html = n; } catch {} };
-  if (qaOn()) for (let k = 0; k < 2; k++) {
-    setNote(note, k ? "Checking again" : "Testing the site");
-    const q = await probe(html, 390); if (!q.issues.length) break;
-    if (q.issues.some(i => i.toLowerCase().includes("blank"))) {
-      setNote(note, "Rebuilding complete interface...");
-      try {
-        const full = await collect([{role: "user", content: "The previous code rendered completely blank with no controls or visible text. Rebuild a complete, self-contained single-page application from scratch for this goal:\n" + (lastText || "interactive web app") + "\nEnsure all HTML structure, interactive buttons, styles, and scripts are present in one complete HTML document."}], BUILD);
-        const cand = typeof repairHtml === "function" ? repairHtml(extractHtml(full)) : extractHtml(full);
-        if (typeof isRenderableHtml === "function" ? isRenderableHtml(cand) : (cand && cand.length > 80)) {
-          html = cand;
-          break;
-        }
-      } catch (err) {}
+  if (!qaOn()) return html;
+  setNote(note, "Verifying app runtime...");
+  const q = await probe(html, 390);
+  if (q.pass && !q.issues.length) return html;
+
+  const repairText = q.repairPrompt || (q.issues.length ? "An automated check found these problems. Fix them and change nothing else:\n- " + q.issues.join("\n- ") : "");
+  if (!repairText) return html;
+
+  setNote(note, "Repairing runtime issues...");
+  try {
+    const repaired = await collect([
+      { role: "user", content: repairText }
+    ], BUILD);
+    let cand = typeof repairHtml === "function" ? repairHtml(extractHtml(repaired)) : extractHtml(repaired);
+    if (cand && cand.length > 50 && /<[a-z!]/i.test(cand)) {
+      setNote(note, "Re-verifying repair...");
+      const q2 = await probe(cand, 390);
+      if (q2.pass || q2.issues.length === 0) return cand;
+      if (q2.issues.length < q.issues.length) return cand;
     }
-    await apply("An automated check found these problems. Fix them and change nothing else:\n- " + q.issues.join("\n- "), "Fixing " + q.issues.length + " problem" + (q.issues.length > 1 ? "s" : ""));
+  } catch (err) {
+    console.warn("Automated repair notice:", err);
   }
-  if (vrOn()) { setNote(note, "Reviewing the design"); const fx = await visualReview(html); if (fx.length) await apply("A design review of screenshots found these problems. Fix them and change nothing else:\n- " + fx.join("\n- "), "Polishing the layout"); }
   return html;
 }
 const TPL = [["Dashboard", "a dashboard with a left nav, summary cards, an SVG or canvas chart and a data table"], ["Landing page", "a landing page with a hero, features, social proof, pricing and a call to action"], ["Game", "a playable game with score, levels or lives, keyboard and touch controls and a restart button"], ["Tracker", "a tracker with an add form, a list with edit and delete, streaks or totals and a chart"], ["Notes app", "a notes app with a sidebar of notes, a editor, search and tags"], ["Calculator tool", "a focused calculator or converter with live results, history and copy buttons"], ["Portfolio", "a personal portfolio with an about section, project cards and a contact form"], ["Quiz", "a quiz with questions, instant feedback, a score screen and retry"], ["Timer", "a timer or stopwatch with presets, laps, sound and notifications"], ["Kanban board", "a kanban board with draggable cards, columns you can rename and saved state"], ["Reader", "a blog or reader with article list, reading view, search and a dark mode"], ["Store front", "a store front with a product grid, filters, a cart and a checkout summary"]];
@@ -5123,23 +5023,23 @@ const ARCHETYPES = {
 function detectArchetype(promptText = "") {
   const p = promptText.toLowerCase();
   
-  // Platformer / Mario / Sidescroller
-  if (/\b(mario|super mario|platformer|jump|sidescroll|sonic|metroid|platform|obstacle course|runner)\b/i.test(p)) {
+  // Platformer: only match explicit platformer or mario games (not "e-commerce platform" or "task runner")
+  if (/\b(super mario|mario game|2d platformer|platformer game|sidescroller)\b/i.test(p)) {
     return ARCHETYPES.platformer;
   }
   
-  // Arcade / Shooter / Action / Canvas Games
-  if (/\b(arcade|space invaders|shooter|asteroids|flappy|pong|breakout|snake|pacman|tetris|bullet|dodge|galaxy)\b/i.test(p)) {
+  // Arcade: only match explicit arcade games
+  if (/\b(space invaders|asteroids game|flappy bird|pong game|breakout game|arcade shooter)\b/i.test(p)) {
     return ARCHETYPES.arcade;
   }
   
-  // Audio / Synthesizer / Beats
-  if (/\b(synth|synthesizer|piano|audio|instrument|guitar|drum|beat|soundboard|daw|sequencer|oscillator)\b/i.test(p)) {
+  // Audio: only match explicit synthesizer / DAW / audio sequencers (not "guitar shop")
+  if (/\b(polyphonic synth|synthesizer with adsr|audio sequencer|drum machine|digital audio workstation)\b/i.test(p)) {
     return ARCHETYPES.audio;
   }
   
-  // CRUD / Data / Table / Dashboard
-  if (/\b(crud|table|database|crm|inventory|contacts|records|tracker|budget|expenses|kanban|management)\b/i.test(p)) {
+  // CRUD: only match explicit database management systems (not "table booking")
+  if (/\b(crud app|database management studio|inventory management system|crm database)\b/i.test(p)) {
     return ARCHETYPES.crud;
   }
   
@@ -5161,35 +5061,29 @@ if (typeof window !== "undefined") {
 
 const ARCHITECT_PROMPT = `You are the Lead Software Architect in Poppy's multi-agent software engineering team.
 Analyze the user's request and output a structured, complete Technical Blueprint in JSON.
-Your blueprint must eliminate any ambiguity about how the app or game functions.
+Your blueprint must eliminate any ambiguity about how the app, tool, or game functions.
 
 You must respond with ONLY a valid JSON object in this format:
 \`\`\`json
 {
   "appName": "Short Name",
-  "category": "game | utility | creative-studio | dashboard | document",
+  "category": "utility | game | dashboard | commerce | document | creative",
   "summary": "1-2 sentence core purpose",
-  "gameOrAppLoop": {
-    "hasCanvas": true,
-    "canvasWidth": 800,
-    "canvasHeight": 450,
-    "physics": "gravity, velocity, jump impulse, collisions",
-    "entities": ["player / hero", "platforms / pipes", "question blocks with coins", "enemies / obstacles", "flagpole / goal"],
-    "controls": ["Arrow keys & WASD for desktop", "On-screen touch D-Pad and Jump button for mobile"],
-    "soundEffects": ["jump tone", "coin chime", "stomp sound", "game over"]
+  "architecture": {
+    "layout": "responsive-container",
+    "hasCanvas": false,
+    "primaryComponents": ["navigation / controls", "main interactive work area", "status / feedback display"]
   },
   "stateSchema": {
-    "score": 0,
-    "lives": 3,
-    "level": 1,
-    "gameState": "ready | playing | gameover | victory"
+    "data": [],
+    "status": "ready"
   },
   "interactiveElements": [
     {
       "id": "exact-dom-id",
       "selector": "#exact-dom-id",
       "label": "Button / Control label",
-      "trigger": "click | touchstart | keydown",
+      "trigger": "click | submit | input",
       "action": "Precise state mutation and visual update"
     }
   ]
@@ -5412,361 +5306,34 @@ function repairHtml(html) {
   // 5. Ensure body and html tags are closed
   if (!/<\/body>/i.test(h)) h += "\n</body>";
   if (!/<\/html>/i.test(h)) h += "\n</html>";
-
-  // 6. Blank Render Guard: Ensure page has visible elements
-  if (!isRenderableHtml(h)) {
-    const titleMatch = h.match(/<title[^>]*>(.*?)<\/title>/i);
-    const title = titleMatch ? titleMatch[1] : "Interactive App";
-    const recoveryMarkup = `
-<div style="font-family:system-ui,-apple-system,sans-serif;max-width:800px;margin:40px auto;padding:32px;background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.08);text-align:center">
-  <h1 style="font-size:2.2rem;margin-bottom:12px;color:#18181b">${title}</h1>
-  <p style="color:#71717a;font-size:1.1rem;margin-bottom:28px">Interactive application loaded. All controls and modules are active.</p>
-  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-    <button type="button" id="startBtn" style="background:#f23d2a;color:#fff;border:none;padding:12px 28px;border-radius:99px;font-weight:700;font-size:1rem;cursor:pointer;box-shadow:0 4px 12px rgba(242,61,42,0.3)">Get Started</button>
-    <button type="button" id="demoBtn" style="background:#f4f4f5;color:#18181b;border:1px solid #e4e4e7;padding:12px 28px;border-radius:99px;font-weight:700;font-size:1rem;cursor:pointer">Explore Demo</button>
-  </div>
-</div>`;
-    if (/<\/body>/i.test(h)) {
-      h = h.replace(/<\/body>/i, recoveryMarkup + "\n</body>");
-    } else {
-      h += "\n<body>" + recoveryMarkup + "\n</body>\n</html>";
-    }
-  }
   
   return h;
 }
 
 /**
- * Auto-Wiring Critic: Statically parses HTML and scripts to detect
- * buttons missing handlers or calling undefined functions, then auto-injects
- * functional fallback scripts directly into the document.
+ * Ensures WebAudio contexts unlock smoothly on the first user interaction.
+ * Does not intercept clicks or inject fake behavior.
  */
 function autoWireButtons(html) {
   if (!html || typeof html !== "string") return html;
-  
-  // Prevent duplicate auto-wiring
-  if (html.includes("__poppy_auto_wire__")) return html;
+  if (html.includes("__poppy_audio_unlock__")) return html;
 
-  // Extract inline onclick function calls
-  const onclickRegex = /on[a-z]+\s*=\s*["']([a-zA-Z0-9_$]+)\s*\(/gi;
-  const inlineFnNames = new Set();
-  let m;
-  while ((m = onclickRegex.exec(html)) !== null) {
-    if (m[1]) inlineFnNames.add(m[1]);
-  }
-  const detectedFns = JSON.stringify([...inlineFnNames]);
-
-  // Build an active auto-wiring script to guarantee 100% button functionality
-  const autoWireScript = "<scr" + "ipt id=\"__poppy_auto_wire__\">\n" +
+  const autoWireScript = "<scr" + "ipt id=\"__poppy_audio_unlock__\">\n" +
 `(() => {
-  // Poppy Auto-Wiring Safety Engine
-  const safeRun = (fn, desc) => {
-    try { return fn(); }
-    catch(err) {
-      console.warn("[Poppy Auto-Wire] Notice for " + desc + ":", err);
-    }
-  };
-
-  // 1. Tactile sound synthesis & WebAudio Autoplay Unlocking
-  let userInteracted = false;
-  const unlockAudio = () => {
-    userInteracted = true;
+  // WebAudio Autoplay Safety & User Gesture Unlocker
+  const unlock = () => {
     try {
-      if (window.__poppyAudioCtx && window.__poppyAudioCtx.state === "suspended") {
-        window.__poppyAudioCtx.resume().catch(()=>{});
-      }
-      if (window.Tone && window.Tone.context && window.Tone.context.state === "suspended") {
-        window.Tone.start().catch(()=>{});
-      }
-      if (window.audioCtx && window.audioCtx.state === "suspended") {
-        window.audioCtx.resume().catch(()=>{});
-      }
-      if (window.audioContext && window.audioContext.state === "suspended") {
-        window.audioContext.resume().catch(()=>{});
-      }
+      if (window.__poppyAudioCtx && window.__poppyAudioCtx.state === "suspended") window.__poppyAudioCtx.resume().catch(()=>{});
+      if (window.Tone && window.Tone.context && window.Tone.context.state === "suspended") window.Tone.start().catch(()=>{});
+      if (window.audioCtx && window.audioCtx.state === "suspended") window.audioCtx.resume().catch(()=>{});
+      if (window.audioContext && window.audioContext.state === "suspended") window.audioContext.resume().catch(()=>{});
     } catch(e) {}
   };
   ["click", "keydown", "touchstart", "pointerdown", "mousedown"].forEach(ev => {
-    window.addEventListener(ev, unlockAudio, { capture: true, once: true });
+    window.addEventListener(ev, unlock, { capture: true, once: true });
   });
-
-  const playClickSfx = () => {
-    if (!userInteracted) return;
-    try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = window.__poppyAudioCtx || (window.__poppyAudioCtx = new AudioCtx());
-      unlockAudio();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(320, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.05);
-      gain.gain.setValueAtTime(0.08, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.05);
-    } catch(e) {}
-  };
-
-  const playInstrumentSound = (param) => {
-    if (!userInteracted) return;
-    try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      const actx = window.__poppyAudioCtx || (window.__poppyAudioCtx = new AudioCtx());
-      unlockAudio();
-      const t0 = actx.currentTime;
-
-      const noteFreqs = {
-        "e2": 82.41, "f2": 87.31, "g2": 98.00, "a2": 110.00, "b2": 123.47,
-        "c3": 130.81, "d3": 146.83, "e3": 164.81, "f3": 174.61, "g3": 196.00, "a3": 220.00, "b3": 246.94,
-        "c4": 261.63, "d4": 293.66, "e4": 329.63, "f4": 349.23, "g4": 392.00, "a4": 440.00, "b4": 493.88,
-        "c5": 523.25, "d5": 587.33, "e5": 659.25,
-        "string 6": 82.41, "string 5": 110.00, "string 4": 146.83, "string 3": 196.00, "string 2": 246.94, "string 1": 329.63,
-        "6": 82.41, "5": 110.00, "4": 146.83, "3": 196.00, "2": 246.94, "1": 329.63,
-        "c": 261.63, "d": 293.66, "e": 329.63, "f": 349.23, "g": 392.00, "a": 440.00, "b": 493.88
-      };
-
-      let freq = 220;
-      const strVal = String(param || "").toLowerCase().trim();
-      if (typeof param === "number") {
-        freq = [82.41, 110.00, 146.83, 196.00, 246.94, 329.63][Math.min(5, Math.max(0, param - 1))] || (100 * param);
-      } else if (noteFreqs[strVal]) {
-        freq = noteFreqs[strVal];
-      } else {
-        const found = Object.keys(noteFreqs).find(k => strVal.includes(k));
-        if (found) freq = noteFreqs[found];
-      }
-
-      const osc1 = actx.createOscillator();
-      const osc2 = actx.createOscillator();
-      const gain = actx.createGain();
-      const filter = actx.createBiquadFilter();
-
-      osc1.type = "sawtooth";
-      osc1.frequency.setValueAtTime(freq, t0);
-      osc2.type = "triangle";
-      osc2.frequency.setValueAtTime(freq * 1.002, t0);
-
-      filter.type = "lowpass";
-      filter.frequency.setValueAtTime(freq * 5.0, t0);
-      filter.frequency.exponentialRampToValueAtTime(freq * 0.9, t0 + 1.2);
-
-      gain.gain.setValueAtTime(0.3, t0);
-      gain.gain.exponentialRampToValueAtTime(0.001, t0 + 1.4);
-
-      osc1.connect(filter);
-      osc2.connect(filter);
-      filter.connect(gain);
-      gain.connect(actx.destination);
-
-      osc1.start(t0);
-      osc2.start(t0);
-      osc1.stop(t0 + 1.4);
-      osc2.stop(t0 + 1.4);
-    } catch(e) {}
-  };
-
-  // 2. Pre-wire detected and standard global functions
-  const prewireList = Array.from(new Set([
-    ...${detectedFns},
-    "playNote", "playChord", "playString", "strum", "tune", "pluck",
-    "calculate", "calc", "compute", "convert",
-    "reset", "clear", "submitForm",
-    "openModal", "closeModal", "toggleTheme", "toggleTab", "selectTab"
-  ]));
-
-  prewireList.forEach(fn => {
-    if (typeof window[fn] === "undefined") {
-      window[fn] = function(...args) {
-        if (/play|strum|note|string|chord|sound|audio|tune|pluck/i.test(fn)) {
-          playInstrumentSound(args[0] || fn);
-        } else if (/calc|compute|sum|convert/i.test(fn)) {
-          const out = document.querySelector(".result, #result, .output, output, .calc-res, #output");
-          if (out) out.textContent = "Calculated: " + (Math.floor(Math.random() * 900) + 100);
-        } else if (/theme|dark|mode/i.test(fn)) {
-          document.body.classList.toggle("dark");
-        } else if (/modal|dialog/i.test(fn)) {
-          const dlg = document.querySelector("dialog, .modal");
-          if (dlg) {
-            if (typeof dlg.showModal === "function") dlg.showModal();
-            else dlg.classList.toggle("open");
-          }
-        }
-      };
-    }
-  });
-
-  // Global Scope Resolver for dynamically called missing functions
-  window.addEventListener("error", (e) => {
-    if (e.message && e.message.includes("is not defined")) {
-      const match = e.message.match(/([a-zA-Z0-9_$]+) is not defined/);
-      if (match && match[1]) {
-        const fnName = match[1];
-        window[fnName] = function(...args) {
-          if (/play|strum|note|string|chord|audio/i.test(fnName)) {
-            playInstrumentSound(args[0] || fnName);
-          }
-        };
-      }
-    }
-  });
-
-  // 3. Form submit handler with auto-feedback
-  document.querySelectorAll("form").forEach(f => {
-    f.addEventListener("submit", e => {
-      e.preventDefault();
-      const sBtn = f.querySelector("button[type='submit'], input[type='submit'], button:not([type])");
-      if (sBtn) {
-        const old = sBtn.innerText || sBtn.value;
-        sBtn.innerText = "Submitted!";
-        setTimeout(() => { sBtn.innerText = old; }, 1800);
-      }
-    });
-  });
-
-  // 4. Global Action Engine for tactile clicks and semantic fallbacks
-  document.addEventListener("click", (e) => {
-    unlockAudio();
-    const btn = e.target.closest("button, [role='button'], a.btn, a.button, input[type='button'], input[type='submit'], .key, .fret, .string");
-    if (!btn) return;
-
-    // Trigger physical click sound
-    playClickSfx();
-
-    // Prevent dead link navigation
-    if (btn.tagName === "A" && (!btn.getAttribute("href") || btn.getAttribute("href") === "#")) {
-      e.preventDefault();
-    }
-
-    const text = (btn.innerText || btn.textContent || btn.value || "").trim().toLowerCase();
-    const id = (btn.id || "").toLowerCase();
-    const cls = (btn.className || "").toLowerCase();
-
-    // Musical Instrument & Guitar / Synth Engine
-    const isInstrument = text.includes("string") || text.includes("strum") || text.includes("fret") || text.includes("chord") ||
-      text.includes("guitar") || text.includes("note") || text.includes("tune") || text.includes("pick") ||
-      /^[a-g][#b]?[0-8]?$/i.test(text) || btn.dataset.note || btn.dataset.string || btn.dataset.chord ||
-      cls.includes("string") || cls.includes("fret") || cls.includes("key") || id.includes("string") || id.includes("fret");
-
-    if (isInstrument) {
-      playInstrumentSound(btn.dataset.note || btn.dataset.string || btn.dataset.chord || text);
-      btn.style.transition = "transform .06s ease";
-      btn.style.transform = "scale(0.96) translateY(2px)";
-      setTimeout(() => { btn.style.transform = ""; }, 120);
-      return;
-    }
-
-    // Calculator / Converter / Math
-    if (text.includes("calculate") || text.includes("compute") || text.includes("convert") || id.includes("calc")) {
-      const card = btn.closest(".card, form, section, div") || document.body;
-      const inputs = [...card.querySelectorAll("input:not([type='submit']):not([type='button']), select")];
-      const vals = inputs.map(i => parseFloat(i.value) || i.value || 0);
-      const nums = vals.filter(v => typeof v === "number" && !isNaN(v));
-      const out = card.querySelector(".result, #result, .output, output, .calc-res, #output");
-      if (out) {
-        if (nums.length) {
-          const sum = nums.reduce((a, b) => a + b, 0);
-          out.textContent = (out.textContent.includes("$") ? "$" : "") + sum.toLocaleString();
-        } else {
-          out.textContent = "Calculation complete";
-        }
-        out.style.transition = "transform .2s ease";
-        out.style.transform = "scale(1.04)";
-        setTimeout(() => { out.style.transform = ""; }, 250);
-      }
-    }
-
-    // Copy action
-    if (text.includes("copy") || id.includes("copy") || cls.includes("copy")) {
-      const container = btn.closest(".card, .box, section, div") || document.body;
-      const codeOrInput = container.querySelector("pre, code, input[type='text'], textarea, .code");
-      const val = codeOrInput ? (codeOrInput.value || codeOrInput.innerText) : window.location.href;
-      if (val && navigator.clipboard) {
-        navigator.clipboard.writeText(val).then(() => {
-          const oldTxt = btn.innerText;
-          btn.innerText = "Copied!";
-          setTimeout(() => { btn.innerText = oldTxt; }, 1800);
-        }).catch(() => {});
-      }
-    }
-
-    // Modal / Dialog Open
-    if (text.includes("open") || text.includes("modal") || text.includes("view") || btn.dataset.modal || id.includes("modal") || id.includes("dialog")) {
-      const targetId = btn.dataset.target || btn.dataset.modal || id.replace("btn", "") || "dialog";
-      const dlg = document.querySelector(targetId.startsWith("#") ? targetId : "#" + targetId) || document.querySelector("dialog, .modal");
-      if (dlg) {
-        if (typeof dlg.showModal === "function") dlg.showModal();
-        else dlg.classList.add("open", "active");
-      }
-    }
-
-    // Modal / Dialog Close
-    if (text === "x" || text === "close" || text === "cancel" || text === "dismiss" || cls.includes("close") || id.includes("close")) {
-      const dlg = btn.closest("dialog, .modal, .popup");
-      if (dlg) {
-        if (typeof dlg.close === "function") dlg.close();
-        else dlg.classList.remove("open", "active");
-      }
-    }
-
-    // Stepper / Counter (+, -)
-    if (text === "+" || text === "inc" || text.includes("increase") || text === "&plus;") {
-      const wrap = btn.closest(".counter, .stepper, .card, div") || btn.parentElement;
-      const numInput = wrap ? wrap.querySelector("input[type='number'], .count, .quantity") : null;
-      if (numInput) {
-        if (numInput.tagName === "INPUT") {
-          numInput.value = (parseFloat(numInput.value) || 0) + 1;
-          numInput.dispatchEvent(new Event("change", { bubbles: true }));
-        } else {
-          numInput.textContent = (parseFloat(numInput.textContent) || 0) + 1;
-        }
-      }
-    }
-    if (text === "-" || text === "dec" || text.includes("decrease") || text === "&minus;") {
-      const wrap = btn.closest(".counter, .stepper, .card, div") || btn.parentElement;
-      const numInput = wrap ? wrap.querySelector("input[type='number'], .count, .quantity") : null;
-      if (numInput) {
-        if (numInput.tagName === "INPUT") {
-          numInput.value = Math.max(0, (parseFloat(numInput.value) || 0) - 1);
-          numInput.dispatchEvent(new Event("change", { bubbles: true }));
-        } else {
-          numInput.textContent = Math.max(0, (parseFloat(numInput.textContent) || 0) - 1);
-        }
-      }
-    }
-
-    // Dark Mode / Theme Toggle
-    if (text.includes("theme") || text.includes("dark") || text.includes("light") || id.includes("theme")) {
-      document.body.classList.toggle("dark");
-      if (document.documentElement) document.documentElement.classList.toggle("dark");
-    }
-
-    // Reset / Clear
-    if (text.includes("clear") || text.includes("reset") || id.includes("reset") || id.includes("clear")) {
-      const form = btn.closest("form") || document.body;
-      form.querySelectorAll("input, textarea").forEach(i => {
-        if (i.type !== "submit" && i.type !== "button") i.value = "";
-      });
-    }
-
-    // Delete / Remove Item
-    if (text.includes("delete") || text.includes("remove") || cls.includes("delete") || id.includes("del")) {
-      const row = btn.closest("li, tr, .item, .card, .list-group-item");
-      if (row && row !== document.body) {
-        row.style.transition = "opacity .2s ease, transform .2s ease";
-        row.style.opacity = "0";
-        row.style.transform = "scale(0.95)";
-        setTimeout(() => { row.remove(); }, 200);
-      }
-    }
-  }, true);
 })();\n` + "</scr" + "ipt>";
 
-  // Insert before </body> if present, or append
   if (/<\/body>/i.test(html)) {
     return html.replace(/<\/body>/i, autoWireScript + "\n</body>");
   }
@@ -5880,594 +5447,145 @@ if (typeof window !== "undefined") {
   window.runMultiAgentPipeline = runMultiAgentPipeline;
 }
 
-/* ===== Poppy Universal Reactive Runtime (UAR) =====
-   Total Error Immunity & Universal Interaction Kernel for ALL Website Types.
-   Guarantees 100% functional reliability for:
-   - Calculators, Converters & Math Engines
-   - E-Commerce Shops, Carts & Checkouts
-   - Productivity, Kanban, Todos & Data CRUD
-   - Countdown Timers, Stopwatches & Clocks
-   - Interactive Tabs, Navigation, Sidebars & Modals
-   - Forms, Search Filters & Star Ratings
-   - 2D Canvas Games (Mario, Arcade, Physics)
-   - Media, Audio & Tactile Click Synthesis
-====================================================== */
+/* ===== Poppy Verify Probe =====
+   Runs INSIDE a rendered app and reports what actually happens.
+   Used two ways:
+     - Node eval (eval.js):  page.addInitScript(initProbe); page.evaluate(runProbe)
+     - poppy.html (Phase 2): embed "(" + initProbe + ")()" in <head> of the preview,
+       then post "(" + runProbe + ")()" results back via postMessage.
+   Pure observation: it never fakes behaviour. */
 
-const POPPY_UNIVERSAL_RUNTIME_CODE = `(() => {
-  if (window.__poppy_uar_active__) return;
-  window.__poppy_uar_active__ = true;
-
-  // ===== 1. ERROR IMMUNITY SHIELD =====
-  window.addEventListener("error", (e) => {
-    // If an undefined function was called (e.g. onclick="calculate()"), intercept and auto-resolve
-    if (e.message && e.message.includes("is not defined")) {
-      const match = e.message.match(/([a-zA-Z0-9_$]+) is not defined/);
-      if (match && match[1]) {
-        const fnName = match[1];
-        window[fnName] = function(...args) {
-          dispatchSemanticIntent(fnName, args);
-        };
-        e.preventDefault();
-        return true;
+function initProbe() {
+  if (window.__pp_probe) return;
+  const log = (window.__pp_probe = { errors: [] });
+  const push = m => { if (log.errors.length < 30) log.errors.push(String(m).slice(0, 240)); };
+  window.addEventListener("error", e => push((e.message || "error") + (e.lineno ? " (line " + e.lineno + ")" : "")));
+  window.addEventListener("unhandledrejection", e => push("Unhandled rejection: " + ((e.reason && e.reason.message) || e.reason)));
+  const ce = console.error;
+  console.error = function () { push("console.error: " + [].slice.call(arguments).join(" ")); return ce.apply(console, arguments); };
+  window.alert = window.confirm = () => true;
+  window.prompt = () => "test";
+  // bubble phase on window => runs AFTER the app's own handlers; only stops navigation
+  window.addEventListener("submit", e => { if (!e.defaultPrevented) e.preventDefault(); });
+  window.addEventListener("click", e => {
+    const a = e.target && e.target.closest && e.target.closest("a[href]");
+    if (a && !e.defaultPrevented) e.preventDefault();
+  });
+  window.addEventListener("message", async e => {
+    if (e.data && e.data.poppy === 1 && e.data.cmd === "runProbe") {
+      try {
+        const res = await runProbe(e.data.opts || {});
+        window.parent.postMessage({ poppy: 1, cmdRes: "probeResult", result: res }, "*");
+      } catch (err) {
+        window.parent.postMessage({ poppy: 1, cmdRes: "probeResult", result: { loadErrors: [err.message], clickErrors: [], buttons: { total: 0, dead: [] }, canvas: { present: false }, render: { textLen: 0, visual: false, placeholder: false } } }, "*");
       }
     }
   });
+}
 
-  window.addEventListener("unhandledrejection", (e) => {
-    // Prevent unhandled promise rejections from halting page scripts
-    e.preventDefault();
-  });
+async function runProbe(opts) {
+  opts = opts || {};
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const log = window.__pp_probe || { errors: [] };
+  await sleep(opts.settle || 400);
+  const loadErrors = [...new Set(log.errors)];
 
-  // ===== 2. WEBAUDIO AUTOPLAY SAFETY & TACTILE FEEDBACK =====
-  let userUnlocked = false;
-  let activeAudioCtx = null;
-  const pendingContexts = new Set();
-
-  const unlockAudio = () => {
-    if (userUnlocked) return;
-    userUnlocked = true;
-    for (const ctx of pendingContexts) {
-      try { if (ctx.state === "suspended") ctx.resume().catch(()=>{}); } catch(e) {}
-    }
-    pendingContexts.clear();
+  const canvasHash = c => {
     try {
-      if (window.Tone && window.Tone.context && window.Tone.context.state === "suspended") {
-        window.Tone.start().catch(()=>{});
-      }
-      if (activeAudioCtx && activeAudioCtx.state === "suspended") {
-        activeAudioCtx.resume().catch(()=>{});
-      }
-    } catch(e) {}
+      const t = document.createElement("canvas"); t.width = 32; t.height = 32;
+      t.getContext("2d").drawImage(c, 0, 0, 32, 32);
+      return Array.prototype.join.call(t.getContext("2d").getImageData(0, 0, 32, 32).data, ",");
+    } catch (e) { return "x"; }
+  };
+  const sig = () => {
+    let s = document.body ? document.body.innerHTML : "";
+    document.querySelectorAll("input,textarea,select").forEach(i => { s += "|" + (/checkbox|radio/.test(i.type) ? i.checked : i.value); });
+    try { s += "|" + JSON.stringify(localStorage); } catch (e) {}
+    document.querySelectorAll("canvas").forEach(c => { s += "|" + canvasHash(c); });
+    return s;
+  };
+  const visible = el => {
+    const r = el.getBoundingClientRect(), cs = getComputedStyle(el);
+    return r.width > 0 && r.height > 0 && cs.visibility !== "hidden" && cs.display !== "none" && !el.disabled;
+  };
+  const describe = el =>
+    (el.id ? "#" + el.id : el.tagName.toLowerCase() + (el.className && typeof el.className === "string" ? "." + el.className.trim().split(/\s+/)[0] : "")) +
+    ' "' + ((el.innerText || el.value || el.getAttribute("aria-label") || "").trim().slice(0, 24)) + '"';
+
+  // --- render checks
+  const text = (document.body ? document.body.innerText : "").trim();
+  const render = {
+    textLen: text.length,
+    visual: !!document.querySelector("canvas,svg,img,video,table,input,button"),
+    placeholder: /Interactive application loaded\. All controls and modules are active\./.test(text)
   };
 
-  ["click", "keydown", "touchstart", "pointerdown", "mousedown"].forEach(ev => {
-    window.addEventListener(ev, unlockAudio, { capture: true, once: true });
-    document.addEventListener(ev, unlockAudio, { capture: true, once: true });
+  // --- pre-fill inputs so calculators/forms have something to work with
+  document.querySelectorAll("input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=range]),textarea").forEach(i => {
+    if (!visible(i) || i.value) return;
+    i.value = i.type === "number" ? String(i.min && +i.min > 5 ? i.min : 5) : i.type === "email" ? "a@b.co" : "test";
+    i.dispatchEvent(new Event("input", { bubbles: true })); i.dispatchEvent(new Event("change", { bubbles: true }));
   });
 
-  try {
-    const OrigAC = window.AudioContext || window.webkitAudioContext;
-    if (OrigAC && OrigAC.prototype && OrigAC.prototype.resume) {
-      const origResume = OrigAC.prototype.resume;
-      OrigAC.prototype.resume = function() {
-        if (!userUnlocked) {
-          pendingContexts.add(this);
-          return Promise.resolve();
-        }
-        return origResume.apply(this, arguments);
-      };
-    }
-  } catch(e) {}
-
-  const playTactileClick = (freq = 380, dur = 0.04) => {
-    try {
-      if (!userUnlocked) return;
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      if (!activeAudioCtx) activeAudioCtx = new AudioCtx();
-      if (activeAudioCtx.state === "suspended") activeAudioCtx.resume().catch(()=>{});
-      const t0 = activeAudioCtx.currentTime;
-      const osc = activeAudioCtx.createOscillator();
-      const gain = activeAudioCtx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(freq, t0);
-      osc.frequency.exponentialRampToValueAtTime(freq * 0.4, t0 + dur);
-      gain.gain.setValueAtTime(0.05, t0);
-      gain.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
-      osc.connect(gain);
-      gain.connect(activeAudioCtx.destination);
-      osc.start(t0);
-      osc.stop(t0 + dur);
-    } catch(e) {}
-  };
-
-  // ===== 3. UNIVERSAL CALCULATOR & MATH ENGINE =====
-  const calcState = {
-    expr: "",
-    display: "0",
-    hasEvaluated: false
-  };
-
-  const getCalcDisplayElement = (container) => {
-    const root = container || document;
-    return root.querySelector(
-      ".display, #display, .screen, #screen, .calc-screen, #calc-screen, .calc-display, output, .result, #result, input.screen, input.display, input[readonly]"
-    );
-  };
-
-  const updateCalcDisplay = (val, container) => {
-    const el = getCalcDisplayElement(container);
-    if (!el) return;
-    const clean = String(val).slice(0, 16);
-    if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
-      el.value = clean;
-    } else {
-      el.textContent = clean;
-    }
-    el.style.transition = "transform .08s ease";
-    el.style.transform = "scale(1.02)";
-    setTimeout(() => { el.style.transform = ""; }, 100);
-  };
-
-  const evaluateMathExpr = (expr) => {
-    try {
-      const sanitized = expr
-        .replace(/×/g, "*")
-        .replace(/÷/g, "/")
-        .replace(/−/g, "-")
-        .replace(/%/g, "*0.01")
-        .replace(/[^0-9+\\-*/().]/g, "");
-      if (!sanitized) return "0";
-      // Safe mathematical evaluation
-      const fn = new Function("return " + sanitized);
-      const res = fn();
-      if (typeof res === "number") {
-        if (!isFinite(res)) return "Error";
-        return Number.isInteger(res) ? String(res) : String(parseFloat(res.toFixed(8)));
-      }
-      return String(res);
-    } catch(e) {
-      return "Error";
-    }
-  };
-
-  const handleCalcInput = (key, container) => {
-    playTactileClick(420, 0.03);
-    const k = String(key).trim();
-    if (k === "C" || k === "AC" || k === "clear" || k === "Clear" || k === "Escape") {
-      calcState.expr = "";
-      calcState.display = "0";
-      calcState.hasEvaluated = false;
-      updateCalcDisplay("0", container);
-      return;
-    }
-    if (k === "DEL" || k === "CE" || k === "Backspace") {
-      if (calcState.expr.length > 1) {
-        calcState.expr = calcState.expr.slice(0, -1);
-        calcState.display = calcState.expr;
-      } else {
-        calcState.expr = "";
-        calcState.display = "0";
-      }
-      updateCalcDisplay(calcState.display, container);
-      return;
-    }
-    if (k === "=" || k === "Enter") {
-      if (!calcState.expr) return;
-      const res = evaluateMathExpr(calcState.expr);
-      calcState.display = res;
-      calcState.expr = res === "Error" ? "" : res;
-      calcState.hasEvaluated = true;
-      updateCalcDisplay(res, container);
-      return;
-    }
-    if (k === "±") {
-      if (calcState.expr.startsWith("-")) calcState.expr = calcState.expr.slice(1);
-      else if (calcState.expr) calcState.expr = "-" + calcState.expr;
-      calcState.display = calcState.expr || "0";
-      updateCalcDisplay(calcState.display, container);
-      return;
-    }
-
-    const isOperator = ["+", "-", "*", "/", "×", "÷", "%"].includes(k);
-    if (calcState.hasEvaluated) {
-      calcState.hasEvaluated = false;
-      if (!isOperator) calcState.expr = "";
-    }
-    if (calcState.expr === "0" && !isOperator && k !== ".") {
-      calcState.expr = k;
-    } else {
-      calcState.expr += k;
-    }
-    calcState.display = calcState.expr;
-    updateCalcDisplay(calcState.display, container);
-  };
-
-  // Keyboard synchronization for Calculators
-  window.addEventListener("keydown", (e) => {
-    if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") && !e.target.readOnly) return;
-    const calcEl = document.querySelector(".calculator, .calc, [data-app='calculator'], #calculator");
-    if (!calcEl) return;
-    const validKeys = ["0","1","2","3","4","5","6","7","8","9",".","+","-","*","/","%","=","Enter","Backspace","Escape","c","C"];
-    if (validKeys.includes(e.key)) {
-      e.preventDefault();
-      handleCalcInput(e.key === "c" ? "C" : e.key, calcEl);
-    }
-  });
-
-  // ===== 4. UNIVERSAL SHOPPING CART & E-COMMERCE ENGINE =====
-  const cartStore = {
-    items: [],
-    count() { return this.items.reduce((sum, item) => sum + (item.qty || 1), 0); },
-    total() { return this.items.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0); }
-  };
-
-  const updateCartBadge = () => {
-    const badges = document.querySelectorAll("#cartCount, .cart-count, .cart-badge, .badge-cart, [data-cart-count]");
-    const c = cartStore.count();
-    badges.forEach(b => {
-      b.textContent = b.textContent.includes("Cart") ? "Cart (" + c + ")" : String(c);
-      b.style.display = c > 0 ? "inline-flex" : "none";
-    });
-  };
-
-  const showCartModal = () => {
-    let modal = document.querySelector("#cartModal, .cart-drawer, dialog.cart-dialog");
-    if (!modal) {
-      modal = document.createElement("dialog");
-      modal.id = "cartModal";
-      modal.className = "poppy-cart-modal";
-      modal.style.cssText = "position:fixed;inset:0;margin:auto;max-width:440px;width:90%;border:none;border-radius:16px;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,0.3);font-family:system-ui,-apple-system,sans-serif;background:#fff;color:#18181b;z-index:9999;";
-      document.body.appendChild(modal);
-    }
-
-    const itemsHtml = cartStore.items.length === 0
-      ? '<p style="color:#71717a;text-align:center;padding:24px 0">Your cart is empty.</p>'
-      : '<div style="max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;margin:16px 0">' +
-        cartStore.items.map(it => 
-          '<div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;border-bottom:1px solid #e4e4e7">' +
-            '<div>' +
-              '<div style="font-weight:600;font-size:0.95rem">' + it.name + '</div>' +
-              '<div style="color:#71717a;font-size:0.85rem">Qty: ' + (it.qty || 1) + ' &middot; $' + it.price.toFixed(2) + '</div>' +
-            '</div>' +
-            '<div style="font-weight:700;color:#f23d2a">$' + (it.price * (it.qty || 1)).toFixed(2) + '</div>' +
-          '</div>'
-        ).join("") +
-        '</div>' +
-        '<div style="display:flex;justify-content:space-between;font-size:1.1rem;font-weight:700;margin:16px 0;padding-top:12px;border-top:2px solid #18181b">' +
-          '<span>Total</span><span>$' + cartStore.total().toFixed(2) + '</span>' +
-        '</div>';
-
-    modal.innerHTML = 
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
-        '<h2 style="margin:0;font-size:1.3rem">Shopping Cart</h2>' +
-        '<button type="button" class="poppy-close-cart" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:#71717a">&times;</button>' +
-      '</div>' +
-      itemsHtml +
-      '<div style="display:flex;gap:10px;margin-top:16px">' +
-        '<button type="button" class="poppy-close-cart" style="flex:1;padding:10px;border:1px solid #e4e4e7;border-radius:8px;background:#f4f4f5;font-weight:600;cursor:pointer">Continue Shopping</button>' +
-        '<button type="button" id="poppyCheckoutBtn" style="flex:1;padding:10px;border:none;border-radius:8px;background:#f23d2a;color:#fff;font-weight:700;cursor:pointer">Checkout</button>' +
-      '</div>';
-
-    modal.querySelectorAll(".poppy-close-cart").forEach(b => b.onclick = () => modal.close());
-    const chk = modal.querySelector("#poppyCheckoutBtn");
-    if (chk) chk.onclick = () => {
-      chk.textContent = "Order Placed!";
-      chk.style.background = "#10b981";
-      setTimeout(() => { cartStore.items = []; updateCartBadge(); modal.close(); }, 1400);
-    };
-
-    if (typeof modal.showModal === "function") modal.showModal();
-    else modal.style.display = "block";
-  };
-
-  const handleAddToCart = (btn) => {
-    playTactileClick(520, 0.05);
-    const card = btn.closest(".card, .product, .item, .product-card, div, li") || btn.parentElement;
-    const nameEl = card ? card.querySelector("h2, h3, h4, .title, .product-title, .name") : null;
-    const priceEl = card ? card.querySelector(".price, .cost, .amount, span") : null;
-    const name = nameEl ? nameEl.textContent.trim() : (btn.dataset.item || "Selected Item");
-    let price = 19.99;
-    if (priceEl) {
-      const match = priceEl.textContent.match(/\\$?([0-9]+(?:\\.[0-9]{2})?)/);
-      if (match && match[1]) price = parseFloat(match[1]);
-    }
-    const existing = cartStore.items.find(i => i.name === name);
-    if (existing) existing.qty = (existing.qty || 1) + 1;
-    else cartStore.items.push({ name, price, qty: 1 });
-
-    updateCartBadge();
-
-    const oldText = btn.textContent;
-    btn.textContent = "Added!";
-    btn.style.transition = "all .15s ease";
-    btn.style.transform = "scale(0.96)";
-    setTimeout(() => {
-      btn.textContent = oldText;
-      btn.style.transform = "";
-    }, 1200);
-  };
-
-  // ===== 5. UNIVERSAL TABS, DRAWERS & MODALS =====
-  const handleTabSwitch = (tabBtn) => {
-    playTactileClick(450, 0.03);
-    const parent = tabBtn.closest(".tabs, .nav, .tab-bar, nav, header, ul, div") || document.body;
-    parent.querySelectorAll(".tab, [role='tab'], .nav-link, .nav-item, button").forEach(t => {
-      t.classList.remove("active");
-      t.setAttribute("aria-selected", "false");
-    });
-    tabBtn.classList.add("active");
-    tabBtn.setAttribute("aria-selected", "true");
-
-    const targetId = tabBtn.dataset.target || tabBtn.dataset.tab || tabBtn.getAttribute("href");
-    if (targetId && targetId.startsWith("#")) {
-      const panels = document.querySelectorAll(".tab-panel, .panel, .tab-content > div");
-      panels.forEach(p => p.style.display = "none");
-      const targetPanel = document.querySelector(targetId);
-      if (targetPanel) targetPanel.style.display = "block";
-    } else {
-      // Index-based fallback tab switching
-      const tabs = Array.from(parent.querySelectorAll(".tab, [role='tab'], .nav-link"));
-      const idx = tabs.indexOf(tabBtn);
-      const panels = document.querySelectorAll(".tab-panel, .tab-pane, .panel");
-      if (panels.length && idx >= 0 && panels[idx]) {
-        panels.forEach((p, i) => p.style.display = i === idx ? "block" : "none");
-      }
-    }
-  };
-
-  // ===== 6. UNIVERSAL TIMER & STOPWATCH ENGINE =====
-  const timerEngine = {
-    seconds: 0,
-    interval: null,
-    running: false,
-    displayEl: null
-  };
-
-  const formatTimer = (s) => {
-    const mins = Math.floor(s / 60);
-    const secs = s % 60;
-    return String(mins).padStart(2, "0") + ":" + String(secs).padStart(2, "0");
-  };
-
-  const handleTimerAction = (action, btn) => {
-    playTactileClick(480, 0.04);
-    const root = btn.closest(".timer, .stopwatch, .card, div") || document;
-    timerEngine.displayEl = root.querySelector(".timer-display, .time, .stopwatch-display, .counter, #time, #timer");
-    if (action === "start") {
-      if (timerEngine.running) return;
-      timerEngine.running = true;
-      btn.textContent = "Pause";
-      timerEngine.interval = setInterval(() => {
-        timerEngine.seconds++;
-        if (timerEngine.displayEl) timerEngine.displayEl.textContent = formatTimer(timerEngine.seconds);
-      }, 1000);
-    } else if (action === "pause") {
-      timerEngine.running = false;
-      clearInterval(timerEngine.interval);
-      btn.textContent = "Resume";
-    } else if (action === "reset") {
-      timerEngine.running = false;
-      clearInterval(timerEngine.interval);
-      timerEngine.seconds = 0;
-      if (timerEngine.displayEl) timerEngine.displayEl.textContent = "00:00";
-      const startBtn = root.querySelector("button.start, button#start, button[data-action='start']");
-      if (startBtn) startBtn.textContent = "Start";
-    }
-  };
-
-  // ===== 7. UNIVERSAL TO-DO / TASK & DATA CRUD ENGINE =====
-  const handleTaskAdd = (formOrBtn) => {
-    const container = formOrBtn.closest(".todo-app, .task-list, .card, form, div") || document.body;
-    const input = container.querySelector("input[type='text'], input:not([type]), textarea");
-    if (!input || !input.value.trim()) return;
-    const text = input.value.trim();
-    input.value = "";
-
-    const list = container.querySelector("ul, ol, .list, .todo-items, #tasks, #taskList");
-    if (list) {
-      const li = document.createElement("li");
-      li.className = "todo-item";
-      li.style.cssText = "display:flex;justify-content:space-between;align-items:center;padding:10px 12px;margin:6px 0;background:#f4f4f5;border-radius:8px;transition:all .2s ease";
-      li.innerHTML = 
-        '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;flex:1">' +
-          '<input type="checkbox" style="cursor:pointer;width:18px;height:18px">' +
-          '<span class="task-text">' + text + '</span>' +
-        '</label>' +
-        '<button type="button" class="del-btn" style="background:none;border:none;color:#ef4444;cursor:pointer;font-weight:700;font-size:1.1rem">&times;</button>';
-      li.querySelector("input[type='checkbox']").onchange = (e) => {
-        li.querySelector(".task-text").style.textDecoration = e.target.checked ? "line-through" : "none";
-        li.querySelector(".task-text").style.opacity = e.target.checked ? "0.5" : "1";
-      };
-      li.querySelector(".del-btn").onclick = () => {
-        li.style.opacity = "0";
-        li.style.transform = "translateX(20px)";
-        setTimeout(() => li.remove(), 200);
-      };
-      list.appendChild(li);
-    }
-  };
-
-  // ===== 8. MASTER DELEGATION FOR ALL INTERACTIVE CLICKS =====
-  document.addEventListener("click", (e) => {
-    unlockAudio();
-    const btn = e.target.closest("button, [role='button'], a.btn, a.button, input[type='button'], input[type='submit'], .key, .fret, .string");
-    if (!btn) return;
-
-    playTactileClick();
-
-    const rawText = (btn.innerText || btn.textContent || btn.value || "").trim();
-    const txt = rawText.toLowerCase();
-    const id = (btn.id || "").toLowerCase();
-    const cls = (btn.className || "").toLowerCase();
-
-    // 1. Calculator Keys
-    const isCalc = btn.closest(".calculator, .calc, [data-app='calculator'], #calculator") ||
-                   /^[0-9]$/.test(rawText) || ["+","-","*","/","=","c","ac","ce","del","±","%"].includes(txt);
-    if (isCalc && (rawText.length <= 3 || btn.dataset.key || btn.dataset.val)) {
-      const val = btn.dataset.key || btn.dataset.val || rawText;
-      handleCalcInput(val, btn.closest(".calculator, .calc, div"));
-      return;
-    }
-
-    // 2. Shopping Cart & E-Commerce
-    if (txt.includes("add to cart") || txt.includes("buy now") || txt.includes("add") && btn.closest(".product, .item") || cls.includes("add-cart")) {
-      handleAddToCart(btn);
-      return;
-    }
-    if (txt.includes("cart") || id.includes("cart") || cls.includes("cart-btn") || cls.includes("cart-icon")) {
-      showCartModal();
-      return;
-    }
-
-    // 3. Tabs & View Switchers
-    if (btn.classList.contains("tab") || btn.getAttribute("role") === "tab" || cls.includes("nav-link") || btn.dataset.tab) {
-      handleTabSwitch(btn);
-      return;
-    }
-
-    // 4. Timer & Stopwatch
-    if (txt === "start" || id === "startbtn") {
-      handleTimerAction(timerEngine.running ? "pause" : "start", btn);
-      return;
-    }
-    if (txt === "pause" || txt === "stop") {
-      handleTimerAction("pause", btn);
-      return;
-    }
-    if (txt === "reset" || id === "resetbtn") {
-      handleTimerAction("reset", btn);
-      return;
-    }
-
-    // 5. Todo / Task Add
-    if (txt === "add" || txt === "create" || txt.includes("add task") || txt.includes("add item")) {
-      handleTaskAdd(btn);
-      return;
-    }
-
-    // 6. Stepper Counter (+, -)
-    if (txt === "+" || txt === "inc" || txt === "&plus;") {
-      const wrap = btn.closest(".counter, .stepper, .quantity, div") || btn.parentElement;
-      const inp = wrap ? wrap.querySelector("input[type='number'], .count, .qty") : null;
-      if (inp) {
-        if (inp.tagName === "INPUT") { inp.value = (parseFloat(inp.value) || 0) + 1; inp.dispatchEvent(new Event("change")); }
-        else inp.textContent = (parseFloat(inp.textContent) || 0) + 1;
-      }
-      return;
-    }
-    if (txt === "-" || txt === "dec" || txt === "&minus;") {
-      const wrap = btn.closest(".counter, .stepper, .quantity, div") || btn.parentElement;
-      const inp = wrap ? wrap.querySelector("input[type='number'], .count, .qty") : null;
-      if (inp) {
-        if (inp.tagName === "INPUT") { inp.value = Math.max(0, (parseFloat(inp.value) || 0) - 1); inp.dispatchEvent(new Event("change")); }
-        else inp.textContent = Math.max(0, (parseFloat(inp.textContent) || 0) - 1);
-      }
-      return;
-    }
-
-    // 7. Modals & Dialogs
-    if (txt.includes("open") || txt.includes("modal") || txt.includes("view details") || btn.dataset.modal) {
-      const dlg = document.querySelector("dialog, .modal, .popup");
-      if (dlg) {
-        if (typeof dlg.showModal === "function") dlg.showModal();
-        else dlg.style.display = "block";
-      }
-      return;
-    }
-    if (txt === "x" || txt === "close" || txt === "cancel" || cls.includes("close")) {
-      const dlg = btn.closest("dialog, .modal, .popup");
-      if (dlg) {
-        if (typeof dlg.close === "function") dlg.close();
-        else dlg.style.display = "none";
-      }
-      return;
-    }
-
-    // 8. Dark Mode / Theme Toggle
-    if (txt.includes("theme") || txt.includes("dark") || txt.includes("light") || id.includes("theme")) {
-      document.body.classList.toggle("dark");
-      if (document.documentElement) document.documentElement.classList.toggle("dark");
-      return;
-    }
-
-    // 9. Canvas Game Touch/Mouse Controls (#btnLeft, #btnRight, #btnJump)
-    if (id === "btnjump" || id === "btnleft" || id === "btnright" || id === "btnrestart") {
-      const keyMap = { btnjump: " ", btnleft: "ArrowLeft", btnright: "ArrowRight", btnrestart: "r" };
-      const codeMap = { btnjump: "Space", btnleft: "ArrowLeft", btnright: "ArrowRight", btnrestart: "KeyR" };
-      const key = keyMap[id];
-      if (key) {
-        window.dispatchEvent(new KeyboardEvent("keydown", { key, code: codeMap[id], bubbles: true }));
-        setTimeout(() => {
-          window.dispatchEvent(new KeyboardEvent("keyup", { key, code: codeMap[id], bubbles: true }));
-        }, 100);
-      }
-      return;
-    }
-
-    // 10. Star Ratings
-    if (cls.includes("star") || btn.dataset.rating) {
-      const container = btn.parentElement;
-      const stars = Array.from(container.querySelectorAll(".star, button"));
-      const idx = stars.indexOf(btn);
-      stars.forEach((s, i) => {
-        s.style.color = i <= idx ? "#f59e0b" : "#d1d5db";
-      });
-      return;
-    }
-  }, true);
-
-  // Form Submissions with Auto-Feedback
-  document.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const form = e.target;
-    const submitBtn = form.querySelector("button[type='submit'], input[type='submit'], button:not([type])");
-    if (submitBtn) {
-      const old = submitBtn.textContent || submitBtn.value;
-      submitBtn.textContent = "Submitted!";
-      submitBtn.style.background = "#10b981";
-      setTimeout(() => {
-        submitBtn.textContent = old;
-        submitBtn.style.background = "";
-      }, 1800);
-    }
-    // Also handle task list if input inside form
-    handleTaskAdd(form);
-  });
-
-  // Global Semantic Intent Dispatcher for missing functions
-  function dispatchSemanticIntent(fnName, args) {
-    const fn = fnName.toLowerCase();
-    if (fn.includes("calc") || fn.includes("add") || fn.includes("press") || fn.includes("num")) {
-      handleCalcInput(args[0] || "0");
-    } else if (fn.includes("cart") || fn.includes("buy")) {
-      showCartModal();
-    } else if (fn.includes("theme") || fn.includes("dark")) {
-      document.body.classList.toggle("dark");
-    } else if (fn.includes("modal") || fn.includes("dialog") || fn.includes("open")) {
-      const dlg = document.querySelector("dialog, .modal");
-      if (dlg && typeof dlg.showModal === "function") dlg.showModal();
+  // --- click every visible control, one at a time
+  const els = [...document.querySelectorAll("button,input[type=button],input[type=submit],[role=button],[data-action]")].filter(visible).slice(0, opts.maxButtons || 40);
+  const dead = [], exempt = [], clickErrors = [];
+  for (const el of els) {
+    if (!el.isConnected) continue;
+    const before = sig(), n = log.errors.length;
+    try { el.click(); } catch (e) { clickErrors.push(describe(el) + " -> " + e.message); }
+    await sleep(60);
+    if (log.errors.length > n) log.errors.slice(n).forEach(m => clickErrors.push(describe(el) + " -> " + m));
+    else if (sig() === before) {
+      // restart/reset/stop at initial state legitimately changes nothing
+      if (/^(restart|reset|new game|play again|stop|pause|cancel|close)\b/i.test((el.innerText || el.value || "").trim())) exempt.push(describe(el));
+      else dead.push(describe(el));
     }
   }
-})();`;
 
-function injectUniversalRuntime(html) {
-  if (!html || typeof html !== "string") return html;
-  if (html.includes("__poppy_uar_active__")) return html;
-  const scriptTag = "<scr" + "ipt id=\"__poppy_uar_kernel__\">\n" + POPPY_UNIVERSAL_RUNTIME_CODE + "\n</scr" + "ipt>";
-  if (/<head[^>]*>/i.test(html)) {
-    return html.replace(/<head[^>]*>/i, m => m + "\n" + scriptTag);
+  // --- canvas: does it animate on its own, or react to keys?
+  const canvases = [...document.querySelectorAll("canvas")].filter(visible);
+  const canvas = { present: canvases.length > 0, animating: false, reactsToKeys: false };
+  if (canvases.length) {
+    const h0 = canvasHash(canvases[0]); await sleep(300);
+    canvas.animating = canvasHash(canvases[0]) !== h0;
+    const h1 = canvasHash(canvases[0]);
+    for (const k of ["ArrowRight", " ", "ArrowUp", "Enter"]) {
+      for (const t of [window, document]) {
+        t.dispatchEvent(new KeyboardEvent("keydown", { key: k, code: k === " " ? "Space" : k, bubbles: true }));
+        t.dispatchEvent(new KeyboardEvent("keyup", { key: k, code: k === " " ? "Space" : k, bubbles: true }));
+      }
+      await sleep(120);
+    }
+    canvas.reactsToKeys = canvasHash(canvases[0]) !== h1;
   }
-  return scriptTag + "\n" + html;
+  return { loadErrors, clickErrors, buttons: { total: els.length, dead }, canvas, render };
 }
 
-if (typeof window !== "undefined") {
-  window.POPPY_UNIVERSAL_RUNTIME_CODE = POPPY_UNIVERSAL_RUNTIME_CODE;
-  window.injectUniversalRuntime = injectUniversalRuntime;
+function scoreProbe(r) {
+  const load = r.loadErrors.length === 0;
+  const rendered = !r.render.placeholder && (r.render.textLen >= 15 || r.render.visual);
+  // an always-animating canvas masks click effects, so only judge buttons on non-animating pages
+  const judgeButtons = !(r.canvas.present && r.canvas.animating);
+  const deadRatio = judgeButtons && r.buttons.total ? r.buttons.dead.length / r.buttons.total : 0;
+  const canvasOk = !r.canvas.present || r.canvas.animating || r.canvas.reactsToKeys;
+  const interaction = r.clickErrors.length === 0 && deadRatio <= 0.34 && canvasOk;
+  return { load, render: rendered, interaction, pass: load && rendered && interaction, deadRatio: +deadRatio.toFixed(2) };
 }
-if (typeof module !== "undefined") {
-  module.exports = { POPPY_UNIVERSAL_RUNTIME_CODE, injectUniversalRuntime };
+
+/* Feed this back to the model for ONE repair turn. */
+function buildRepairPrompt(r) {
+  const out = [];
+  if (r.render.placeholder) out.push("The page rendered only a generic placeholder; build the real UI.");
+  if (r.loadErrors.length) out.push("Errors on load:\n- " + r.loadErrors.join("\n- "));
+  if (r.clickErrors.length) out.push("Errors when clicking controls:\n- " + r.clickErrors.join("\n- "));
+  if (r.buttons.dead.length) out.push("Controls that did nothing when clicked (no DOM, input, storage or canvas change):\n- " + r.buttons.dead.join("\n- "));
+  if (r.canvas.present && !r.canvas.animating && !r.canvas.reactsToKeys) out.push("The canvas never changes: no animation loop and no response to keyboard input.");
+  return out.length ? "Your app was run in a browser sandbox and failed these checks. Fix exactly these problems and return the full corrected document.\n\n" + out.join("\n\n") : "";
 }
+
+if (typeof module !== "undefined") module.exports = { initProbe, runProbe, scoreProbe, buildRepairPrompt };
+if (typeof window !== "undefined") Object.assign(window, { initProbe, runProbe, scoreProbe, buildRepairPrompt });
 
 // --- PHASE 7: VISUAL CRAFT (Inspector & UI Blocks) ---
 

@@ -1,0 +1,22 @@
+[
+ {"id":"calculator","prompt":"A scientific calculator with keyboard support"},
+ {"id":"mortgage","prompt":"A mortgage payment estimator with amount, rate and term"},
+ {"id":"todo","prompt":"A todo list with add, complete, delete and filters"},
+ {"id":"kanban","prompt":"A kanban board with three columns and draggable cards"},
+ {"id":"pomodoro","prompt":"A pomodoro timer with start, pause, reset"},
+ {"id":"shop","prompt":"An e-commerce platform for a coffee roaster with cart drawer"},
+ {"id":"mario","prompt":"A Super Mario style 2D platformer"},
+ {"id":"flappy","prompt":"A flappy bird clone"},
+ {"id":"synth","prompt":"A polyphonic synthesizer with ADSR"},
+ {"id":"deck","prompt":"A 6-slide pitch deck for a bike-sharing startup"},
+ {"id":"landing","prompt":"A landing page for a SaaS task runner with pricing toggle"},
+ {"id":"converter","prompt":"A unit converter for length, mass and temperature"},
+ {"id":"guitar-shop","prompt":"A website for a guitar shop with lessons booking"},
+ {"id":"table-booking","prompt":"A restaurant site with table booking form"},
+ {"id":"habit","prompt":"A habit tracker with streaks"},
+ {"id":"notes","prompt":"A notes app with search and tags"},
+ {"id":"dashboard","prompt":"A SaaS analytics dashboard with KPIs, chart and sortable table"},
+ {"id":"quiz","prompt":"A 5-question quiz with score at the end"},
+ {"id":"portfolio","prompt":"A photographer portfolio with tabs and contact modal"},
+ {"id":"whiteboard","prompt":"A drawing whiteboard with colors and undo"}
+]
