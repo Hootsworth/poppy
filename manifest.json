@@ -1,0 +1,21 @@
+{
+  "name": "Poppy",
+  "short_name": "Poppy",
+  "description": "Universal creation engine that creates whatever software you ask for.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f23d2a",
+  "theme_color": "#f23d2a",
+  "icons": [
+    {
+      "src": "favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

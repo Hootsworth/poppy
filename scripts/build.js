@@ -138,5 +138,11 @@ if (fs.existsSync(path.join(__dirname, "..", "apple-touch-icon.png"))) {
 if (fs.existsSync(path.join(__dirname, "..", "logo.png"))) {
   fs.copyFileSync(path.join(__dirname, "..", "logo.png"), path.join(__dirname, "..", "dist", "logo.png"));
 }
+if (fs.existsSync(path.join(__dirname, "..", "sw.js"))) {
+  fs.copyFileSync(path.join(__dirname, "..", "sw.js"), path.join(__dirname, "..", "dist", "sw.js"));
+}
+if (fs.existsSync(path.join(__dirname, "..", "manifest.json"))) {
+  fs.copyFileSync(path.join(__dirname, "..", "manifest.json"), path.join(__dirname, "..", "dist", "manifest.json"));
+}
 
 console.log(`Build complete! Output written to index.html, poppy.html, dist/index.html, and favicon.ico (${bundle.length} bytes). Verified exactly 1 script closing tag.`);
