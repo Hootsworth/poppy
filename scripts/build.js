@@ -16,7 +16,8 @@ const cssFiles = [
   "src/css/ecosystem.css",
   "src/css/voice.css",
   "src/css/document.css",
-  "src/css/export.css"
+  "src/css/export.css",
+  "src/css/persistent.css"
 ];
 cssFiles.forEach(file => {
   const content = readFile(file);
@@ -60,6 +61,7 @@ const jsFiles = [
   "src/js/engine/dispatcher.js",
   "src/js/core/core-engine.js",
   "src/js/tests/selftest.js",
+  "src/js/engine/persistent.js",
   "src/js/engine/packager.js",
   "src/js/engine/exporters.js",
   "src/js/engine/archetypes.js",

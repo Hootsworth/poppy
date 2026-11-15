@@ -298,3 +298,91 @@ if ($("#ecoAddPluginBtn")) $("#ecoAddPluginBtn").onclick = addCustomPlugin;
 // Wire up automation multi-step builder
 if ($("#autoAddStepBtn")) $("#autoAddStepBtn").onclick = () => addPipelineStep();
 if ($("#testPipelineBtn")) $("#testPipelineBtn").onclick = testRunActivePipeline;
+
+// Persistent Cloud Software (Poppy 3.5) Handlers
+async function exportGitHubActionsCronJob() {
+  const name = (meta && meta.name) || "poppy-scheduled-job";
+  const cron = prompt("Enter 5-part cron expression (e.g. '0 9 * * 1-5' for weekdays at 9am):", "0 9 * * 1-5");
+  if (!cron) return;
+
+  const res = typeof PERSISTENT_ENGINE !== "undefined"
+    ? PERSISTENT_ENGINE.generateGitHubActionsCron(name, cron, "// Poppy Scheduled Task\nconsole.log('Automated cloud task executed successfully');")
+    : null;
+  if (!res) return;
+
+  const enc = new TextEncoder();
+  const zipFiles = [{ name: res.filename, data: enc.encode(res.content) }];
+  const zipBytes = await createZip(zipFiles);
+  const blob = new Blob([zipBytes], { type: "application/zip" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${res.slug}-github-cron.zip`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+
+  recordHeartbeatLog("github-actions", "success", `Exported scheduled cron: ${cron}`);
+  toast(`Exported GitHub Actions cron workflow (${cron})`);
+}
+
+async function exportCloudflareWorkerCronJob() {
+  const name = (meta && meta.name) || "poppy-cron-worker";
+  const cron = prompt("Enter 5-part cron expression for Cloudflare Worker:", "0 * * * *");
+  if (!cron) return;
+
+  const res = typeof PERSISTENT_ENGINE !== "undefined"
+    ? PERSISTENT_ENGINE.generateCloudflareWorkerCron(name, cron)
+    : null;
+  if (!res) return;
+
+  const enc = new TextEncoder();
+  const zipFiles = Object.entries(res.files).map(([fn, c]) => ({ name: fn, data: enc.encode(c) }));
+  const zipBytes = await createZip(zipFiles);
+  const blob = new Blob([zipBytes], { type: "application/zip" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${res.slug}-cloudflare-worker.zip`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+
+  recordHeartbeatLog("cloudflare-worker", "success", `Exported Cloudflare Worker cron: ${cron}`);
+  toast(`Exported Cloudflare Worker cron bundle`);
+}
+
+async function exportWebhookReceiver() {
+  const name = (meta && meta.name) || "poppy-webhook";
+  const res = typeof PERSISTENT_ENGINE !== "undefined"
+    ? PERSISTENT_ENGINE.generateWebhookHandler(name)
+    : null;
+  if (!res) return;
+
+  const enc = new TextEncoder();
+  const zipFiles = [{ name: "webhook.js", data: enc.encode(res.code) }];
+  const zipBytes = await createZip(zipFiles);
+  const blob = new Blob([zipBytes], { type: "application/zip" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${res.slug}-webhook.zip`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+
+  recordHeartbeatLog("webhook", "success", `Exported webhook receiver for ${name}`);
+  toast(`Exported webhook receiver script`);
+}
+
+function recordHeartbeatLog(jobId, status, message) {
+  if (typeof PERSISTENT_ENGINE !== "undefined") {
+    PERSISTENT_ENGINE.recordExecutionHeartbeat(jobId, status, { message });
+  }
+  const term = $("#persistTerminalLogs");
+  if (term) {
+    const line = document.createElement("div");
+    line.className = "persist-log-line";
+    const time = new Date().toLocaleTimeString();
+    line.innerHTML = `<span class="persist-log-time">[${time}]</span><span class="persist-log-status ${status}">${status.toUpperCase()}</span><span>${message}</span>`;
+    term.prepend(line);
+  }
+}
+
+if ($("#btnExportGhCron")) $("#btnExportGhCron").onclick = exportGitHubActionsCronJob;
+if ($("#btnExportCfWorker")) $("#btnExportCfWorker").onclick = exportCloudflareWorkerCronJob;
+if ($("#btnExportWebhook")) $("#btnExportWebhook").onclick = exportWebhookReceiver;

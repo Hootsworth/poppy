@@ -1,0 +1,28 @@
+/* ===== Poppy Persistent Software Engine (Poppy 3.5): CSS ===== */
+.persist-drawer{margin-top:20px;background:#141417;border:1px solid #27272a;border-radius:10px;padding:18px}
+.persist-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.persist-head h4{margin:0;font-size:13px;font-weight:700;color:#e4e4e7;text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:8px}
+
+.persist-pulse-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;box-shadow:0 0 8px rgba(34,197,94,.6);animation:pulse-heartbeat 2s infinite}
+.persist-pulse-dot.warning{background:#eab308;box-shadow:0 0 8px rgba(234,179,8,.6)}
+.persist-pulse-dot.failure{background:#ef4444;box-shadow:0 0 8px rgba(239,68,68,.6);animation:none}
+
+@keyframes pulse-heartbeat{
+  0%{transform:scale(.95);opacity:.7}
+  50%{transform:scale(1.2);opacity:1}
+  100%{transform:scale(.95);opacity:.7}
+}
+
+.persist-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px}
+.persist-card{background:#18181b;border:1px solid #27272a;border-radius:8px;padding:14px;cursor:pointer;transition:border-color .15s,background .15s}
+.persist-card:hover{border-color:var(--red);background:#202025}
+.persist-card h5{margin:0 0 4px 0;font-size:13px;font-weight:600;color:#fff}
+.persist-card p{margin:0;font-size:11px;color:#a1a1aa;line-height:1.4}
+
+.persist-terminal{background:#09090b;border:1px solid #27272a;border-radius:6px;padding:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:11px;color:#d4d4d8;max-height:160px;overflow-y:auto;line-height:1.5}
+.persist-log-line{display:flex;gap:10px;margin-bottom:4px}
+.persist-log-time{color:#71717a;flex:none}
+.persist-log-status{font-weight:700}
+.persist-log-status.success{color:#4ade80}
+.persist-log-status.warning{color:#facc15}
+.persist-log-status.failure{color:#f87171}

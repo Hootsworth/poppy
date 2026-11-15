@@ -37,6 +37,41 @@
       <div id="autoTestLog" style="display:none;margin-top:10px;padding:8px;background:#fff;border:1px solid var(--ink);border-radius:8px;font-size:.8rem;font-family:monospace;max-height:140px;overflow-y:auto"></div>
     </div>
     <div id="autoList"></div>
+
+    <!-- Persistent Software (Poppy 3.5): Cloud Runners & Heartbeats -->
+    <div class="persist-drawer" id="persistCloudDrawer">
+      <div class="persist-head">
+        <h4>
+          <span class="persist-pulse-dot" id="persistHeartbeatDot"></span>
+          <span>Persistent Cloud Software</span>
+        </h4>
+        <span class="exp-badge">POPPY 3.5</span>
+      </div>
+      <p style="font-size:12px;color:var(--sub);margin:0 0 14px">Run scheduled jobs and workflows 24/7 in the cloud without keeping your browser open.</p>
+      
+      <div class="persist-grid">
+        <div class="persist-card" id="btnExportGhCron">
+          <h5>GitHub Actions Cron</h5>
+          <p>Unattended 24/7 scheduled runner via free GitHub Actions workflow.</p>
+        </div>
+        <div class="persist-card" id="btnExportCfWorker">
+          <h5>Cloudflare Worker Cron</h5>
+          <p>Global edge serverless worker triggered on cron schedule.</p>
+        </div>
+        <div class="persist-card" id="btnExportWebhook">
+          <h5>Authenticated Webhook</h5>
+          <p>HTTP receiver endpoint with secret validation and event routing.</p>
+        </div>
+      </div>
+
+      <div class="persist-terminal" id="persistTerminalLogs">
+        <div class="persist-log-line">
+          <span class="persist-log-time">[System]</span>
+          <span class="persist-log-status success">ONLINE</span>
+          <span>Persistent engine initialized. Ready for cloud runner dispatch.</span>
+        </div>
+      </div>
+    </div>
   </div>
   <div class="acts"><button class="go sp" id="autoClose" type="button">Done</button></div>
 </dialog>
