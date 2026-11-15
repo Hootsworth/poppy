@@ -5,7 +5,7 @@
   "main": "dist/index.html",
   "scripts": {
     "build": "node scripts/build.js",
-    "test": "node scripts/test.js && node test_phase1_uaa.js && node test_phase2_distribution.js"
+    "test": "node scripts/test.js && node test_phase1_uaa.js && node test_phase2_distribution.js && node test_phase2_e2e_verification.js"
   },
   "keywords": ["generative-ui", "offline-first", "wasm", "sqlite", "presentation-engine"],
   "author": "Poppy Team",
