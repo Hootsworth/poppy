@@ -1,0 +1,51 @@
+<div id="voiceOverlay" data-mode="voice" role="dialog" aria-modal="true" aria-label="Poppy Voice Mode">
+  <header class="voice-bar">
+    <div class="voice-brand">Poppy<small>Voice</small></div>
+    <div class="voice-chip" id="voiceState">Ready</div>
+    <div class="voice-row">
+      <button class="voice-rb" id="voiceMute" type="button" aria-pressed="false" aria-label="Mute microphone" title="Mute/unmute microphone">&#9679;</button>
+      <button class="voice-rb" id="voiceEnd" type="button" aria-label="Close voice mode" title="Close voice mode">&times;</button>
+    </div>
+  </header>
+  <div class="voice-stage">
+    <section class="voice-vl">
+      <div class="voice-orbw" id="voiceOrbw" data-state="idle">
+        <div class="voice-glow"></div>
+        <i class="voice-r"></i><i class="voice-r"></i><i class="voice-r"></i>
+        <svg id="voiceVf" viewBox="0 0 200 200" aria-hidden="true"></svg>
+      </div>
+      <div class="voice-tr" id="voiceTr" aria-live="polite"></div>
+      <div class="voice-suggestions" id="voiceSug">
+        <button type="button" class="voice-sug-btn">A lighthouse tea shop</button>
+        <button type="button" class="voice-sug-btn">60fps retro space shooter</button>
+        <button type="button" class="voice-sug-btn">Pomodoro timer with sound</button>
+      </div>
+    </section>
+    <aside class="voice-vr">
+      <div class="voice-vi" id="voiceWork">
+        <div class="voice-card">
+          <h3><span class="voice-d3"><i></i><i></i><i></i></span><span id="voiceStat">Thinking</span></h3>
+          <ul class="voice-th" id="voiceTh"></ul>
+        </div>
+        <div class="voice-card">
+          <ol class="voice-steps" id="voiceSteps">
+            <li>Plan</li>
+            <li>Build</li>
+            <li>Check</li>
+            <li>Fix</li>
+          </ol>
+          <div class="voice-pbar"><i id="voicePb"></i></div>
+          <div class="voice-meta">
+            <span><span id="voicePn" data-v="0">0</span>%</span>
+            <span id="voiceFx"></span>
+            <span><span id="voiceTk" data-v="0">0</span> tokens</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+  <footer class="voice-dock">
+    <button type="button" class="voice-play" id="voicePlay">Play conversation</button>
+  </footer>
+</div>
+<div class="voice-wipe" id="voiceWipe" aria-hidden="true"><span>Your site.</span></div>

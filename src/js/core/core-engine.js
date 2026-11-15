@@ -2109,18 +2109,13 @@ if ($("#imgIn")) $("#imgIn").onchange = e => { setImg(e.target.files[0]); e.targ
 if ($("#imgX")) $("#imgX").onclick = () => setImg(null);
 
 function wireMic(btn, inp){
-  const R = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!R) { btn.hidden = true; return; }
-  let r, base = "";
-  const start = () => {
-    if (r) return; r = new R(); r.interimResults = true; r.continuous = true; r.lang = navigator.language || "en-US"; base = inp.value ? inp.value + " " : "";
-    r.onresult = e => { inp.value = base + [...e.results].map(x => x[0].transcript).join(""); inp.dispatchEvent(new Event("input")); };
-    r.onend = () => { r = null; btn.classList.remove("on"); }; r.onerror = () => {};
-    btn.classList.add("on"); try { r.start(); } catch { r = null; btn.classList.remove("on"); }
+  if (!btn) return;
+  btn.onclick = e => {
+    e.preventDefault();
+    if (typeof openVoiceMode === "function") {
+      openVoiceMode(btn);
+    }
   };
-  const stop = () => { if (r) r.stop(); };
-  btn.onpointerdown = e => { e.preventDefault(); start(); }; btn.onpointerup = btn.onpointerleave = stop;
-  btn.onkeydown = e => { if ((e.key === " " || e.key === "Enter") && !e.repeat) { e.preventDefault(); start(); } }; btn.onkeyup = stop;
 }
 wireMic($("#homeForm .mic"), $("#prompt")); wireMic($("#tweakForm .mic"), $("#tweak"));
 
