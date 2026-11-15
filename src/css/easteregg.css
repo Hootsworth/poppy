@@ -1,0 +1,123 @@
+/* Poppy Easter Egg: 1-in-50 Party Overlay */
+#poppyEasterEgg {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: radial-gradient(circle at center, rgba(15, 23, 42, 0.94), rgba(2, 6, 23, 0.98));
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+  animation: eggFadeIn 0.4s ease-out;
+  pointer-events: auto;
+}
+
+@keyframes eggFadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+#poppyEasterEgg.closing {
+  animation: eggFadeOut 0.5s ease-in forwards;
+}
+
+@keyframes eggFadeOut {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(1.04); pointer-events: none; }
+}
+
+.egg-party-box {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  background: rgba(30, 41, 59, 0.88);
+  border: 2px solid #38bdf8;
+  border-radius: 16px;
+  padding: 24px 36px;
+  box-shadow: 0 0 35px rgba(56, 189, 248, 0.4), 0 0 70px rgba(244, 63, 94, 0.3);
+  backdrop-filter: blur(8px);
+  max-width: 90vw;
+}
+
+.egg-title {
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  background: linear-gradient(90deg, #f43f5e, #fb923c, #facc15, #38bdf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+}
+
+.egg-subtitle {
+  font-size: 1rem;
+  color: #94a3b8;
+  margin-bottom: 12px;
+}
+
+.egg-track-badge {
+  display: inline-block;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 6px 14px;
+  border-radius: 99px;
+  font-size: 0.85rem;
+  color: #38bdf8;
+  margin-bottom: 16px;
+}
+
+.egg-timer-bar-wrap {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.egg-timer-bar {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #38bdf8, #f43f5e);
+  animation: eggTimerCountdown 10s linear forwards;
+}
+
+@keyframes eggTimerCountdown {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+.egg-skip-btn {
+  background: #334155;
+  color: #e2e8f0;
+  border: 1px solid #475569;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.egg-skip-btn:hover {
+  background: #475569;
+  color: #fff;
+}
+
+.egg-floating-cat {
+  position: absolute;
+  pointer-events: none;
+  z-index: 5;
+  width: 64px;
+  height: 64px;
+  animation: eggCatFloat 4s ease-in-out infinite alternate;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+}
+
+@keyframes eggCatFloat {
+  0% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-30px) rotate(15deg); }
+  100% { transform: translateY(30px) rotate(-15deg); }
+}

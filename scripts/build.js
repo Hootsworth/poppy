@@ -17,7 +17,8 @@ const cssFiles = [
   "src/css/voice.css",
   "src/css/document.css",
   "src/css/export.css",
-  "src/css/persistent.css"
+  "src/css/persistent.css",
+  "src/css/easteregg.css"
 ];
 cssFiles.forEach(file => {
   const content = readFile(file);
@@ -74,6 +75,7 @@ const jsFiles = [
   "src/js/modules/automations.js",
   "src/js/modules/onboarding.js",
   "src/js/modules/voice.js",
+  "src/js/modules/easteregg.js",
   "src/js/app.js"
 ];
 const js = jsFiles.map(readFile).join("\n\n");

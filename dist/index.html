@@ -1180,6 +1180,130 @@ dialog::backdrop{background:rgba(42,13,22,.55)}
 .persist-log-status.success{color:#4ade80}
 .persist-log-status.warning{color:#facc15}
 .persist-log-status.failure{color:#f87171}
+
+/* Poppy Easter Egg: 1-in-50 Party Overlay */
+#poppyEasterEgg {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: radial-gradient(circle at center, rgba(15, 23, 42, 0.94), rgba(2, 6, 23, 0.98));
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+  animation: eggFadeIn 0.4s ease-out;
+  pointer-events: auto;
+}
+
+@keyframes eggFadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+#poppyEasterEgg.closing {
+  animation: eggFadeOut 0.5s ease-in forwards;
+}
+
+@keyframes eggFadeOut {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(1.04); pointer-events: none; }
+}
+
+.egg-party-box {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  background: rgba(30, 41, 59, 0.88);
+  border: 2px solid #38bdf8;
+  border-radius: 16px;
+  padding: 24px 36px;
+  box-shadow: 0 0 35px rgba(56, 189, 248, 0.4), 0 0 70px rgba(244, 63, 94, 0.3);
+  backdrop-filter: blur(8px);
+  max-width: 90vw;
+}
+
+.egg-title {
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  background: linear-gradient(90deg, #f43f5e, #fb923c, #facc15, #38bdf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+}
+
+.egg-subtitle {
+  font-size: 1rem;
+  color: #94a3b8;
+  margin-bottom: 12px;
+}
+
+.egg-track-badge {
+  display: inline-block;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 6px 14px;
+  border-radius: 99px;
+  font-size: 0.85rem;
+  color: #38bdf8;
+  margin-bottom: 16px;
+}
+
+.egg-timer-bar-wrap {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.egg-timer-bar {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #38bdf8, #f43f5e);
+  animation: eggTimerCountdown 10s linear forwards;
+}
+
+@keyframes eggTimerCountdown {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+.egg-skip-btn {
+  background: #334155;
+  color: #e2e8f0;
+  border: 1px solid #475569;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.egg-skip-btn:hover {
+  background: #475569;
+  color: #fff;
+}
+
+.egg-floating-cat {
+  position: absolute;
+  pointer-events: none;
+  z-index: 5;
+  width: 64px;
+  height: 64px;
+  animation: eggCatFloat 4s ease-in-out infinite alternate;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+}
+
+@keyframes eggCatFloat {
+  0% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-30px) rotate(15deg); }
+  100% { transform: translateY(30px) rotate(-15deg); }
+}
 </style>
 </head>
 <body>
@@ -12757,6 +12881,118 @@ if (typeof window !== "undefined") {
     document.addEventListener("DOMContentLoaded", initVoiceDOM);
   } else {
     initVoiceDOM();
+  }
+})();
+
+// Poppy Easter Egg: 1-in-50 Party Mode
+(() => {
+  let eggAudio = null;
+  let eggTimer = null;
+
+  const CAT_COLORS = ["#facc15", "#fb923c", "#f43f5e", "#38bdf8", "#a78bfa", "#34d399"];
+
+  function createCatSvg(color) {
+    return `<svg viewBox="0 0 64 64" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M16 12L24 24H40L48 12L44 28C48 32 50 38 50 44C50 54 42 60 32 60C22 60 14 54 14 44C14 38 16 32 20 28L16 12Z" fill="${color}" stroke="#0f172a" stroke-width="2"/>
+      <ellipse cx="26" cy="40" rx="3" ry="4" fill="#0f172a"/>
+      <ellipse cx="38" cy="40" rx="3" ry="4" fill="#0f172a"/>
+      <polygon points="32,46 29,43 35,43" fill="#f43f5e"/>
+      <path d="M28 48C29 50 31 51 32 51C33 51 35 50 36 48" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+      <path d="M22 44L12 42M22 47L14 48M42 44L52 42M42 47L50 48" stroke="#0f172a" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>`;
+  }
+
+  function triggerEasterEgg() {
+    if (document.getElementById("poppyEasterEgg")) return;
+
+    const overlay = document.createElement("div");
+    overlay.id = "poppyEasterEgg";
+
+    // Center party content
+    overlay.innerHTML = `
+      <div class="egg-party-box">
+        <div class="egg-title">PARTY MODE ACTIVATED</div>
+        <div class="egg-subtitle">You discovered the 1-in-50 Poppy easter egg!</div>
+        <div class="egg-track-badge">Now Playing: Justin Bieber - Beauty and a Beat</div>
+        <div class="egg-timer-bar-wrap">
+          <div class="egg-timer-bar"></div>
+        </div>
+        <button type="button" class="egg-skip-btn" id="eggSkipBtn">Skip to Poppy</button>
+      </div>
+    `;
+
+    // Spawn floating cats
+    for (let i = 0; i < 14; i++) {
+      const cat = document.createElement("div");
+      cat.className = "egg-floating-cat";
+      cat.style.left = (Math.random() * 88 + 2) + "vw";
+      cat.style.top = (Math.random() * 82 + 5) + "vh";
+      cat.style.animationDuration = (3.5 + Math.random() * 3) + "s";
+      cat.style.animationDelay = (Math.random() * 2) + "s";
+      const size = Math.floor(48 + Math.random() * 36);
+      cat.style.width = size + "px";
+      cat.style.height = size + "px";
+      const color = CAT_COLORS[i % CAT_COLORS.length];
+      cat.innerHTML = createCatSvg(color);
+      overlay.appendChild(cat);
+    }
+
+    document.body.appendChild(overlay);
+
+    // Audio stream via iTunes JSONP
+    const cbName = "poppy_egg_cb_" + Math.random().toString(36).slice(2, 8);
+    const script = document.createElement("script");
+    window[cbName] = data => {
+      delete window[cbName];
+      if (script.parentNode) script.remove();
+      const track = data.results && data.results[0];
+      if (track && track.previewUrl) {
+        eggAudio = new Audio(track.previewUrl);
+        eggAudio.volume = 0.65;
+        const p = eggAudio.play();
+        if (p !== undefined) {
+          p.catch(() => {
+            window.addEventListener("click", () => {
+              if (eggAudio) eggAudio.play().catch(() => {});
+            }, { once: true });
+          });
+        }
+      }
+    };
+    script.onerror = () => {
+      delete window[cbName];
+      if (script.parentNode) script.remove();
+    };
+    script.src = `https://itunes.apple.com/search?term=Justin+Bieber+Beauty+and+a+Beat&entity=song&limit=1&callback=${cbName}`;
+    document.body.appendChild(script);
+
+    // Auto-dismiss after 10 seconds
+    function closeEgg() {
+      if (eggTimer) clearTimeout(eggTimer);
+      if (eggAudio) {
+        try { eggAudio.pause(); } catch (e) {}
+        eggAudio = null;
+      }
+      overlay.classList.add("closing");
+      setTimeout(() => {
+        if (overlay.parentNode) overlay.remove();
+      }, 500);
+    }
+
+    document.getElementById("eggSkipBtn").onclick = closeEgg;
+    eggTimer = setTimeout(closeEgg, 10000);
+  }
+
+  window.triggerPoppyParty = triggerEasterEgg;
+
+  // 1-in-50 chance on initial launch, or manually via #party hash
+  const shouldTrigger = (Math.floor(Math.random() * 50) === 0) || (window.location && window.location.hash === "#party");
+  if (shouldTrigger) {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", triggerEasterEgg);
+    } else {
+      setTimeout(triggerEasterEgg, 100);
+    }
   }
 })();
 
