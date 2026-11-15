@@ -321,7 +321,7 @@ async function* streamRaw(messages, system = SYSTEM, pv = prov()){
   } else if (p === "gemini") {
     url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":streamGenerateContent?alt=sse";
     headers["x-goog-api-key"] = key;
-    body = {systemInstruction: {parts: [{text: system}]}, contents: messages.map(m => ({role: "user", parts: [...(m.image ? [{inline_data: {mime_type: m.image.mime, data: m.image.b64}}] : []), {text: m.content}]})), generationConfig: {maxOutputTokens: 16000}};
+    body = {systemInstruction: {parts: [{text: system}]}, contents: messages.map(m => ({role: m.role === "assistant" ? "model" : "user", parts: [...(m.image ? [{inline_data: {mime_type: m.image.mime, data: m.image.b64}}] : []), {text: m.content}]})), generationConfig: {maxOutputTokens: 16000}};
   } else {
     url = p === "openai" ? "https://api.openai.com/v1/chat/completions" : "https://api.llama.com/compat/v1/chat/completions";
     headers.authorization = "Bearer " + key;
@@ -1462,7 +1462,72 @@ addEventListener("message", async e => {
   catch (err) { reply({ok: false, error: err.message || String(err)}); }
 });
 
-async function collect(messages, system, onTok){ let out = ""; for await (const t of stream(messages, system)) { out += t; onTok && onTok(out); } return out; }
+function cleanContinuation(prior, next) {
+  let n = (next || "").replace(/^\s*```[a-z]*\s*\n?/i, "");
+  for (let len = Math.min(60, prior.length, n.length); len >= 4; len--) {
+    const tail = prior.slice(-len);
+    if (n.startsWith(tail)) {
+      n = n.slice(len);
+      break;
+    }
+  }
+  return n;
+}
+
+function isCodeTruncated(str) {
+  if (!str || typeof str !== "string" || str.length < 80) return false;
+  const s = str.trim();
+  if (/<\/html>\s*(?:```)?$/i.test(s)) return false;
+  if (/(?:^|\n)(?:---|===)\s*FILE:\s*index\.html/i.test(s) && /<\/html>\s*(?:```)?$/i.test(s)) return false;
+  const openScripts = (s.match(/<script\b[^>]*>/gi) || []).length;
+  const closeScripts = (s.match(/<\/script>/gi) || []).length;
+  if (openScripts > closeScripts) return true;
+  const openStyles = (s.match(/<style\b[^>]*>/gi) || []).length;
+  const closeStyles = (s.match(/<\/style>/gi) || []).length;
+  if (openStyles > closeStyles) return true;
+  if (/<(!doctype|html)\b/i.test(s) && !/<\/html>/i.test(s)) return true;
+  return false;
+}
+
+async function collect(messages, system, onTok) {
+  let out = "";
+  for await (const t of stream(messages, system)) {
+    out += t;
+    onTok && onTok(out);
+  }
+
+  // Auto-continuation: ensure high-fidelity builds are never cut off by token limits
+  let depth = 0;
+  while (depth < 3 && isCodeTruncated(out)) {
+    depth++;
+    const contMessages = [
+      ...messages,
+      { role: "assistant", content: out },
+      {
+        role: "user",
+        content: "You reached the output token limit. Continue generating the code EXACTLY where you left off. Do not repeat any existing code, and do not wrap in markdown fences. Immediately resume writing the remaining code from the exact cut-off point until all files/scripts and </html> are completely closed."
+      }
+    ];
+    let contOut = "";
+    try {
+      for await (const t of stream(contMessages, system)) {
+        contOut += t;
+      }
+      if (contOut.trim()) {
+        const cleaned = cleanContinuation(out, contOut);
+        out += cleaned;
+        onTok && onTok(out);
+      } else {
+        break;
+      }
+    } catch (err) {
+      console.warn("Auto-continuation notice:", err);
+      break;
+    }
+  }
+
+  return out;
+}
 function bundleFiles(files, assetMap = {}){
   if (!files || typeof files !== "object") return "";
   let html = files["index.html"] || Object.values(files)[0] || "";
