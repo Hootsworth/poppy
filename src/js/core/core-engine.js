@@ -48,7 +48,7 @@ const PROVIDERS = {
   anthropic: {name: "Anthropic", model: "claude-sonnet-4-6", hint: "Get a key at console.anthropic.com."},
   openai: {name: "OpenAI", model: "gpt-4.1", hint: "Get a key at platform.openai.com."},
   gemini: {name: "Gemini", model: "gemini-2.0-flash", hint: "Get a key at aistudio.google.com."},
-  meta: {name: "Meta", model: "Llama-4-Maverick-17B-128E-Instruct-FP8", hint: "Get a key at llama.developer.meta.com. Meta's API may block direct browser calls."}
+  meta: {name: "Meta", model: "Muse Spark 1.3 Contributor", hint: "Meta AI. Default model: Muse Spark 1.3 Contributor."}
 };
 if (ls.get("poppy.key") && !ls.get("poppy.key.anthropic")) ls.set("poppy.key.anthropic", ls.get("poppy.key"));
 const prov = () => ls.get("poppy.prov") || "anthropic";
@@ -61,7 +61,44 @@ const modelOf = p => {
   }
   return m;
 };
-function updateProv(){ const p = prov(), on = !!keyOf(p); $("#provLabel").textContent = on ? PROVIDERS[p].name : "Add a key";  }
+
+function getWeekKey(date = new Date()) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
+}
+
+function getWeeklyQuota() {
+  try {
+    const q = JSON.parse(ls.get("poppy.free_quota") || "{}");
+    const currentWeek = getWeekKey();
+    if (q.week === currentWeek) return q;
+    return { week: currentWeek, count: 0 };
+  } catch {
+    return { week: getWeekKey(), count: 0 };
+  }
+}
+
+function recordWeeklyUse() {
+  const q = getWeeklyQuota();
+  q.count = (q.count || 0) + 1;
+  ls.set("poppy.free_quota", JSON.stringify(q));
+  updateProv();
+}
+
+function updateProv(){
+  const p = prov(), on = !!keyOf(p);
+  if (on) {
+    $("#provLabel").textContent = PROVIDERS[p].name;
+  } else {
+    const q = getWeeklyQuota();
+    const left = Math.max(0, 3 - (q.count || 0));
+    $("#provLabel").textContent = `Free Tier (${left}/3 left)`;
+  }
+}
 let sel = "anthropic";
 function saveTab(){ ls.set("poppy.key." + sel, $("#key").value.trim()); ls.set("poppy.model." + sel, $("#model").value.trim()); }
 function showTab(p){
@@ -339,7 +376,62 @@ async function* stream(messages, system = SYSTEM, pv){
 }
 async function* streamRaw(messages, system = SYSTEM, pv = prov()){
   const p = pv, P = PROVIDERS[p], key = keyOf(p), model = modelOf(p);
-  if (!key) throw new Error("Add your " + P.name + " API key first.");
+
+  // If user does not have their own API key, route through backend proxy (capped at 3/week)
+  if (!key) {
+    const quota = getWeeklyQuota();
+    if (quota.count >= 3) {
+      if ($("#dlg")) $("#dlg").showModal();
+      throw new Error("Weekly free limit reached (3/3 builds used this week). Add your own API key in Switch AI to keep building without limits!");
+    }
+
+    const backendUrl = window.POPPY_BACKEND_URL || "/api/generate";
+    let proxyRes;
+    try {
+      proxyRes = await fetch(backendUrl, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ messages, system })
+      });
+    } catch {
+      throw new Error("Add your " + P.name + " API key in Switch AI to start building.");
+    }
+
+    if (!proxyRes.ok) {
+      let errText = "";
+      try { const ej = await proxyRes.json(); errText = ej.error || ""; } catch {}
+      if (proxyRes.status === 429) {
+        if ($("#dlg")) $("#dlg").showModal();
+        throw new Error(errText || "Weekly free limit reached (3/3 builds used this week). Add your own API key in Switch AI to continue unlimited builds!");
+      }
+      throw new Error(errText || `Backend proxy error (${proxyRes.status}). Add your own API key in Switch AI.`);
+    }
+
+    const rd = proxyRes.body.getReader(), dec = new TextDecoder();
+    let buf = "";
+    for (;;) {
+      const { done, value } = await rd.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop();
+      for (const l of lines) {
+        if (!l.startsWith("data:")) continue;
+        const raw = l.slice(5).trim();
+        if (!raw || raw === "[DONE]") continue;
+        let j;
+        try { j = JSON.parse(raw); } catch { continue; }
+        if (j.error) throw new Error(j.error.message || j.error || "Stream error.");
+        let t = "";
+        if (j.choices?.[0]?.delta?.content) t = j.choices[0].delta.content;
+        else if (j.candidates?.[0]?.content?.parts?.[0]?.text) t = j.candidates[0].content.parts[0].text;
+        else if (typeof j.text === "string") t = j.text;
+        if (t) yield t;
+      }
+    }
+    recordWeeklyUse();
+    return;
+  }
   let url, headers = {"content-type": "application/json"}, body;
   const chat = [{role: "system", content: system}, ...messages.map(m => vis(p, m))];
   if (p === "anthropic") {
