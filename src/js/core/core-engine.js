@@ -139,6 +139,34 @@ const AT_OPTIONS = [
     desc: "Embedded streaming AI logic & assistants",
     hint: "ai",
     svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'
+  },
+  {
+    tag: "@cam",
+    title: "Live Webcam FX Studio",
+    desc: "Camera stream, ASCII cam & photobooth",
+    hint: "cam",
+    svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>'
+  },
+  {
+    tag: "@photo",
+    title: "Canvas Photo Editor & Markup",
+    desc: "Adjustments, aspect crop & privacy redaction",
+    hint: "photo",
+    svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>'
+  },
+  {
+    tag: "@physics",
+    title: "Falling Sand & Physics Sandbox",
+    desc: "Cellular automata elemental reactions & gravity",
+    hint: "physics",
+    svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12a4 4 0 0 0 8 0"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>'
+  },
+  {
+    tag: "@3d",
+    title: "Generative Art & 3D Spatial Viewer",
+    desc: "Vector flow fields & WebGL 3D meshes",
+    hint: "3d",
+    svg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>'
   }
 ];
 
@@ -1835,7 +1863,7 @@ async function checkAndFix(html, note, promptText = ""){
   }
   return html;
 }
-const TPL = [["Dashboard", "a dashboard with a left nav, summary cards, an SVG or canvas chart and a data table"], ["Landing page", "a landing page with a hero, features, social proof, pricing and a call to action"], ["Game", "a playable game with score, levels or lives, keyboard and touch controls and a restart button"], ["Tracker", "a tracker with an add form, a list with edit and delete, streaks or totals and a chart"], ["Notes app", "a notes app with a sidebar of notes, a editor, search and tags"], ["Calculator tool", "a focused calculator or converter with live results, history and copy buttons"], ["Portfolio", "a personal portfolio with an about section, project cards and a contact form"], ["Quiz", "a quiz with questions, instant feedback, a score screen and retry"], ["Timer", "a timer or stopwatch with presets, laps, sound and notifications"], ["Kanban board", "a kanban board with draggable cards, columns you can rename and saved state"], ["Reader", "a blog or reader with article list, reading view, search and a dark mode"], ["Store front", "a store front with a product grid, filters, a cart and a checkout summary"]];
+const TPL = [["Dashboard", "a dashboard with a left nav, summary cards, an SVG or canvas chart and a data table"], ["Landing page", "a landing page with a hero, features, social proof, pricing and a call to action"], ["Game", "a playable game with score, levels or lives, keyboard and touch controls and a restart button"], ["Tracker", "a tracker with an add form, a list with edit and delete, streaks or totals and a chart"], ["Notes app", "a notes app with a sidebar of notes, a editor, search and tags"], ["Calculator tool", "a focused calculator or converter with live results, history and copy buttons"], ["Portfolio", "a personal portfolio with an about section, project cards and a contact form"], ["Quiz", "a quiz with questions, instant feedback, a score screen and retry"], ["Timer", "a timer or stopwatch with presets, laps, sound and notifications"], ["Kanban board", "a kanban board with draggable cards, columns you can rename and saved state"], ["Reader", "a blog or reader with article list, reading view, search and a dark mode"], ["Store front", "a store front with a product grid, filters, a cart and a checkout summary"], ["Webcam FX Studio", "a live webcam photobooth with real-time ASCII/VHS/Thermal canvas filters, countdown timer and snapshot export"], ["Photo Editor", "a canvas photo editor with adjustment sliders, aspect ratio crop presets, markup arrows and redaction"], ["Physics Sandbox", "a 60fps cellular automata falling sand physics sandbox with sand, water, fire, stone, plant and acid reactions"]];
 const STY = [["Brutalist", "thick black borders, raw system fonts, stark colors, hard shadows"], ["Soft pastel", "rounded shapes, pastel palette, gentle shadows, friendly type"], ["Neon dark", "dark background, glowing neon accents, monospace details"], ["Editorial", "serif headlines, generous whitespace, a magazine grid, restrained colors"], ["Retro Mac", "1990s Macintosh windows, pixel fonts, dithered grays"], ["Playful stickers", "bold colors, tilted sticker-like cards, hand-drawn feel, big emoji"]];
 TPL.forEach(([n]) => $("#tpl").append(new Option(n))); STY.forEach(([n]) => $("#sty").append(new Option(n)));
 const tplPick = () => TPL[$("#tpl").selectedIndex - 1];
@@ -1896,6 +1924,38 @@ function detectIntent(text = "") {
       label: "SQLite Database App",
       desc: "Relational Tables & Persistent Store",
       hint: "\n\nCategory: Database application using poppy.db for SQLite queries and persistent records."
+    };
+  }
+  if (/\b(cam|webcam|photobooth|selfie|filter|@cam|@webcam|@photobooth)\b/i.test(t)) {
+    return {
+      type: "webcam",
+      label: "Live Webcam FX Studio",
+      desc: "Camera Stream, Realtime Shaders & Photobooth",
+      hint: "\n\nCategory: Live webcam and video processing studio using getUserMedia, real-time canvas shaders (ASCII, VHS, Halftone, Thermal), photo burst capture, and high-DPI export with fallback pattern generator."
+    };
+  }
+  if (/\b(photo|image|editor|crop|meme|markup|redact|@photo|@editor|@meme)\b/i.test(t)) {
+    return {
+      type: "photo",
+      label: "Canvas Photo Studio & Editor",
+      desc: "Non-Destructive Adjustments, Crop & Markup",
+      hint: "\n\nCategory: Canvas photo editor with non-destructive adjustments (exposure, contrast, warmth, vignette), aspect-ratio crop presets, arrow/spotlight markup, privacy redaction, and lossless export."
+    };
+  }
+  if (/\b(physics|sand|powder|simulation|cellular|particle|@physics|@sand|@sim)\b/i.test(t)) {
+    return {
+      type: "physics",
+      label: "Falling Sand & Physics Sandbox",
+      desc: "Cellular Automata & Elemental Simulation",
+      hint: "\n\nCategory: 60fps cellular automata falling sand physics sandbox with Sand, Water, Fire, Stone, Acid, and Plant reactions, brush controls, and gravity dynamics."
+    };
+  }
+  if (/\b(3d|generative|flowfield|perlin|spirograph|webgl|@3d|@generative)\b/i.test(t)) {
+    return {
+      type: "generative",
+      label: "Generative Art & 3D Spatial Viewer",
+      desc: "Noise Vector Flow Fields & WebGL Geometry",
+      hint: "\n\nCategory: Generative art and 3D spatial viewer with vector flow fields, particle dynamics, orbit camera rotation, and 4K wallpaper export."
     };
   }
   return null;

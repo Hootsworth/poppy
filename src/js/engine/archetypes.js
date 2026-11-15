@@ -153,6 +153,201 @@ const ARCHETYPES = {
 ...
 --- FILE: app.js ---
 ...`
+  },
+
+  webcam: {
+    type: "webcam",
+    name: "Live Webcam FX & Photobooth Studio",
+    spec: `Architecture Requirements for Live Webcam & Video Processing:
+- MediaStream: Request camera with navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 }, audio: false }).
+- Permission & Fallback: Gracefully catch permission denial and provide an interactive fallback canvas with demo animated video or test pattern so the application remains 100% functional.
+- Real-Time Shaders / Canvas Filters:
+  * ASCII Cam: Sample pixel brightness in 10x10 blocks and map to ASCII characters (' .:-=+*#%@') rendered onto canvas.
+  * Retro VHS: Horizontal jitter, chromatic aberration (RGB channel offset), scanlines, and timestamp overlay.
+  * Comic Halftone: Circular dot matrix scaling based on luminance.
+  * Thermal Duotone: Map grayscale values to infrared heat gradient (blue -> cyan -> yellow -> red -> white).
+  * High-Contrast Noir: Desaturated film grain with dramatic contrast curve.
+- Photo Capture & Burst:
+  * 3-2-1 visual and audible countdown (using WebAudio oscillator beep).
+  * Flash animation on snapshot.
+  * Photo strip thumbnail gallery holding captured frames.
+- Export: Download full-resolution captured photo as high-quality PNG with customizable Polaroid-style border or sticker watermark.`,
+    fileTemplate: `Organize into modular files:
+--- FILE: index.html ---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photobooth Studio</title>
+</head>
+<body>
+  <div id="booth">
+    <div id="viewfinder">
+      <video id="cam" playsinline autoplay muted class="hidden"></video>
+      <canvas id="output"></canvas>
+      <div id="flash" class="flash-overlay"></div>
+      <div id="countdown" class="count-overlay hidden"></div>
+    </div>
+    <div id="controls">
+      <div class="filters-row">
+        <button type="button" class="filter-btn active" data-filter="normal">Normal</button>
+        <button type="button" class="filter-btn" data-filter="ascii">ASCII</button>
+        <button type="button" class="filter-btn" data-filter="vhs">Retro VHS</button>
+        <button type="button" class="filter-btn" data-filter="halftone">Halftone</button>
+        <button type="button" class="filter-btn" data-filter="thermal">Thermal</button>
+      </div>
+      <button type="button" id="btnSnap" class="snap-btn" aria-label="Take Photo">SNAP</button>
+    </div>
+    <div id="gallery" class="photo-strip"></div>
+  </div>
+</body>
+</html>
+
+--- FILE: style.css ---
+/* Dark studio theme, viewfinder styling, filter pills, retro film photo strip, and flash animations */
+
+--- FILE: video-engine.js ---
+/* Camera stream initialization, fallback test pattern generator, pixel manipulation filters (ASCII, VHS, Halftone, Thermal) running in 60fps requestAnimationFrame */
+
+--- FILE: app.js ---
+/* Countdown timer, audio beep synthesizer, snapshot image capture to PNG, and photo strip gallery interactions */`
+  },
+
+  audioRecorder: {
+    type: "audioRecorder",
+    name: "Audio Visualizer & Voice Memo Suite",
+    spec: `Architecture Requirements for Audio Visualizer & Voice Suite:
+- Audio Capture: navigator.mediaDevices.getUserMedia({ audio: true }).
+- WebAudio Analyser:
+  * AudioContext + AnalyserNode (fftSize 256 or 512, smoothingTimeConstant 0.75).
+  * Real-time frequency bars visualizer with gradient coloring (sunset orange/crimson).
+  * Circular oscilloscope wave reacting to mic amplitude.
+- Voice Recording & MediaRecorder:
+  * MediaRecorder recording chunks into Blob (audio/webm).
+  * Record / Pause / Stop states with elapsed time clock (MM:SS).
+  * Waveform playback scrubber with play/pause, seek, and speed multiplier (0.5x, 1x, 1.5x, 2x).
+- Memo Library: Save recordings in an interactive list with timestamps, duration, and download link.`,
+    fileTemplate: `Organize into modular files:
+--- FILE: index.html ---
+...
+--- FILE: style.css ---
+...
+--- FILE: audio-analyser.js ---
+...
+--- FILE: recorder.js ---
+...
+--- FILE: app.js ---
+...`
+  },
+
+  photoEditor: {
+    type: "photoEditor",
+    name: "Canvas Photo Editor & Adjustment Studio",
+    spec: `Architecture Requirements for Canvas Photo Editor:
+- Image Loading: Drag-and-drop file dropzone + file input button + pre-loaded sample photo presets.
+- Non-Destructive Filter Pipeline:
+  * Sliders: Exposure (-100 to +100), Contrast (-100 to +100), Saturation (0 to 200%), Warmth/Tint, Blur, Sharpening, and Vignette.
+  * Presets: Cyberpunk, Kodachrome, Emerald, B&W High-Contrast, Polaroid Fade.
+  * Pixel pipeline: Offscreen canvas rendering with original image backing so adjustments remain lossless.
+- Crop & Aspect Ratio:
+  * Presets: Freeform, 1:1 (Square), 4:5 (Portrait), 16:9 (Landscape), 9:16 (Story/Reel).
+  * Visual draggable crop overlay bounding box with grid guidelines.
+- Transform: 90-degree rotate, horizontal flip, vertical flip.
+- Export: Download high-DPI lossless PNG or WebP with custom filename.`,
+    fileTemplate: `Organize into modular files:
+--- FILE: index.html ---
+...
+--- FILE: style.css ---
+...
+--- FILE: filters.js ---
+...
+--- FILE: crop.js ---
+...
+--- FILE: app.js ---
+...`
+  },
+
+  markupMeme: {
+    type: "markupMeme",
+    name: "Screenshot Markup, Redaction & Meme Generator",
+    spec: `Architecture Requirements for Markup & Meme Generator:
+- Canvas Composition: Multi-layer canvas with base image + vector annotation overlay.
+- Annotation Tools:
+  * Freehand drawing brush with configurable color palette and stroke width.
+  * Vector Callout Arrows: Drag to create directional arrows with solid heads.
+  * Spotlight Tool: Dim outside area to highlight critical UI element.
+  * Privacy Redaction Tool: Pixelate or heavy blur brush to redact sensitive emails, keys, or names.
+- Meme Generator Mode:
+  * Top text and Bottom text inputs in classic Impact uppercase font with black outline stroke.
+  * Draggable and resizable sticker stamps.
+- History: Undo / Redo state stack so any mistake can be reverted.
+- Export: One-click export to clipboard or PNG download.`,
+    fileTemplate: `Organize into modular files:
+--- FILE: index.html ---
+...
+--- FILE: style.css ---
+...
+--- FILE: tools.js ---
+...
+--- FILE: app.js ---
+...`
+  },
+
+  physicsSandbox: {
+    type: "physicsSandbox",
+    name: "Cellular Automata Falling Sand & Physics Sandbox",
+    spec: `Architecture Requirements for Falling Sand & Elemental Sandbox:
+- Cellular Automata Grid: High-performance 2D typed array (Uint8Array) grid mapped to an offscreen ImageData buffer.
+- Elements & Physical Rules:
+  * Sand: Falls downward, slides diagonally down-left/down-right if blocked, sinks in water.
+  * Water: Falls downward, flows horizontally left and right, extinguishes fire.
+  * Fire: Rises upward, flickers, burns plants, ignites gunpowder, turns water into steam.
+  * Stone: Indestructible solid barrier that blocks falling particles.
+  * Plant: Flammable organic structure; spreads when touched by water; burns when touched by fire.
+  * Acid: Dissolves sand, stone, and plant upon contact.
+- Interactive Tools:
+  * Mouse / Touch brush with adjustable radius (1px, 4px, 8px, 16px).
+  * Wall border toggle, gravity direction selector (Normal, Reverse, Left, Right).
+  * Step mode, Pause, and Clear Canvas buttons.
+  * Realtime particle count & 60fps monitor.`,
+    fileTemplate: `Organize into modular files:
+--- FILE: index.html ---
+...
+--- FILE: style.css ---
+...
+--- FILE: elements.js ---
+...
+--- FILE: sim-engine.js ---
+...
+--- FILE: app.js ---
+...`
+  },
+
+  generative3D: {
+    type: "generative3D",
+    name: "Generative Flow Fields & 3D Spatial Art",
+    spec: `Architecture Requirements for Generative & 3D Spatial Art:
+- Vector Flow Field:
+  * Simplex / Perlin noise generator mapping 2D coordinate space to angle vectors.
+  * 3,000 to 10,000 active particles traversing the flow field with velocity and lifetime decay.
+  * Multi-color palette trails with translucent fading for rich generative tapestry.
+- 3D Geometry Viewer:
+  * Vanilla WebGL / Canvas 3D rendering of parametric shapes (Icosahedron, Torus, Mobius strip, Wireframe cube).
+  * Mouse drag / touch rotation with inertial damping and zoom controls.
+  * Morphing sliders for vertex displacement, noise turbulence, and wireframe thickness.
+- Export: Instant high-resolution 4K wallpaper PNG export.`,
+    fileTemplate: `Organize into modular files:
+--- FILE: index.html ---
+...
+--- FILE: style.css ---
+...
+--- FILE: noise.js ---
+...
+--- FILE: flow-engine.js ---
+...
+--- FILE: app.js ---
+...`
   }
 };
 
@@ -162,6 +357,36 @@ const ARCHETYPES = {
 function detectArchetype(promptText = "") {
   const p = promptText.toLowerCase();
   
+  // Webcam & Live Video Filters
+  if (/\b(webcam|photobooth|camera fx|ascii cam|live video filter|video effects|live camera|selfie booth)\b/i.test(p)) {
+    return ARCHETYPES.webcam;
+  }
+
+  // Audio Recorder & Visualizer
+  if (/\b(voice memo|audio recorder|sound visualizer|microphone visualizer|audio spectrum|voice recording|dictaphone)\b/i.test(p)) {
+    return ARCHETYPES.audioRecorder;
+  }
+
+  // Photo Editor & Crop Studio
+  if (/\b(photo editor|image editor|picture editor|photo filter|image adjustments|crop image|vintage filter)\b/i.test(p)) {
+    return ARCHETYPES.photoEditor;
+  }
+
+  // Screenshot Markup, Redaction & Meme Generator
+  if (/\b(meme generator|screenshot markup|image annotation|redact image|meme maker|photo markup|redaction tool)\b/i.test(p)) {
+    return ARCHETYPES.markupMeme;
+  }
+
+  // Falling Sand & Cellular Automata Physics
+  if (/\b(falling sand|sand simulator|physics sandbox|cellular automata|powder game|particle sandbox|sand physics)\b/i.test(p)) {
+    return ARCHETYPES.physicsSandbox;
+  }
+
+  // Generative Flow Fields & 3D Art
+  if (/\b(generative art|flow field|perlin noise|3d visualizer|spirograph|webgl 3d|spatial art|particle flow)\b/i.test(p)) {
+    return ARCHETYPES.generative3D;
+  }
+
   // Platformer: only match explicit platformer or mario games (not "e-commerce platform" or "task runner")
   if (/\b(super mario|mario game|2d platformer|platformer game|sidescroller)\b/i.test(p)) {
     return ARCHETYPES.platformer;
