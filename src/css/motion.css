@@ -1,0 +1,118 @@
+/* Poppy Motion System: Micro-animations adapted from poppy-motion-catalog.html */
+:root {
+  --e: cubic-bezier(.3, 1.6, .5, 1);
+  --o: cubic-bezier(.2, .8, .2, 1);
+}
+
+/* 1. Keyframe Definitions from Motion Catalog */
+@keyframes bnc { 0%, 60%, 100% { transform: none; } 30% { transform: translateY(-10px) rotate(12deg); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes rg { 0% { transform: scale(.2); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
+@keyframes up { 0% { transform: translateY(20px) scale(.5); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(-24px) scale(1.1); opacity: 0; } }
+@keyframes eq { 50% { height: 38px; background: var(--red); } }
+@keyframes dt { 0%, 60%, 100% { opacity: .3; transform: none; } 30% { opacity: 1; transform: translateY(-6px); } }
+@keyframes wv { 50% { transform: translateY(-12px) rotate(14deg); } }
+@keyframes st { to { background-position: 28px 0; } }
+@keyframes swp { from { transform: translateX(-100%); } to { transform: translateX(290%); } }
+@keyframes shim { to { background-position: -200% 0; } }
+@keyframes sn { to { left: 130%; } }
+@keyframes rs { from { transform: translateY(.7em) scale(.95); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes dw { from { stroke-dashoffset: 150; } to { stroke-dashoffset: 0; } }
+@keyframes wob { 0%, 30%, 100% { transform: none; } 5% { transform: rotate(14deg); } 10% { transform: rotate(-12deg); } 15% { transform: rotate(8deg); } 20% { transform: rotate(-6deg); } }
+@keyframes png { 0% { transform: scale(1); opacity: .8; } 100% { transform: scale(3); opacity: 0; } }
+@keyframes br { 50% { transform: scale(1.1); } }
+@keyframes sway { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+@keyframes pp { 50% { transform: scale(1.35); } }
+@keyframes shk { 20% { transform: translateX(-8px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(2px); } }
+@keyframes pop { from { transform: scale(.88); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* 2. Interactive Buttons & CTA Shine */
+.ask .go {
+  position: relative;
+  overflow: hidden;
+  transition: transform .2s var(--e), box-shadow .2s, background .18s, color .18s;
+}
+.ask .go:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 0 var(--red);
+}
+.ask .go:active {
+  transform: translateY(2px) scale(.98);
+  box-shadow: 0 1px 0 var(--red);
+}
+.ask .go::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .32), transparent);
+  transform: skewX(-20deg);
+  animation: sn 3.5s infinite;
+  pointer-events: none;
+}
+
+/* 3. Idea Chips Spring Hover */
+.ideas button {
+  transition: transform .25s var(--e), background .18s, color .18s, box-shadow .18s;
+}
+.ideas button:hover {
+  transform: translateY(-2px) rotate(-.8deg);
+  box-shadow: 0 3px 0 var(--ink);
+}
+
+/* 4. Top Navigation & Action Buttons */
+.nav .link {
+  transition: transform .2s var(--e), background .18s, color .18s;
+}
+.nav .link:hover {
+  transform: translateY(-2px);
+}
+
+/* 5. Dialog Spring Entrance */
+dialog[open] {
+  animation: pop .22s var(--e) both;
+}
+
+/* 6. Toast Notification Spring Entrance */
+.toast {
+  box-shadow: 0 8px 24px rgba(42, 13, 22, .28);
+  animation: rs .45s var(--e) both;
+}
+
+/* 7. Dialog Tabs Sliding Spring Feedback */
+dialog .tab {
+  transition: transform .22s var(--e), background .18s, color .18s, box-shadow .18s;
+}
+dialog .tab:hover {
+  transform: translateY(-1.5px);
+}
+dialog .tab.active, dialog .tab[aria-selected="true"] {
+  box-shadow: 0 3px 0 var(--red);
+}
+
+/* 8. Validation Error Shake */
+.bad, input:invalid:focus {
+  animation: shk .45s ease-in-out;
+}
+
+/* 9. Petal Particles for Celebrations */
+.poppy-petal-particle {
+  position: fixed;
+  z-index: 999999;
+  pointer-events: none;
+  width: 11px;
+  height: 15px;
+  border: 2px solid var(--ink);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+}
+
+/* 10. Accessibility: Respect Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

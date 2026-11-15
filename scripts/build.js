@@ -18,7 +18,8 @@ const cssFiles = [
   "src/css/document.css",
   "src/css/export.css",
   "src/css/persistent.css",
-  "src/css/easteregg.css"
+  "src/css/easteregg.css",
+  "src/css/motion.css"
 ];
 cssFiles.forEach(file => {
   const content = readFile(file);
