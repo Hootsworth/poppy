@@ -2211,8 +2211,10 @@ async function build(text, auto){
       await saveHist(); refreshVers(); setImg(null);
       if (manifest && typeof RUNTIME_DISPATCHER !== "undefined") {
         RUNTIME_DISPATCHER.dispatch(manifest);
+        reveal(html, live, true);
+      } else {
+        reveal(html, live);
       }
-      reveal(html, live);
       return;
     } catch (e) {
       console.warn("Multi-agent pipeline notice, using standard build:", e);
@@ -2254,8 +2256,8 @@ async function build(text, auto){
 }
 const go = i => { if (busy) return; const t = i.value.trim() || (img ? "Build this from my screenshot or sketch." : !current && tplPick() ? "A " + tplPick()[0].toLowerCase() : ""); i.value = ""; $("#flower").style.setProperty("--lean", "0deg"); build(t); };
 
-function reveal(html, wasLive){
-  show(html);
+function reveal(html, wasLive, skipShow = false){
+  if (!skipShow) show(html);
   runAutomations("open", { siteId });
   if (wasLive) { const f = $("#fab").getBoundingClientRect(); burst(f.left + f.width / 2, f.top + f.height / 2); return; }
   const r = $("#flower").getBoundingClientRect();
