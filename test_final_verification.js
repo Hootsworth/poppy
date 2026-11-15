@@ -5,10 +5,10 @@ const assert = require("assert");
 const html = fs.readFileSync("poppy.html", "utf8");
 
 // 1. Script compilation
-const hostScriptStart = html.indexOf("<script>\nconst $ = s => document.querySelector(s);");
+const hostScriptStart = html.indexOf("<script>");
 assert.ok(hostScriptStart > 0, "Host script tag exists");
 const hostScriptEnd = html.lastIndexOf("</script>");
-const code = html.slice(hostScriptStart + 9, hostScriptEnd);
+const code = html.slice(hostScriptStart + 8, hostScriptEnd);
 new vm.Script(code, { filename: "poppy_host.js" });
 console.log("Check 1 passed: Script compiles with 0 syntax errors.");
 

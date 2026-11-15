@@ -53,8 +53,13 @@ UNIVERSAL ARCHITECTURE RULES (APPLIES TO ALL TYPES OF WEBSITES):
    - TIMERS & STOPWATCHES: Working Start/Pause/Reset buttons, formatted MM:SS display, and drift-free timing loop.
    - GAMES & SIMULATIONS: 60fps canvas loop, player physics (velocity, gravity, collision), patrolling enemies, coin/score items, dual desktop keyboard + mobile on-screen buttons, and sound effects.
    - PRESENTATIONS & DECKS: 16:9 widescreen viewport, Prev/Next navigation, progress bar, slide counter, and speaker notes drawer.
-4. ZERO DEAD BUTTONS: Every button must have type="button", clear semantic attributes (e.g. data-action, data-tab, onclick), and active visual/audio feedback.
-5. SCRIPT PLACEMENT: Put all <script> tags at the very bottom of <body> (just before </body>) and wrap initialization in DOMContentLoaded or window.onload.`;
+4. ZERO DEAD BUTTONS & EVENT ARCHITECTURE:
+   - Place all <script> tags at the very bottom of <body> (just before </body>).
+   - Attach event listeners via JavaScript (e.g. element.addEventListener('click', handler) or element.onclick = handler) OR assign handlers to window (e.g. window.calculate = function() { ... }).
+   - If you use inline onclick="fn()", fn MUST be defined as a top-level global function (outside of any DOMContentLoaded closure) so the browser can invoke it.
+   - CALCULATORS & CONVERTERS: Provide an immediate, real mathematical computation engine that handles operations (digits, decimals, +, -, *, /, =, Clear) and updates the display element immediately without reloading.
+   - FORMS: Always intercept form submission with e.preventDefault() in the submit handler and execute real validation/processing.
+5. NO EXTERNAL DEPENDENCIES: Use pure native HTML5, CSS3, JavaScript, and Canvas. No external CDNs.`;
 
 function balanceDelimiters(code) {
   let c = code.replace(/\s+$/, "");
@@ -172,11 +177,8 @@ function repairHtml(html) {
   // e.g. viewBox=\"0 0 24 24\" -> viewBox="0 0 24 24"
   // e.g. d=\"M10.325...\" -> d="M10.325..."
   if (/=\\"|viewBox=\\"|d=\\"|class=\\"|id=\\"/i.test(h)) {
-    h = h.replace(/=\\"/g, '="').replace(/\\">/g, '">').replace(/\\"\s/g, '" ');
-    h = h.replace(/viewBox="\\+/g, 'viewBox="').replace(/d="\\+/g, 'd="');
-    if (/\\"[a-zA-Z0-9_\s-]+\\"/i.test(h)) {
-      h = h.replace(/\\"/g, '"');
-    }
+    h = h.replace(/\\"/g, '"');
+    h = h.replace(/(viewBox|d|class|id|fill|stroke)="+\\*(.*?)"/gi, '$1="$2"');
   }
 
   // 1. Check for unclosed style tags
@@ -219,10 +221,10 @@ function repairHtml(html) {
     
     code = balanceDelimiters(code);
     code += "</scr" + "ipt>";
-    h = h.slice(0, scriptTagEnd + 1) + "\n" + code;
+    h = h.slice(0, styleTagEnd + 1) + "\n" + code;
   }
   
-  // 4. Scan every <script> block and repair any syntax errors
+  // 4. Balance unclosed delimiters in script blocks without destructive line popping
   h = h.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi, (match, attrs, code) => {
     if (/\bsrc\s*=/i.test(attrs)) return match;
     const trimmed = code.trim();
@@ -236,15 +238,7 @@ function repairHtml(html) {
         new Function(repaired);
         return `<script${attrs}>\n${repaired}\n</scr` + `ipt>`;
       } catch (err2) {
-        let lines = trimmed.split("\n");
-        while (lines.length > 1) {
-          lines.pop();
-          const attempt = balanceDelimiters(lines.join("\n"));
-          try {
-            new Function(attempt);
-            return `<script${attrs}>\n${attempt}\n</scr` + `ipt>`;
-          } catch(e) {}
-        }
+        // Keep original code rather than destroying lines; probe will report precise error
         return match;
       }
     }

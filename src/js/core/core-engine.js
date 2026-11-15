@@ -6,9 +6,9 @@ CRITICAL: EVERY SINGLE BUTTON MUST WORK - ABSOLUTELY ZERO DEAD BUTTONS:
 1. Every single <button>, interactive <a>, tab, counter, card, toggle, filter, or control MUST have working JavaScript event listeners. Never leave dead placeholder buttons or visual-only buttons.
 2. If a button says 'Get Started', 'Order', 'Buy', 'Contact', or 'Demo', clicking it MUST open a working modal, slide-over drawer, or trigger an interactive prompt.
 3. If buttons are tabs (e.g. 'Overview', 'Pricing', 'Features'), clicking MUST toggle active classes and switch the visible tab content panel.
-4. If it has a calculator, converter, or form, clicking Calculate/Submit MUST compute results immediately and update the screen without reloading.
+4. If it has a calculator, converter, or form, clicking Calculate/Submit MUST compute real results immediately and update the screen without reloading.
 5. If it is a game, buttons MUST control the game (Start, Pause, Restart, Shoot, Jump).
-6. ALWAYS wrap your script in document.addEventListener('DOMContentLoaded', ...) or place all <script> tags at the very bottom of <body> (just before </body>) so all DOM elements exist before querySelector or getElementById runs.
+6. SCRIPT ARCHITECTURE: Place all <script> tags at the very bottom of <body> (just before </body>). Attach event listeners via JavaScript (element.addEventListener('click', handler) or element.onclick = handler) OR assign handlers to window (window.myHandler = function() { ... }). If you use inline onclick="fn()", fn MUST be defined as a top-level global function (outside of any DOMContentLoaded closure) so the browser can invoke it.
 7. Always set type="button" on all buttons that are not form submit buttons. When forms are used, always attach an onsubmit handler with e.preventDefault().
 8. State may live in JS variables, localStorage, or poppy.store. When given the current page plus a change request, return the full updated document. If the request is for something unrelated, build that instead.
 
@@ -748,41 +748,6 @@ const playClickAudio=()=>{
     osc.stop(ctx.currentTime+0.04);
   }catch(e){}
 };
-
-// Auto-resolve inline handlers: window[fn] fallback
-window.addEventListener("error",e=>{
-  if(e.message&&e.message.includes("is not defined")){
-    const m=e.message.match(/([a-zA-Z0-9_$]+) is not defined/);
-    if(m&&m[1]){
-      window[m[1]]=function(...args){
-        console.log("[Poppy Safety Net] Resolved unhandled function:",m[1],args);
-      };
-      e.preventDefault();
-    }
-  }
-});
-
-const wireButtons=()=>{
-  document.querySelectorAll("form").forEach(f=>{
-    if(!f.__poppy_bound){
-      f.__poppy_bound=true;
-      f.addEventListener("submit",e=>{
-        e.preventDefault();
-        const sBtn=f.querySelector("button[type='submit'], input[type='submit'], button:not([type])");
-        if(sBtn){
-          const old=sBtn.innerText||sBtn.value;
-          sBtn.innerText="Submitted!";
-          setTimeout(()=>{sBtn.innerText=old;},1800);
-        }
-      });
-    }
-  });
-  document.querySelectorAll("button, [role='button'], a.btn, a.button, .btn, .cta, .tab-btn, input[type='button'], input[type='submit']").forEach(btn=>{
-    if(btn.tagName==="BUTTON"&&!btn.getAttribute("type"))btn.setAttribute("type","button");
-  });
-};
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",wireButtons);
-else wireButtons();
 
 const rep=(t,m,fn,ln,stk)=>{try{P.postMessage({poppy:1,report:{t,m:String(m).slice(0,400),fn:fn||"",ln:ln||0,stk:String(stk||"").slice(0,500)}},"*")}catch(e){}};
 addEventListener("error",e=>{const stk=(e.error&&e.error.stack)?e.error.stack:"";rep("error",e.message+(e.lineno?" (line "+e.lineno+")":""),e.filename,e.lineno,stk);});
@@ -1665,7 +1630,10 @@ function applyPatches(src, out){
   return isObj ? files : files["index.html"];
 }
 /* ===== Phase 4: hidden check, design review, templates, evals ===== */
-const QA_JS = `;(${typeof initProbe === "function" ? initProbe.toString() : "() => {}"})();
+function getQaJs() {
+  const initStr = typeof initProbe === "function" ? initProbe.toString() : (typeof window !== "undefined" && typeof window.initProbe === "function" ? window.initProbe.toString() : "() => {}");
+  const runStr = typeof runProbe === "function" ? runProbe.toString() : (typeof window !== "undefined" && typeof window.runProbe === "function" ? window.runProbe.toString() : "() => ({})");
+  return `;(${initStr})();
 addEventListener("load", () => setTimeout(async () => {
   const b = document.body; if (!b) return;
   const qa = {
@@ -1675,12 +1643,14 @@ addEventListener("load", () => setTimeout(async () => {
     iw: innerWidth
   };
   try {
-    const res = await (${typeof runProbe === "function" ? runProbe.toString() : "() => ({})" })({ settle: 200 });
+    const res = await (${runStr})({ settle: 200 });
     parent.postMessage({ poppy: 1, cmdRes: "probeResult", result: res, qa }, "*");
   } catch (err) {
     parent.postMessage({ poppy: 1, cmdRes: "probeResult", result: { loadErrors: [err.message], clickErrors: [], buttons: { total: 0, dead: [] }, canvas: { present: false }, render: { textLen: qa.t, visual: qa.v, placeholder: false } }, qa }, "*");
   }
 }, 300));`;
+}
+const QA_JS = getQaJs();
 const qaStub = m => m === "ai" ? "" : m === "store.list" ? [] : m === "fetch" || m.startsWith("connect.") ? {ok: false, status: 0, text: "", json: null} : null;
 function probe(html, w = 390, scale){
   return new Promise(res => {
@@ -1703,8 +1673,8 @@ function probe(html, w = 390, scale){
         if (qa.t < 15 && !qa.v) issues.push("The page renders blank: no visible text or controls after load.");
         if (w <= 480 && qa.w > qa.iw + 6) issues.push("The content is wider than a " + w + "px phone screen (" + qa.w + "px), so it scrolls sideways.");
       }
-      const score = probeRes && typeof scoreProbe === "function" ? scoreProbe(probeRes) : { pass: issues.length === 0, load: true, render: true, interaction: true, deadRatio: 0 };
-      const prompt = probeRes && typeof buildRepairPrompt === "function" ? buildRepairPrompt(probeRes) : (issues.length ? issues.join("\n") : "");
+      const score = typeof scoreProbe === "function" ? scoreProbe(probeRes || {}) : { pass: issues.length === 0, load: true, render: true, interaction: true, deadRatio: 0 };
+      const prompt = typeof buildRepairPrompt === "function" ? buildRepairPrompt(probeRes || {}) : (issues.length ? issues.join("\n") : "");
       res({
         pass: score.pass && (!qa || (qa.t >= 15 || qa.v)),
         score,
@@ -1731,7 +1701,7 @@ function probe(html, w = 390, scale){
       }
     };
     addEventListener("message", on); const t1 = setTimeout(end, 5000), t2 = setTimeout(end, scale ? 14000 : 5500);
-    f.srcdoc = inject(html, SDK + QA_JS); document.body.append(f);
+    f.srcdoc = inject(html, SDK + getQaJs()); document.body.append(f);
   });
 }
 const REVIEW = 'You review website screenshots. The image shows the same page at phone (390px), tablet (820px) and desktop (1280px) widths, left to right. Reply with ONLY JSON: {"ok":true} when it looks good, or {"ok":false,"fixes":["short concrete fix", ...]} with at most 4 fixes. Only report real problems: overlapping or clipped content, unreadable contrast, tiny tap targets, broken layout, large empty areas.';
@@ -1769,7 +1739,7 @@ async function editDoc(cur, req, im){
   return bundleFiles(currentFiles, aMap);
 }
 const qaOn = () => ls.get("poppy.qa") !== "0", vrOn = () => ls.get("poppy.vr") === "1";
-async function checkAndFix(html, note){
+async function checkAndFix(html, note, promptText = ""){
   if (!qaOn()) return html;
   setNote(note, "Verifying app runtime...");
   const q = await probe(html, 390);
@@ -1780,9 +1750,14 @@ async function checkAndFix(html, note){
 
   setNote(note, "Repairing runtime issues...");
   try {
-    const repaired = await collect([
-      { role: "user", content: repairText }
-    ], BUILD);
+    const goal = promptText || (typeof lastText !== "undefined" ? lastText : "") || "interactive web application";
+    const repairMsg = [
+      {
+        role: "user",
+        content: `You are repairing an application created for this goal:\n"${goal}"\n\nHere is the current HTML implementation:\n\`\`\`html\n${html}\n\`\`\`\n\n${repairText}\n\nReturn the complete, working single-page HTML document with all fixes applied. Ensure all buttons have real working event handlers and all calculations and interactions function flawlessly.`
+      }
+    ];
+    const repaired = await collect(repairMsg, BUILD);
     let cand = typeof repairHtml === "function" ? repairHtml(extractHtml(repaired)) : extractHtml(repaired);
     if (cand && cand.length > 50 && /<[a-z!]/i.test(cand)) {
       setNote(note, "Re-verifying repair...");
@@ -1959,7 +1934,7 @@ async function build(text, auto){
       if (!isRenderable) throw new Error("Multi-agent build fell back.");
       if (typeof repairHtml === "function") html = repairHtml(html);
       if (typeof autoWireButtons === "function") html = autoWireButtons(html);
-      if (!auto) html = await checkAndFix(html, note);
+      if (!auto) html = await checkAndFix(html, note, text);
       current = html;
       currentFiles = files;
       activeFile = "index.html";
@@ -1995,7 +1970,7 @@ async function build(text, auto){
     if (peek) { peek.remove(); peek = null; }
     const isRenderable = typeof isRenderableHtml === "function" ? isRenderableHtml(html) : (html && html.length > 50 && /<[a-z!]/i.test(html));
     if (!isRenderable) throw new Error("Poppy didn't get a page back. Try rewording.");
-    if (!auto) html = await checkAndFix(html, note);
+    if (!auto) html = await checkAndFix(html, note, text);
     if (typeof repairHtml === "function") html = repairHtml(html);
     if (typeof autoWireButtons === "function") html = autoWireButtons(html);
     current = html;

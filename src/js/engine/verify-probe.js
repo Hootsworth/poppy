@@ -114,24 +114,37 @@ async function runProbe(opts) {
 }
 
 function scoreProbe(r) {
-  const load = r.loadErrors.length === 0;
-  const rendered = !r.render.placeholder && (r.render.textLen >= 15 || r.render.visual);
+  r = r || {};
+  const loadErrors = Array.isArray(r.loadErrors) ? r.loadErrors : [];
+  const clickErrors = Array.isArray(r.clickErrors) ? r.clickErrors : [];
+  const render = r.render || { textLen: 0, visual: false, placeholder: false };
+  const buttons = r.buttons || { total: 0, dead: [] };
+  const canvas = r.canvas || { present: false, animating: false, reactsToKeys: false };
+
+  const load = loadErrors.length === 0;
+  const rendered = !render.placeholder && (render.textLen >= 15 || render.visual);
   // an always-animating canvas masks click effects, so only judge buttons on non-animating pages
-  const judgeButtons = !(r.canvas.present && r.canvas.animating);
-  const deadRatio = judgeButtons && r.buttons.total ? r.buttons.dead.length / r.buttons.total : 0;
-  const canvasOk = !r.canvas.present || r.canvas.animating || r.canvas.reactsToKeys;
-  const interaction = r.clickErrors.length === 0 && deadRatio <= 0.34 && canvasOk;
+  const judgeButtons = !(canvas.present && canvas.animating);
+  const deadRatio = judgeButtons && buttons.total ? (buttons.dead || []).length / buttons.total : 0;
+  const canvasOk = !canvas.present || canvas.animating || canvas.reactsToKeys;
+  const interaction = clickErrors.length === 0 && deadRatio <= 0.34 && canvasOk;
   return { load, render: rendered, interaction, pass: load && rendered && interaction, deadRatio: +deadRatio.toFixed(2) };
 }
 
 /* Feed this back to the model for ONE repair turn. */
 function buildRepairPrompt(r) {
+  r = r || {};
   const out = [];
-  if (r.render.placeholder) out.push("The page rendered only a generic placeholder; build the real UI.");
-  if (r.loadErrors.length) out.push("Errors on load:\n- " + r.loadErrors.join("\n- "));
-  if (r.clickErrors.length) out.push("Errors when clicking controls:\n- " + r.clickErrors.join("\n- "));
-  if (r.buttons.dead.length) out.push("Controls that did nothing when clicked (no DOM, input, storage or canvas change):\n- " + r.buttons.dead.join("\n- "));
-  if (r.canvas.present && !r.canvas.animating && !r.canvas.reactsToKeys) out.push("The canvas never changes: no animation loop and no response to keyboard input.");
+  const render = r.render || {};
+  const loadErrors = Array.isArray(r.loadErrors) ? r.loadErrors : [];
+  const clickErrors = Array.isArray(r.clickErrors) ? r.clickErrors : [];
+  const buttons = r.buttons || { dead: [] };
+  const canvas = r.canvas || {};
+  if (render.placeholder) out.push("The page rendered only a generic placeholder; build the real UI.");
+  if (loadErrors.length) out.push("Errors on load:\n- " + loadErrors.join("\n- "));
+  if (clickErrors.length) out.push("Errors when clicking controls:\n- " + clickErrors.join("\n- "));
+  if (buttons.dead && buttons.dead.length) out.push("Controls that did nothing when clicked (no DOM, input, storage or canvas change):\n- " + buttons.dead.join("\n- "));
+  if (canvas.present && !canvas.animating && !canvas.reactsToKeys) out.push("The canvas never changes: no animation loop and no response to keyboard input.");
   return out.length ? "Your app was run in a browser sandbox and failed these checks. Fix exactly these problems and return the full corrected document.\n\n" + out.join("\n\n") : "";
 }
 

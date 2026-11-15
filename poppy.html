@@ -935,6 +935,159 @@ dialog::backdrop{background:rgba(42,13,22,.55)}
 <dialog id="onb" aria-labelledby="onbT"><div class="dh"><h2 id="onbT"></h2><button class="x" type="button" aria-label="Close">&times;</button></div><div class="db" id="onbB"></div><div class="acts" id="onbA"></div></dialog>
 
 <script>
+/* ===== Poppy Verify Probe =====
+   Runs INSIDE a rendered app and reports what actually happens.
+   Used two ways:
+     - Node eval (eval.js):  page.addInitScript(initProbe); page.evaluate(runProbe)
+     - poppy.html (Phase 2): embed "(" + initProbe + ")()" in <head> of the preview,
+       then post "(" + runProbe + ")()" results back via postMessage.
+   Pure observation: it never fakes behaviour. */
+
+function initProbe() {
+  if (window.__pp_probe) return;
+  const log = (window.__pp_probe = { errors: [] });
+  const push = m => { if (log.errors.length < 30) log.errors.push(String(m).slice(0, 240)); };
+  window.addEventListener("error", e => push((e.message || "error") + (e.lineno ? " (line " + e.lineno + ")" : "")));
+  window.addEventListener("unhandledrejection", e => push("Unhandled rejection: " + ((e.reason && e.reason.message) || e.reason)));
+  const ce = console.error;
+  console.error = function () { push("console.error: " + [].slice.call(arguments).join(" ")); return ce.apply(console, arguments); };
+  window.alert = window.confirm = () => true;
+  window.prompt = () => "test";
+  // bubble phase on window => runs AFTER the app's own handlers; only stops navigation
+  window.addEventListener("submit", e => { if (!e.defaultPrevented) e.preventDefault(); });
+  window.addEventListener("click", e => {
+    const a = e.target && e.target.closest && e.target.closest("a[href]");
+    if (a && !e.defaultPrevented) e.preventDefault();
+  });
+  window.addEventListener("message", async e => {
+    if (e.data && e.data.poppy === 1 && e.data.cmd === "runProbe") {
+      try {
+        const res = await runProbe(e.data.opts || {});
+        window.parent.postMessage({ poppy: 1, cmdRes: "probeResult", result: res }, "*");
+      } catch (err) {
+        window.parent.postMessage({ poppy: 1, cmdRes: "probeResult", result: { loadErrors: [err.message], clickErrors: [], buttons: { total: 0, dead: [] }, canvas: { present: false }, render: { textLen: 0, visual: false, placeholder: false } } }, "*");
+      }
+    }
+  });
+}
+
+async function runProbe(opts) {
+  opts = opts || {};
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const log = window.__pp_probe || { errors: [] };
+  await sleep(opts.settle || 400);
+  const loadErrors = [...new Set(log.errors)];
+
+  const canvasHash = c => {
+    try {
+      const t = document.createElement("canvas"); t.width = 32; t.height = 32;
+      t.getContext("2d").drawImage(c, 0, 0, 32, 32);
+      return Array.prototype.join.call(t.getContext("2d").getImageData(0, 0, 32, 32).data, ",");
+    } catch (e) { return "x"; }
+  };
+  const sig = () => {
+    let s = document.body ? document.body.innerHTML : "";
+    document.querySelectorAll("input,textarea,select").forEach(i => { s += "|" + (/checkbox|radio/.test(i.type) ? i.checked : i.value); });
+    try { s += "|" + JSON.stringify(localStorage); } catch (e) {}
+    document.querySelectorAll("canvas").forEach(c => { s += "|" + canvasHash(c); });
+    return s;
+  };
+  const visible = el => {
+    const r = el.getBoundingClientRect(), cs = getComputedStyle(el);
+    return r.width > 0 && r.height > 0 && cs.visibility !== "hidden" && cs.display !== "none" && !el.disabled;
+  };
+  const describe = el =>
+    (el.id ? "#" + el.id : el.tagName.toLowerCase() + (el.className && typeof el.className === "string" ? "." + el.className.trim().split(/\s+/)[0] : "")) +
+    ' "' + ((el.innerText || el.value || el.getAttribute("aria-label") || "").trim().slice(0, 24)) + '"';
+
+  // --- render checks
+  const text = (document.body ? document.body.innerText : "").trim();
+  const render = {
+    textLen: text.length,
+    visual: !!document.querySelector("canvas,svg,img,video,table,input,button"),
+    placeholder: /Interactive application loaded\. All controls and modules are active\./.test(text)
+  };
+
+  // --- pre-fill inputs so calculators/forms have something to work with
+  document.querySelectorAll("input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=range]),textarea").forEach(i => {
+    if (!visible(i) || i.value) return;
+    i.value = i.type === "number" ? String(i.min && +i.min > 5 ? i.min : 5) : i.type === "email" ? "a@b.co" : "test";
+    i.dispatchEvent(new Event("input", { bubbles: true })); i.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
+  // --- click every visible control, one at a time
+  const els = [...document.querySelectorAll("button,input[type=button],input[type=submit],[role=button],[data-action]")].filter(visible).slice(0, opts.maxButtons || 40);
+  const dead = [], exempt = [], clickErrors = [];
+  for (const el of els) {
+    if (!el.isConnected) continue;
+    const before = sig(), n = log.errors.length;
+    try { el.click(); } catch (e) { clickErrors.push(describe(el) + " -> " + e.message); }
+    await sleep(60);
+    if (log.errors.length > n) log.errors.slice(n).forEach(m => clickErrors.push(describe(el) + " -> " + m));
+    else if (sig() === before) {
+      // restart/reset/stop at initial state legitimately changes nothing
+      if (/^(restart|reset|new game|play again|stop|pause|cancel|close)\b/i.test((el.innerText || el.value || "").trim())) exempt.push(describe(el));
+      else dead.push(describe(el));
+    }
+  }
+
+  // --- canvas: does it animate on its own, or react to keys?
+  const canvases = [...document.querySelectorAll("canvas")].filter(visible);
+  const canvas = { present: canvases.length > 0, animating: false, reactsToKeys: false };
+  if (canvases.length) {
+    const h0 = canvasHash(canvases[0]); await sleep(300);
+    canvas.animating = canvasHash(canvases[0]) !== h0;
+    const h1 = canvasHash(canvases[0]);
+    for (const k of ["ArrowRight", " ", "ArrowUp", "Enter"]) {
+      for (const t of [window, document]) {
+        t.dispatchEvent(new KeyboardEvent("keydown", { key: k, code: k === " " ? "Space" : k, bubbles: true }));
+        t.dispatchEvent(new KeyboardEvent("keyup", { key: k, code: k === " " ? "Space" : k, bubbles: true }));
+      }
+      await sleep(120);
+    }
+    canvas.reactsToKeys = canvasHash(canvases[0]) !== h1;
+  }
+  return { loadErrors, clickErrors, buttons: { total: els.length, dead }, canvas, render };
+}
+
+function scoreProbe(r) {
+  r = r || {};
+  const loadErrors = Array.isArray(r.loadErrors) ? r.loadErrors : [];
+  const clickErrors = Array.isArray(r.clickErrors) ? r.clickErrors : [];
+  const render = r.render || { textLen: 0, visual: false, placeholder: false };
+  const buttons = r.buttons || { total: 0, dead: [] };
+  const canvas = r.canvas || { present: false, animating: false, reactsToKeys: false };
+
+  const load = loadErrors.length === 0;
+  const rendered = !render.placeholder && (render.textLen >= 15 || render.visual);
+  // an always-animating canvas masks click effects, so only judge buttons on non-animating pages
+  const judgeButtons = !(canvas.present && canvas.animating);
+  const deadRatio = judgeButtons && buttons.total ? (buttons.dead || []).length / buttons.total : 0;
+  const canvasOk = !canvas.present || canvas.animating || canvas.reactsToKeys;
+  const interaction = clickErrors.length === 0 && deadRatio <= 0.34 && canvasOk;
+  return { load, render: rendered, interaction, pass: load && rendered && interaction, deadRatio: +deadRatio.toFixed(2) };
+}
+
+/* Feed this back to the model for ONE repair turn. */
+function buildRepairPrompt(r) {
+  r = r || {};
+  const out = [];
+  const render = r.render || {};
+  const loadErrors = Array.isArray(r.loadErrors) ? r.loadErrors : [];
+  const clickErrors = Array.isArray(r.clickErrors) ? r.clickErrors : [];
+  const buttons = r.buttons || { dead: [] };
+  const canvas = r.canvas || {};
+  if (render.placeholder) out.push("The page rendered only a generic placeholder; build the real UI.");
+  if (loadErrors.length) out.push("Errors on load:\n- " + loadErrors.join("\n- "));
+  if (clickErrors.length) out.push("Errors when clicking controls:\n- " + clickErrors.join("\n- "));
+  if (buttons.dead && buttons.dead.length) out.push("Controls that did nothing when clicked (no DOM, input, storage or canvas change):\n- " + buttons.dead.join("\n- "));
+  if (canvas.present && !canvas.animating && !canvas.reactsToKeys) out.push("The canvas never changes: no animation loop and no response to keyboard input.");
+  return out.length ? "Your app was run in a browser sandbox and failed these checks. Fix exactly these problems and return the full corrected document.\n\n" + out.join("\n\n") : "";
+}
+
+if (typeof module !== "undefined") module.exports = { initProbe, runProbe, scoreProbe, buildRepairPrompt };
+if (typeof window !== "undefined") Object.assign(window, { initProbe, runProbe, scoreProbe, buildRepairPrompt });
+
 const $ = s => document.querySelector(s);
 const SYSTEM = `You are the engine of Poppy, a universal creation engine that creates whatever software, application, game, presentation, or tool the user asks for.
 Reply with ONE complete, self-contained HTML document and nothing else, no commentary and no code fences. Use inline <style> and <script> only: no external files, fonts, CDNs or images (use CSS, inline SVG, canvas). It must be responsive, have a distinct, deliberately designed look suited to its subject (not a generic template), and be fully functional with real working logic and realistic content.
@@ -943,9 +1096,9 @@ CRITICAL: EVERY SINGLE BUTTON MUST WORK - ABSOLUTELY ZERO DEAD BUTTONS:
 1. Every single <button>, interactive <a>, tab, counter, card, toggle, filter, or control MUST have working JavaScript event listeners. Never leave dead placeholder buttons or visual-only buttons.
 2. If a button says 'Get Started', 'Order', 'Buy', 'Contact', or 'Demo', clicking it MUST open a working modal, slide-over drawer, or trigger an interactive prompt.
 3. If buttons are tabs (e.g. 'Overview', 'Pricing', 'Features'), clicking MUST toggle active classes and switch the visible tab content panel.
-4. If it has a calculator, converter, or form, clicking Calculate/Submit MUST compute results immediately and update the screen without reloading.
+4. If it has a calculator, converter, or form, clicking Calculate/Submit MUST compute real results immediately and update the screen without reloading.
 5. If it is a game, buttons MUST control the game (Start, Pause, Restart, Shoot, Jump).
-6. ALWAYS wrap your script in document.addEventListener('DOMContentLoaded', ...) or place all <script> tags at the very bottom of <body> (just before </body>) so all DOM elements exist before querySelector or getElementById runs.
+6. SCRIPT ARCHITECTURE: Place all <script> tags at the very bottom of <body> (just before </body>). Attach event listeners via JavaScript (element.addEventListener('click', handler) or element.onclick = handler) OR assign handlers to window (window.myHandler = function() { ... }). If you use inline onclick="fn()", fn MUST be defined as a top-level global function (outside of any DOMContentLoaded closure) so the browser can invoke it.
 7. Always set type="button" on all buttons that are not form submit buttons. When forms are used, always attach an onsubmit handler with e.preventDefault().
 8. State may live in JS variables, localStorage, or poppy.store. When given the current page plus a change request, return the full updated document. If the request is for something unrelated, build that instead.
 
@@ -1685,41 +1838,6 @@ const playClickAudio=()=>{
     osc.stop(ctx.currentTime+0.04);
   }catch(e){}
 };
-
-// Auto-resolve inline handlers: window[fn] fallback
-window.addEventListener("error",e=>{
-  if(e.message&&e.message.includes("is not defined")){
-    const m=e.message.match(/([a-zA-Z0-9_$]+) is not defined/);
-    if(m&&m[1]){
-      window[m[1]]=function(...args){
-        console.log("[Poppy Safety Net] Resolved unhandled function:",m[1],args);
-      };
-      e.preventDefault();
-    }
-  }
-});
-
-const wireButtons=()=>{
-  document.querySelectorAll("form").forEach(f=>{
-    if(!f.__poppy_bound){
-      f.__poppy_bound=true;
-      f.addEventListener("submit",e=>{
-        e.preventDefault();
-        const sBtn=f.querySelector("button[type='submit'], input[type='submit'], button:not([type])");
-        if(sBtn){
-          const old=sBtn.innerText||sBtn.value;
-          sBtn.innerText="Submitted!";
-          setTimeout(()=>{sBtn.innerText=old;},1800);
-        }
-      });
-    }
-  });
-  document.querySelectorAll("button, [role='button'], a.btn, a.button, .btn, .cta, .tab-btn, input[type='button'], input[type='submit']").forEach(btn=>{
-    if(btn.tagName==="BUTTON"&&!btn.getAttribute("type"))btn.setAttribute("type","button");
-  });
-};
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",wireButtons);
-else wireButtons();
 
 const rep=(t,m,fn,ln,stk)=>{try{P.postMessage({poppy:1,report:{t,m:String(m).slice(0,400),fn:fn||"",ln:ln||0,stk:String(stk||"").slice(0,500)}},"*")}catch(e){}};
 addEventListener("error",e=>{const stk=(e.error&&e.error.stack)?e.error.stack:"";rep("error",e.message+(e.lineno?" (line "+e.lineno+")":""),e.filename,e.lineno,stk);});
@@ -2602,7 +2720,10 @@ function applyPatches(src, out){
   return isObj ? files : files["index.html"];
 }
 /* ===== Phase 4: hidden check, design review, templates, evals ===== */
-const QA_JS = `;(${typeof initProbe === "function" ? initProbe.toString() : "() => {}"})();
+function getQaJs() {
+  const initStr = typeof initProbe === "function" ? initProbe.toString() : (typeof window !== "undefined" && typeof window.initProbe === "function" ? window.initProbe.toString() : "() => {}");
+  const runStr = typeof runProbe === "function" ? runProbe.toString() : (typeof window !== "undefined" && typeof window.runProbe === "function" ? window.runProbe.toString() : "() => ({})");
+  return `;(${initStr})();
 addEventListener("load", () => setTimeout(async () => {
   const b = document.body; if (!b) return;
   const qa = {
@@ -2612,12 +2733,14 @@ addEventListener("load", () => setTimeout(async () => {
     iw: innerWidth
   };
   try {
-    const res = await (${typeof runProbe === "function" ? runProbe.toString() : "() => ({})" })({ settle: 200 });
+    const res = await (${runStr})({ settle: 200 });
     parent.postMessage({ poppy: 1, cmdRes: "probeResult", result: res, qa }, "*");
   } catch (err) {
     parent.postMessage({ poppy: 1, cmdRes: "probeResult", result: { loadErrors: [err.message], clickErrors: [], buttons: { total: 0, dead: [] }, canvas: { present: false }, render: { textLen: qa.t, visual: qa.v, placeholder: false } }, qa }, "*");
   }
 }, 300));`;
+}
+const QA_JS = getQaJs();
 const qaStub = m => m === "ai" ? "" : m === "store.list" ? [] : m === "fetch" || m.startsWith("connect.") ? {ok: false, status: 0, text: "", json: null} : null;
 function probe(html, w = 390, scale){
   return new Promise(res => {
@@ -2640,8 +2763,8 @@ function probe(html, w = 390, scale){
         if (qa.t < 15 && !qa.v) issues.push("The page renders blank: no visible text or controls after load.");
         if (w <= 480 && qa.w > qa.iw + 6) issues.push("The content is wider than a " + w + "px phone screen (" + qa.w + "px), so it scrolls sideways.");
       }
-      const score = probeRes && typeof scoreProbe === "function" ? scoreProbe(probeRes) : { pass: issues.length === 0, load: true, render: true, interaction: true, deadRatio: 0 };
-      const prompt = probeRes && typeof buildRepairPrompt === "function" ? buildRepairPrompt(probeRes) : (issues.length ? issues.join("\n") : "");
+      const score = typeof scoreProbe === "function" ? scoreProbe(probeRes || {}) : { pass: issues.length === 0, load: true, render: true, interaction: true, deadRatio: 0 };
+      const prompt = typeof buildRepairPrompt === "function" ? buildRepairPrompt(probeRes || {}) : (issues.length ? issues.join("\n") : "");
       res({
         pass: score.pass && (!qa || (qa.t >= 15 || qa.v)),
         score,
@@ -2668,7 +2791,7 @@ function probe(html, w = 390, scale){
       }
     };
     addEventListener("message", on); const t1 = setTimeout(end, 5000), t2 = setTimeout(end, scale ? 14000 : 5500);
-    f.srcdoc = inject(html, SDK + QA_JS); document.body.append(f);
+    f.srcdoc = inject(html, SDK + getQaJs()); document.body.append(f);
   });
 }
 const REVIEW = 'You review website screenshots. The image shows the same page at phone (390px), tablet (820px) and desktop (1280px) widths, left to right. Reply with ONLY JSON: {"ok":true} when it looks good, or {"ok":false,"fixes":["short concrete fix", ...]} with at most 4 fixes. Only report real problems: overlapping or clipped content, unreadable contrast, tiny tap targets, broken layout, large empty areas.';
@@ -2706,7 +2829,7 @@ async function editDoc(cur, req, im){
   return bundleFiles(currentFiles, aMap);
 }
 const qaOn = () => ls.get("poppy.qa") !== "0", vrOn = () => ls.get("poppy.vr") === "1";
-async function checkAndFix(html, note){
+async function checkAndFix(html, note, promptText = ""){
   if (!qaOn()) return html;
   setNote(note, "Verifying app runtime...");
   const q = await probe(html, 390);
@@ -2717,9 +2840,14 @@ async function checkAndFix(html, note){
 
   setNote(note, "Repairing runtime issues...");
   try {
-    const repaired = await collect([
-      { role: "user", content: repairText }
-    ], BUILD);
+    const goal = promptText || (typeof lastText !== "undefined" ? lastText : "") || "interactive web application";
+    const repairMsg = [
+      {
+        role: "user",
+        content: `You are repairing an application created for this goal:\n"${goal}"\n\nHere is the current HTML implementation:\n\`\`\`html\n${html}\n\`\`\`\n\n${repairText}\n\nReturn the complete, working single-page HTML document with all fixes applied. Ensure all buttons have real working event handlers and all calculations and interactions function flawlessly.`
+      }
+    ];
+    const repaired = await collect(repairMsg, BUILD);
     let cand = typeof repairHtml === "function" ? repairHtml(extractHtml(repaired)) : extractHtml(repaired);
     if (cand && cand.length > 50 && /<[a-z!]/i.test(cand)) {
       setNote(note, "Re-verifying repair...");
@@ -2896,7 +3024,7 @@ async function build(text, auto){
       if (!isRenderable) throw new Error("Multi-agent build fell back.");
       if (typeof repairHtml === "function") html = repairHtml(html);
       if (typeof autoWireButtons === "function") html = autoWireButtons(html);
-      if (!auto) html = await checkAndFix(html, note);
+      if (!auto) html = await checkAndFix(html, note, text);
       current = html;
       currentFiles = files;
       activeFile = "index.html";
@@ -2932,7 +3060,7 @@ async function build(text, auto){
     if (peek) { peek.remove(); peek = null; }
     const isRenderable = typeof isRenderableHtml === "function" ? isRenderableHtml(html) : (html && html.length > 50 && /<[a-z!]/i.test(html));
     if (!isRenderable) throw new Error("Poppy didn't get a page back. Try rewording.");
-    if (!auto) html = await checkAndFix(html, note);
+    if (!auto) html = await checkAndFix(html, note, text);
     if (typeof repairHtml === "function") html = repairHtml(html);
     if (typeof autoWireButtons === "function") html = autoWireButtons(html);
     current = html;
@@ -4778,7 +4906,9 @@ async function openGallery() {
         frame.setAttribute("loading", "lazy");
         frame.setAttribute("aria-hidden", "true");
         frame.tabIndex = -1;
-        frame.srcdoc = (cur.html || "").replace(/<script\b[\s\S]*?<\/script>/gi, "");
+        frame.srcdoc = (cur.html || "")
+          .replace(/<script\b[\s\S]*?(?:<\/script>|$)/gi, "")
+          .replace(/\son[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "");
         th.append(frame);
       }
 
@@ -5106,8 +5236,13 @@ UNIVERSAL ARCHITECTURE RULES (APPLIES TO ALL TYPES OF WEBSITES):
    - TIMERS & STOPWATCHES: Working Start/Pause/Reset buttons, formatted MM:SS display, and drift-free timing loop.
    - GAMES & SIMULATIONS: 60fps canvas loop, player physics (velocity, gravity, collision), patrolling enemies, coin/score items, dual desktop keyboard + mobile on-screen buttons, and sound effects.
    - PRESENTATIONS & DECKS: 16:9 widescreen viewport, Prev/Next navigation, progress bar, slide counter, and speaker notes drawer.
-4. ZERO DEAD BUTTONS: Every button must have type="button", clear semantic attributes (e.g. data-action, data-tab, onclick), and active visual/audio feedback.
-5. SCRIPT PLACEMENT: Put all <script> tags at the very bottom of <body> (just before </body>) and wrap initialization in DOMContentLoaded or window.onload.`;
+4. ZERO DEAD BUTTONS & EVENT ARCHITECTURE:
+   - Place all <script> tags at the very bottom of <body> (just before </body>).
+   - Attach event listeners via JavaScript (e.g. element.addEventListener('click', handler) or element.onclick = handler) OR assign handlers to window (e.g. window.calculate = function() { ... }).
+   - If you use inline onclick="fn()", fn MUST be defined as a top-level global function (outside of any DOMContentLoaded closure) so the browser can invoke it.
+   - CALCULATORS & CONVERTERS: Provide an immediate, real mathematical computation engine that handles operations (digits, decimals, +, -, *, /, =, Clear) and updates the display element immediately without reloading.
+   - FORMS: Always intercept form submission with e.preventDefault() in the submit handler and execute real validation/processing.
+5. NO EXTERNAL DEPENDENCIES: Use pure native HTML5, CSS3, JavaScript, and Canvas. No external CDNs.`;
 
 function balanceDelimiters(code) {
   let c = code.replace(/\s+$/, "");
@@ -5225,11 +5360,8 @@ function repairHtml(html) {
   // e.g. viewBox=\"0 0 24 24\" -> viewBox="0 0 24 24"
   // e.g. d=\"M10.325...\" -> d="M10.325..."
   if (/=\\"|viewBox=\\"|d=\\"|class=\\"|id=\\"/i.test(h)) {
-    h = h.replace(/=\\"/g, '="').replace(/\\">/g, '">').replace(/\\"\s/g, '" ');
-    h = h.replace(/viewBox="\\+/g, 'viewBox="').replace(/d="\\+/g, 'd="');
-    if (/\\"[a-zA-Z0-9_\s-]+\\"/i.test(h)) {
-      h = h.replace(/\\"/g, '"');
-    }
+    h = h.replace(/\\"/g, '"');
+    h = h.replace(/(viewBox|d|class|id|fill|stroke)="+\\*(.*?)"/gi, '$1="$2"');
   }
 
   // 1. Check for unclosed style tags
@@ -5272,10 +5404,10 @@ function repairHtml(html) {
     
     code = balanceDelimiters(code);
     code += "</scr" + "ipt>";
-    h = h.slice(0, scriptTagEnd + 1) + "\n" + code;
+    h = h.slice(0, styleTagEnd + 1) + "\n" + code;
   }
   
-  // 4. Scan every <script> block and repair any syntax errors
+  // 4. Balance unclosed delimiters in script blocks without destructive line popping
   h = h.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi, (match, attrs, code) => {
     if (/\bsrc\s*=/i.test(attrs)) return match;
     const trimmed = code.trim();
@@ -5289,15 +5421,7 @@ function repairHtml(html) {
         new Function(repaired);
         return `<script${attrs}>\n${repaired}\n</scr` + `ipt>`;
       } catch (err2) {
-        let lines = trimmed.split("\n");
-        while (lines.length > 1) {
-          lines.pop();
-          const attempt = balanceDelimiters(lines.join("\n"));
-          try {
-            new Function(attempt);
-            return `<script${attrs}>\n${attempt}\n</scr` + `ipt>`;
-          } catch(e) {}
-        }
+        // Keep original code rather than destroying lines; probe will report precise error
         return match;
       }
     }
@@ -5446,146 +5570,6 @@ if (typeof window !== "undefined") {
   window.autoWireButtons = autoWireButtons;
   window.runMultiAgentPipeline = runMultiAgentPipeline;
 }
-
-/* ===== Poppy Verify Probe =====
-   Runs INSIDE a rendered app and reports what actually happens.
-   Used two ways:
-     - Node eval (eval.js):  page.addInitScript(initProbe); page.evaluate(runProbe)
-     - poppy.html (Phase 2): embed "(" + initProbe + ")()" in <head> of the preview,
-       then post "(" + runProbe + ")()" results back via postMessage.
-   Pure observation: it never fakes behaviour. */
-
-function initProbe() {
-  if (window.__pp_probe) return;
-  const log = (window.__pp_probe = { errors: [] });
-  const push = m => { if (log.errors.length < 30) log.errors.push(String(m).slice(0, 240)); };
-  window.addEventListener("error", e => push((e.message || "error") + (e.lineno ? " (line " + e.lineno + ")" : "")));
-  window.addEventListener("unhandledrejection", e => push("Unhandled rejection: " + ((e.reason && e.reason.message) || e.reason)));
-  const ce = console.error;
-  console.error = function () { push("console.error: " + [].slice.call(arguments).join(" ")); return ce.apply(console, arguments); };
-  window.alert = window.confirm = () => true;
-  window.prompt = () => "test";
-  // bubble phase on window => runs AFTER the app's own handlers; only stops navigation
-  window.addEventListener("submit", e => { if (!e.defaultPrevented) e.preventDefault(); });
-  window.addEventListener("click", e => {
-    const a = e.target && e.target.closest && e.target.closest("a[href]");
-    if (a && !e.defaultPrevented) e.preventDefault();
-  });
-  window.addEventListener("message", async e => {
-    if (e.data && e.data.poppy === 1 && e.data.cmd === "runProbe") {
-      try {
-        const res = await runProbe(e.data.opts || {});
-        window.parent.postMessage({ poppy: 1, cmdRes: "probeResult", result: res }, "*");
-      } catch (err) {
-        window.parent.postMessage({ poppy: 1, cmdRes: "probeResult", result: { loadErrors: [err.message], clickErrors: [], buttons: { total: 0, dead: [] }, canvas: { present: false }, render: { textLen: 0, visual: false, placeholder: false } } }, "*");
-      }
-    }
-  });
-}
-
-async function runProbe(opts) {
-  opts = opts || {};
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
-  const log = window.__pp_probe || { errors: [] };
-  await sleep(opts.settle || 400);
-  const loadErrors = [...new Set(log.errors)];
-
-  const canvasHash = c => {
-    try {
-      const t = document.createElement("canvas"); t.width = 32; t.height = 32;
-      t.getContext("2d").drawImage(c, 0, 0, 32, 32);
-      return Array.prototype.join.call(t.getContext("2d").getImageData(0, 0, 32, 32).data, ",");
-    } catch (e) { return "x"; }
-  };
-  const sig = () => {
-    let s = document.body ? document.body.innerHTML : "";
-    document.querySelectorAll("input,textarea,select").forEach(i => { s += "|" + (/checkbox|radio/.test(i.type) ? i.checked : i.value); });
-    try { s += "|" + JSON.stringify(localStorage); } catch (e) {}
-    document.querySelectorAll("canvas").forEach(c => { s += "|" + canvasHash(c); });
-    return s;
-  };
-  const visible = el => {
-    const r = el.getBoundingClientRect(), cs = getComputedStyle(el);
-    return r.width > 0 && r.height > 0 && cs.visibility !== "hidden" && cs.display !== "none" && !el.disabled;
-  };
-  const describe = el =>
-    (el.id ? "#" + el.id : el.tagName.toLowerCase() + (el.className && typeof el.className === "string" ? "." + el.className.trim().split(/\s+/)[0] : "")) +
-    ' "' + ((el.innerText || el.value || el.getAttribute("aria-label") || "").trim().slice(0, 24)) + '"';
-
-  // --- render checks
-  const text = (document.body ? document.body.innerText : "").trim();
-  const render = {
-    textLen: text.length,
-    visual: !!document.querySelector("canvas,svg,img,video,table,input,button"),
-    placeholder: /Interactive application loaded\. All controls and modules are active\./.test(text)
-  };
-
-  // --- pre-fill inputs so calculators/forms have something to work with
-  document.querySelectorAll("input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=range]),textarea").forEach(i => {
-    if (!visible(i) || i.value) return;
-    i.value = i.type === "number" ? String(i.min && +i.min > 5 ? i.min : 5) : i.type === "email" ? "a@b.co" : "test";
-    i.dispatchEvent(new Event("input", { bubbles: true })); i.dispatchEvent(new Event("change", { bubbles: true }));
-  });
-
-  // --- click every visible control, one at a time
-  const els = [...document.querySelectorAll("button,input[type=button],input[type=submit],[role=button],[data-action]")].filter(visible).slice(0, opts.maxButtons || 40);
-  const dead = [], exempt = [], clickErrors = [];
-  for (const el of els) {
-    if (!el.isConnected) continue;
-    const before = sig(), n = log.errors.length;
-    try { el.click(); } catch (e) { clickErrors.push(describe(el) + " -> " + e.message); }
-    await sleep(60);
-    if (log.errors.length > n) log.errors.slice(n).forEach(m => clickErrors.push(describe(el) + " -> " + m));
-    else if (sig() === before) {
-      // restart/reset/stop at initial state legitimately changes nothing
-      if (/^(restart|reset|new game|play again|stop|pause|cancel|close)\b/i.test((el.innerText || el.value || "").trim())) exempt.push(describe(el));
-      else dead.push(describe(el));
-    }
-  }
-
-  // --- canvas: does it animate on its own, or react to keys?
-  const canvases = [...document.querySelectorAll("canvas")].filter(visible);
-  const canvas = { present: canvases.length > 0, animating: false, reactsToKeys: false };
-  if (canvases.length) {
-    const h0 = canvasHash(canvases[0]); await sleep(300);
-    canvas.animating = canvasHash(canvases[0]) !== h0;
-    const h1 = canvasHash(canvases[0]);
-    for (const k of ["ArrowRight", " ", "ArrowUp", "Enter"]) {
-      for (const t of [window, document]) {
-        t.dispatchEvent(new KeyboardEvent("keydown", { key: k, code: k === " " ? "Space" : k, bubbles: true }));
-        t.dispatchEvent(new KeyboardEvent("keyup", { key: k, code: k === " " ? "Space" : k, bubbles: true }));
-      }
-      await sleep(120);
-    }
-    canvas.reactsToKeys = canvasHash(canvases[0]) !== h1;
-  }
-  return { loadErrors, clickErrors, buttons: { total: els.length, dead }, canvas, render };
-}
-
-function scoreProbe(r) {
-  const load = r.loadErrors.length === 0;
-  const rendered = !r.render.placeholder && (r.render.textLen >= 15 || r.render.visual);
-  // an always-animating canvas masks click effects, so only judge buttons on non-animating pages
-  const judgeButtons = !(r.canvas.present && r.canvas.animating);
-  const deadRatio = judgeButtons && r.buttons.total ? r.buttons.dead.length / r.buttons.total : 0;
-  const canvasOk = !r.canvas.present || r.canvas.animating || r.canvas.reactsToKeys;
-  const interaction = r.clickErrors.length === 0 && deadRatio <= 0.34 && canvasOk;
-  return { load, render: rendered, interaction, pass: load && rendered && interaction, deadRatio: +deadRatio.toFixed(2) };
-}
-
-/* Feed this back to the model for ONE repair turn. */
-function buildRepairPrompt(r) {
-  const out = [];
-  if (r.render.placeholder) out.push("The page rendered only a generic placeholder; build the real UI.");
-  if (r.loadErrors.length) out.push("Errors on load:\n- " + r.loadErrors.join("\n- "));
-  if (r.clickErrors.length) out.push("Errors when clicking controls:\n- " + r.clickErrors.join("\n- "));
-  if (r.buttons.dead.length) out.push("Controls that did nothing when clicked (no DOM, input, storage or canvas change):\n- " + r.buttons.dead.join("\n- "));
-  if (r.canvas.present && !r.canvas.animating && !r.canvas.reactsToKeys) out.push("The canvas never changes: no animation loop and no response to keyboard input.");
-  return out.length ? "Your app was run in a browser sandbox and failed these checks. Fix exactly these problems and return the full corrected document.\n\n" + out.join("\n\n") : "";
-}
-
-if (typeof module !== "undefined") module.exports = { initProbe, runProbe, scoreProbe, buildRepairPrompt };
-if (typeof window !== "undefined") Object.assign(window, { initProbe, runProbe, scoreProbe, buildRepairPrompt });
 
 // --- PHASE 7: VISUAL CRAFT (Inspector & UI Blocks) ---
 

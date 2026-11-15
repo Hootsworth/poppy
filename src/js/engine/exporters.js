@@ -1102,7 +1102,9 @@ async function openGallery() {
         frame.setAttribute("loading", "lazy");
         frame.setAttribute("aria-hidden", "true");
         frame.tabIndex = -1;
-        frame.srcdoc = (cur.html || "").replace(/<script\b[\s\S]*?<\/script>/gi, "");
+        frame.srcdoc = (cur.html || "")
+          .replace(/<script\b[\s\S]*?(?:<\/script>|$)/gi, "")
+          .replace(/\son[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "");
         th.append(frame);
       }
 

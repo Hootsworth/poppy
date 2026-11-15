@@ -33,14 +33,14 @@ if (html.includes('id="promptBackdrop"') || html.includes('id="detectedIntent"')
 }
 console.log("@ Mention target engine & intent detection: verified.");
 
-// 5. Verify Universal Button Safety Engine & Multi-Agent Architecture
-if (!html.includes('wireButtons')) {
-  throw new Error("Universal button interaction safety engine missing");
+// 5. Verify Runtime Verify Probe & Multi-Agent Architecture
+if (!html.includes('runProbe') || !html.includes('scoreProbe')) {
+  throw new Error("Runtime verification probe missing");
 }
-if (!html.includes('runMultiAgentPipeline') || !html.includes('autoWireButtons') || !html.includes('multiAgentOn')) {
+if (!html.includes('runMultiAgentPipeline') || !html.includes('multiAgentOn')) {
   throw new Error("Multi-Agent Architecture missing");
 }
-console.log("Universal button interaction safety engine & Multi-Agent Architecture: verified.");
+console.log("Runtime Verify Probe & Multi-Agent Architecture: verified.");
 
 // 6. Verify Zero-Purple Palette in Keyword Glow
 const baseCss = fs.readFileSync(path.join(__dirname, "..", "src/css/base.css"), "utf8");
