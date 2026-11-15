@@ -1,123 +1,74 @@
-/* Poppy Easter Egg: 1-in-50 Party Overlay */
-#poppyEasterEgg {
-  position: fixed;
-  inset: 0;
-  z-index: 999999;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  background: radial-gradient(circle at center, rgba(15, 23, 42, 0.94), rgba(2, 6, 23, 0.98));
-  color: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
-  animation: eggFadeIn 0.4s ease-out;
-  pointer-events: auto;
-}
+/* ===== Party mode (Poppy Easter Egg) ===== */
+@keyframes pty-bg { to { background-position: 400% 0; } }
+@keyframes pty-up { from { transform: translate(var(--x0), 112vh) rotate(var(--r0)); } to { transform: translate(var(--x1), -30vh) rotate(var(--r1)); } }
+@keyframes pty-sway { 50% { transform: translateX(18px) rotate(8deg); } }
+@keyframes pty-spin { to { transform: rotate(360deg); } }
+@keyframes pty-pop { 40% { transform: scale(1.5) rotate(15deg); } to { transform: scale(0); opacity: 0; } }
+@keyframes pty-wait { 50% { transform: scale(1.06); } }
 
-@keyframes eggFadeIn {
-  from { opacity: 0; transform: scale(0.96); }
-  to { opacity: 1; transform: scale(1); }
-}
+body.party { background: linear-gradient(120deg, #f23d2a, #ff4fa3, #7b3cff, #22d3ee, #ffd447, #f23d2a) 0 0 / 400% 100%; animation: pty-bg 12s linear infinite; }
+body.party::before { content: ""; position: fixed; inset: -50%; z-index: 0; pointer-events: none; mix-blend-mode: overlay; background: conic-gradient(rgba(255,255,255,.24), transparent 8%, rgba(255,255,255,.2) 16%, transparent 24%, rgba(255,255,255,.22) 33%, transparent 41%, rgba(255,255,255,.22) 50%, transparent 58%, rgba(255,255,255,.22) 66%, transparent 75%, rgba(255,255,255,.2) 85%, transparent 92%); animation: pty-spin 16s linear infinite; }
+body.party #home { position: relative; z-index: 2; margin-top: 26px; }
+body.party #home h1 { color: #fff; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 4px 4px 0 #7b3cff, 8px 8px 0 #22d3ee; scale: calc(1 + var(--beat,0) * .035); }
+body.party .bloom { scale: calc(1 + var(--beat,0) * .08); }
 
-#poppyEasterEgg.closing {
-  animation: eggFadeOut 0.5s ease-in forwards;
-}
+#pty { position: fixed; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; }
+.pc { position: absolute; left: 0; top: 0; animation: pty-up var(--d) linear var(--dl) infinite; will-change: transform; }
+.pc .c { display: block; position: relative; animation: pty-sway 3s ease-in-out infinite; scale: calc(1 + var(--beat,0) * .12); }
+.pc.cat .c { width: var(--s); pointer-events: auto; cursor: pointer; filter: drop-shadow(0 4px 0 rgba(42,13,22,.35)); }
+.pc.cat .c svg { display: block; width: 100%; overflow: visible; }
+.pc.emo .c { font-size: var(--s); line-height: 1; }
+.pc.cap .c { font: 900 var(--s) / 1 Impact, "Arial Black", system-ui, sans-serif; color: #fff; text-transform: uppercase; white-space: nowrap; text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000; animation-duration: 5s; }
+.pc.pop .c { animation: pty-pop .5s forwards; }
+.pc.pop .c::after { content: "MEOW!"; position: absolute; left: 50%; top: -8px; translate: -50% -100%; background: #fff; color: var(--ink); font: 800 .9rem system-ui; padding: 3px 10px; border-radius: 99px; border: 2px solid var(--ink); }
 
-@keyframes eggFadeOut {
-  from { opacity: 1; transform: scale(1); }
-  to { opacity: 0; transform: scale(1.04); pointer-events: none; }
-}
+#ptybar { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); translate: -50% 0; z-index: 30; display: flex; align-items: center; gap: 12px; background: var(--white); border: 2px solid var(--ink); border-radius: 99px; box-shadow: 0 5px 0 var(--ink); padding: 8px 14px 8px 8px; max-width: calc(100vw - 24px); }
+#ptybar .rec { width: 44px; height: 44px; flex: none; border-radius: 50%; overflow: hidden; border: 2px solid var(--ink); background: var(--petal2); animation: pty-spin 3.5s linear infinite; }
+#ptybar .rec img { width: 100%; height: 100%; object-fit: cover; display: block; }
+#ptybar .meta { display: grid; min-width: 0; line-height: 1.2; }
+#ptybar b { font-size: .78rem; letter-spacing: .04em; }
+#ptybar span { font-weight: 700; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: min(46vw, 300px); }
+#ptybar.wait span { animation: pty-wait 1s ease-in-out infinite; color: var(--red); }
+#ptybar button { border: 2px solid var(--ink); background: transparent; border-radius: 99px; padding: 4px 12px; font: 800 .85rem inherit; cursor: pointer; transition: transform .2s var(--ease), background .2s, color .2s; }
+#ptybar button:hover { background: var(--ink); color: var(--white); transform: translateY(-2px); }
 
-.egg-party-box {
-  position: relative;
-  z-index: 10;
-  text-align: center;
-  background: rgba(30, 41, 59, 0.88);
-  border: 2px solid #38bdf8;
-  border-radius: 16px;
-  padding: 24px 36px;
-  box-shadow: 0 0 35px rgba(56, 189, 248, 0.4), 0 0 70px rgba(244, 63, 94, 0.3);
-  backdrop-filter: blur(8px);
-  max-width: 90vw;
-}
+/* Dancing flower + stage */
+@keyframes pty-swing { from { transform: rotate(-24deg); } to { transform: rotate(24deg); } }
+@keyframes pty-hop { 50% { transform: translateY(-8px) rotate(-2deg); } }
+@keyframes pty-mq { to { transform: translateX(-50%); } }
 
-.egg-title {
-  font-size: 2.2rem;
-  font-weight: 900;
-  letter-spacing: 2px;
-  background: linear-gradient(90deg, #f43f5e, #fb923c, #facc15, #38bdf8);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 8px;
-}
+body.party #flower { grid-area: 1 / 1; }
+.pdance { grid-area: 1 / 1; height: auto; overflow: visible; pointer-events: none; --b: 0; }
+.pdance .arm path, .pdance .leg path { fill: none; stroke: #2a0d16; stroke-width: 8; stroke-linecap: round; }
+.pdance .hand { fill: #ffe6dc; stroke: #2a0d16; stroke-width: 4; }
+.pdance .arm { transform-origin: 10px 104px; transform: rotate(calc(var(--b) * 38deg)); }
+.pdance .arm.r { transform-origin: 190px 104px; transform: rotate(calc(var(--b) * -38deg)); }
+.pdance .leg { transform-origin: 88px 190px; transform: rotate(calc(var(--b) * 18deg)); }
+.pdance .leg.r { transform-origin: 112px 190px; transform: rotate(calc(var(--b) * -18deg)); }
 
-.egg-subtitle {
-  font-size: 1rem;
-  color: #94a3b8;
-  margin-bottom: 12px;
-}
+#pyfloor { position: absolute; left: -30%; right: -30%; bottom: -10vh; height: 42vh; transform: perspective(380px) rotateX(64deg); transform-origin: 50% 100%; background: repeating-conic-gradient(hsl(var(--hue,0) 90% 62%) 0 25%, hsl(calc(var(--hue,0) + 150) 90% 55%) 0 50%) 0 0 / 140px 140px; opacity: .5; -webkit-mask-image: linear-gradient(transparent, #000 55%); mask-image: linear-gradient(transparent, #000 55%); }
+.spot { position: absolute; top: -4vh; left: 6%; width: 46vmin; height: 140vh; transform-origin: 50% 0; background: linear-gradient(rgba(255,255,255,.55), transparent 75%); clip-path: polygon(46% 0, 54% 0, 100% 100%, 0 100%); mix-blend-mode: soft-light; animation: pty-swing 3.75s ease-in-out infinite alternate; }
+.spot.r { left: auto; right: 6%; animation-direction: alternate-reverse; }
 
-.egg-track-badge {
-  display: inline-block;
-  background: rgba(15, 23, 42, 0.8);
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  padding: 6px 14px;
-  border-radius: 99px;
-  font-size: 0.85rem;
-  color: #38bdf8;
-  margin-bottom: 16px;
-}
+#pymq { position: absolute; top: 0; left: 0; right: 0; height: 26px; overflow: hidden; background: #2a0d16; color: #ffd447; font: 900 .8rem / 26px Impact, "Arial Black", system-ui, sans-serif; letter-spacing: .08em; white-space: nowrap; }
+#pymq span { display: inline-block; animation: pty-mq 16s linear infinite; }
 
-.egg-timer-bar-wrap {
-  width: 100%;
-  height: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 99px;
-  overflow: hidden;
-  margin-bottom: 16px;
-}
+#pyeq { position: absolute; left: 0; right: 0; bottom: 0; height: 20vh; display: flex; gap: 4px; align-items: flex-end; padding: 0 2px; opacity: .85; }
+#pyeq i { flex: 1; height: 100%; transform-origin: bottom; border-radius: 6px 6px 0 0; background: hsl(calc(var(--hue,0) + var(--i,0) * 9) 95% 60%); border: 2px solid rgba(42,13,22,.6); border-bottom: 0; }
 
-.egg-timer-bar {
-  height: 100%;
-  width: 100%;
-  background: linear-gradient(90deg, #38bdf8, #f43f5e);
-  animation: eggTimerCountdown 10s linear forwards;
-}
+.pcf { position: fixed; z-index: 40; pointer-events: none; }
+.pwoo { position: fixed; z-index: 41; pointer-events: none; font: 900 clamp(1.4rem, 3.4vw, 2.4rem) / 1 Impact, "Arial Black", system-ui, sans-serif; color: #fff; -webkit-text-stroke: 2px #2a0d16; paint-order: stroke fill; text-shadow: 3px 3px 0 #7b3cff; white-space: nowrap; }
 
-@keyframes eggTimerCountdown {
-  from { width: 100%; }
-  to { width: 0%; }
-}
+body.party .ask { box-shadow: 0 5px 0 var(--ink), 0 0 0 4px #fff, 0 0 28px 8px hsl(var(--hue,0) 100% 60% / .8); }
+body.party .go { background: hsl(var(--hue,0) 90% 45%); animation: pty-hop .9375s ease-in-out infinite; }
+body.party .ideas button { background: rgba(255,255,255,.88); animation: pty-hop .9375s ease-in-out infinite; }
+body.party .ideas button:nth-child(even) { animation-delay: .47s; }
+body.party .top .brand { animation: pty-hop .9375s ease-in-out infinite; }
+body.party .lede { display: inline-block; background: #fff; padding: 6px 14px; border-radius: 12px; rotate: -1.5deg; box-shadow: 0 4px 0 var(--ink); }
 
-.egg-skip-btn {
-  background: #334155;
-  color: #e2e8f0;
-  border: 1px solid #475569;
-  padding: 6px 16px;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.egg-skip-btn:hover {
-  background: #475569;
-  color: #fff;
-}
-
-.egg-floating-cat {
-  position: absolute;
-  pointer-events: none;
-  z-index: 5;
-  width: 64px;
-  height: 64px;
-  animation: eggCatFloat 4s ease-in-out infinite alternate;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
-}
-
-@keyframes eggCatFloat {
-  0% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-30px) rotate(15deg); }
-  100% { transform: translateY(30px) rotate(-15deg); }
+@media (prefers-reduced-motion: reduce) {
+  body.party, body.party::before, .pc .c, #ptybar .rec, #ptybar.wait span,
+  .spot, #pymq span, body.party .go, body.party .ideas button, body.party .top .brand {
+    animation: none !important;
+  }
 }
