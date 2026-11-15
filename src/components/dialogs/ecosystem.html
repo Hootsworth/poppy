@@ -10,6 +10,7 @@
     <div class="tabs" id="ecoTabs">
       <button class="tab" data-tab="plugins" aria-pressed="true">Skill Plugins (poppy.use)</button>
       <button class="tab" data-tab="templates">Template Marketplace</button>
+      <button class="tab" data-tab="graph">Ecosystem Graph (Poppy 5.0)</button>
     </div>
 
     <!-- Plugins Tab -->
@@ -25,6 +26,44 @@
     <div id="ecoTabTemplates" class="inspect-panel" style="display:none">
       <p class="hint">Production-ready community starter templates. Click "Clone Template" to start a new project instantly.</p>
       <div id="ecoTemplatesGrid" class="eco-grid"></div>
+    </div>
+
+    <!-- Ecosystem Graph Tab (Poppy 5.0) -->
+    <div id="ecoTabGraph" class="inspect-panel" style="display:none">
+      <div class="eco-toolbar">
+        <div class="eco-select-group">
+          <label for="ecoArchetypeSel">Blueprint:</label>
+          <select id="ecoArchetypeSel">
+            <option value="saas_growth_engine">SaaS Growth Engine (6 Deliverables)</option>
+            <option value="club_community_suite">Club &amp; Community Suite (5 Deliverables)</option>
+            <option value="ecommerce_retail_mesh">E-Commerce Retail Mesh (5 Deliverables)</option>
+            <option value="iot_hardware_hub">IoT Hardware &amp; Fleet Mesh (4 Deliverables)</option>
+          </select>
+          <button class="go sm" id="ecoGenBtn" type="button">Generate Graph</button>
+        </div>
+        <div class="eco-actions">
+          <button class="go sm sp" id="ecoVerifyContractsBtn" type="button">Verify Contracts</button>
+          <button class="go sm" id="ecoExportMonorepoBtn" type="button">Export Monorepo</button>
+        </div>
+      </div>
+
+      <div class="eco-graph-viewport" id="ecoGraphViewport">
+        <svg class="eco-graph-canvas" id="ecoSvgCanvas"></svg>
+        <div id="ecoNodesContainer"></div>
+      </div>
+
+      <div id="ecoAuditBox" class="eco-audit-box verified" style="display:none"></div>
+
+      <div class="eco-remix-section">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="eco-remix-title">Semantic AST Component Remixer</span>
+          <button class="go sm" id="ecoExtractCompBtn" type="button" style="font-size:11px;padding:4px 8px">Scan Current Artifact</button>
+        </div>
+        <p class="hint" style="margin:4px 0 8px">Deconstruct active artifact into semantic components and remix into ecosystem.</p>
+        <div id="ecoComponentsGrid" class="eco-components-grid">
+          <span style="font-size:12px;color:var(--sub);font-style:italic">Click &quot;Scan Current Artifact&quot; to deconstruct UI into components.</span>
+        </div>
+      </div>
     </div>
   </div>
   <div class="acts">

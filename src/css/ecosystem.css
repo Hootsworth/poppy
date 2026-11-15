@@ -1,1 +1,193 @@
-/* Ecosystem & Pipeline CSS */
+/* Ecosystem & Pipeline CSS (Poppy 5.0) */
+
+#ecoTabGraph {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.eco-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg2, #f8fafc);
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line, #e2e8f0);
+}
+
+.eco-select-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.eco-select-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text, #0f172a);
+}
+
+.eco-select-group select {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line, #cbd5e1);
+  background: var(--bg, #ffffff);
+  color: var(--text, #0f172a);
+  font-size: 13px;
+}
+
+.eco-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.eco-graph-viewport {
+  position: relative;
+  width: 100%;
+  height: 380px;
+  background: var(--bg3, #0f172a);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line2, #334155);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.eco-graph-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.eco-node-card {
+  position: absolute;
+  background: #1e293b;
+  border: 1.5px solid #475569;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #f8fafc;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s, border-color 0.15s;
+  min-width: 140px;
+}
+
+.eco-node-card:hover {
+  transform: translateY(-2px);
+  border-color: #38bdf8;
+}
+
+.eco-node-card.active {
+  border-color: #38bdf8;
+  background: #0b1f3a;
+}
+
+.eco-node-title {
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.eco-node-role {
+  display: inline-block;
+  font-size: 10px;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #334155;
+  color: #94a3b8;
+}
+
+.eco-node-role.role-web {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+.eco-node-role.role-crm {
+  background: #8b5cf6;
+  color: #ffffff;
+}
+
+.eco-node-role.role-api {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.eco-node-role.role-cron {
+  background: #f59e0b;
+  color: #0f172a;
+}
+
+.eco-node-role.role-db {
+  background: #ec4899;
+  color: #ffffff;
+}
+
+.eco-node-role.role-doc {
+  background: #64748b;
+  color: #ffffff;
+}
+
+.eco-audit-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #334155;
+}
+
+.eco-audit-box.verified {
+  border-left: 4px solid #10b981;
+}
+
+.eco-audit-box.error {
+  border-left: 4px solid #ef4444;
+}
+
+.eco-remix-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+  border-top: 1px solid var(--line, #e2e8f0);
+  padding-top: 12px;
+}
+
+.eco-remix-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text, #0f172a);
+}
+
+.eco-components-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.eco-comp-chip {
+  background: var(--bg2, #f1f5f9);
+  border: 1px solid var(--line, #cbd5e1);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.eco-comp-name {
+  font-weight: 700;
+  color: var(--text, #0f172a);
+}
+
+.eco-comp-meta {
+  font-size: 11px;
+  color: var(--sub, #64748b);
+}

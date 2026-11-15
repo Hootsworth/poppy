@@ -64,6 +64,7 @@ const jsFiles = [
   "src/js/engine/persistent.js",
   "src/js/engine/packager.js",
   "src/js/engine/native.js",
+  "src/js/engine/ecosystem.js",
   "src/js/engine/exporters.js",
   "src/js/engine/archetypes.js",
   "src/js/engine/multi-agent.js",

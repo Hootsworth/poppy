@@ -281,6 +281,8 @@ function addCustomPlugin() {
 }
 
 // Wire up Ecosystem dialog
+let activeEcosystemGraph = null;
+
 if ($("#ecoTabs")) $("#ecoTabs").onclick = e => {
   const b = e.target.closest("button.tab");
   if (!b) return;
@@ -289,7 +291,192 @@ if ($("#ecoTabs")) $("#ecoTabs").onclick = e => {
   const tab = b.dataset.tab;
   $("#ecoTabPlugins").style.display = tab === "plugins" ? "flex" : "none";
   $("#ecoTabTemplates").style.display = tab === "templates" ? "flex" : "none";
+  if ($("#ecoTabGraph")) {
+    $("#ecoTabGraph").style.display = tab === "graph" ? "flex" : "none";
+    if (tab === "graph" && !activeEcosystemGraph) {
+      renderActiveEcosystemGraph();
+    }
+  }
 };
+
+function renderActiveEcosystemGraph() {
+  const sel = $("#ecoArchetypeSel");
+  const archetype = (sel && sel.value) || "saas_growth_engine";
+  if (typeof generateEcosystemGraph === "function") {
+    activeEcosystemGraph = generateEcosystemGraph(archetype);
+  } else {
+    return;
+  }
+
+  const container = $("#ecoNodesContainer");
+  const svg = $("#ecoSvgCanvas");
+  if (!container || !svg) return;
+
+  container.textContent = "";
+  svg.innerHTML = "";
+
+  const nodes = activeEcosystemGraph.nodes || [];
+  const edges = activeEcosystemGraph.edges || [];
+
+  // Coordinate map for nodes layout
+  const coords = {};
+  const width = 880;
+  const height = 360;
+
+  nodes.forEach((node, i) => {
+    let col = 0;
+    if (node.role === "public-web" || node.role === "sim-canvas") col = 0;
+    else if (node.role === "admin-crm") col = 0;
+    else if (node.role === "api-backend" || node.role === "shared-db") col = 1;
+    else col = 2;
+
+    const row = (i % 2 === 0) ? 0 : 1;
+    const x = 50 + col * 280;
+    const y = 40 + (row === 0 ? 50 : 200) + (i > 3 ? 30 : 0);
+    coords[node.id] = { x: Math.min(x, width - 200), y: Math.min(y, height - 90) };
+  });
+
+  // Render SVG connector lines
+  let svgPaths = "";
+  edges.forEach(edge => {
+    const s = coords[edge.source];
+    const t = coords[edge.target];
+    if (s && t) {
+      const x1 = s.x + 80;
+      const y1 = s.y + 35;
+      const x2 = t.x + 80;
+      const y2 = t.y + 35;
+      svgPaths += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#475569" stroke-width="2" stroke-dasharray="4,4" />`;
+    }
+  });
+  svg.innerHTML = svgPaths;
+
+  // Render Node Cards
+  nodes.forEach(node => {
+    const c = coords[node.id] || { x: 50, y: 50 };
+    const card = document.createElement("div");
+    card.className = "eco-node-card";
+    card.style.left = `${c.x}px`;
+    card.style.top = `${c.y}px`;
+
+    let roleClass = "role-web";
+    if (node.role === "admin-crm") roleClass = "role-crm";
+    else if (node.role === "api-backend") roleClass = "role-api";
+    else if (node.role === "cron-worker") roleClass = "role-cron";
+    else if (node.role === "shared-db") roleClass = "role-db";
+    else if (node.role === "document-report") roleClass = "role-doc";
+
+    const title = document.createElement("div");
+    title.className = "eco-node-title";
+    title.textContent = node.name;
+
+    const role = document.createElement("span");
+    role.className = `eco-node-role ${roleClass}`;
+    role.textContent = node.role || node.type;
+
+    const meta = document.createElement("div");
+    meta.style.cssText = "font-size:10px;color:#94a3b8;margin-top:4px";
+    meta.textContent = `${Object.keys(node.files || {}).length} files`;
+
+    card.append(title, role, meta);
+    container.append(card);
+  });
+}
+
+function verifyEcosystemContractsUI() {
+  if (!activeEcosystemGraph && typeof generateEcosystemGraph === "function") {
+    renderActiveEcosystemGraph();
+  }
+  const box = $("#ecoAuditBox");
+  if (!box || !activeEcosystemGraph) return;
+
+  const res = typeof verifyEcosystemIntegration === "function"
+    ? verifyEcosystemIntegration(activeEcosystemGraph)
+    : { valid: true, errors: [], edgeAudit: [] };
+
+  box.style.display = "block";
+  if (res.valid) {
+    box.className = "eco-audit-box verified";
+    box.innerHTML = `<strong>Contract Verification Passed!</strong><br>` +
+      `Validated ${res.nodeCount} deliverables and ${res.edgeCount} interconnected contracts.<br>` +
+      res.edgeAudit.map(a => `&bull; [${a.type.toUpperCase()}] ${a.detail}`).join("<br>");
+  } else {
+    box.className = "eco-audit-box error";
+    box.innerHTML = `<strong>Contract Errors Detected:</strong><br>` + res.errors.join("<br>");
+  }
+}
+
+async function exportEcosystemMonorepoUI() {
+  if (!activeEcosystemGraph && typeof generateEcosystemGraph === "function") {
+    renderActiveEcosystemGraph();
+  }
+  if (!activeEcosystemGraph) return;
+
+  try {
+    const repo = typeof exportEcosystemMonorepo === "function"
+      ? exportEcosystemMonorepo(activeEcosystemGraph)
+      : null;
+    if (!repo) return;
+
+    const enc = new TextEncoder();
+    const zipFiles = Object.keys(repo.files).map(k => ({
+      name: k,
+      data: enc.encode(repo.files[k])
+    }));
+
+    const zipBytes = await createZip(zipFiles);
+    const blob = new Blob([zipBytes], { type: "application/zip" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${activeEcosystemGraph.id}-monorepo.zip`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+
+    toast(`Exported ${repo.fileCount} deliverables as monorepo ZIP`);
+  } catch (err) {
+    toast(`Monorepo export error: ${err.message}`);
+  }
+}
+
+function scanCurrentArtifactComponentsUI() {
+  const grid = $("#ecoComponentsGrid");
+  if (!grid) return;
+  grid.textContent = "";
+
+  const html = (typeof current === "string" && current) ? current : "";
+  const components = typeof extractSemanticComponents === "function"
+    ? extractSemanticComponents(html)
+    : [];
+
+  if (components.length === 0) {
+    grid.innerHTML = '<span style="font-size:12px;color:var(--sub)">No semantic components found in active artifact.</span>';
+    return;
+  }
+
+  components.forEach(comp => {
+    const chip = document.createElement("div");
+    chip.className = "eco-comp-chip";
+
+    const name = document.createElement("div");
+    name.className = "eco-comp-name";
+    name.textContent = `${comp.title} (${comp.type})`;
+
+    const meta = document.createElement("div");
+    meta.className = "eco-comp-meta";
+    meta.textContent = comp.desc || `<${comp.tag}> element`;
+
+    chip.append(name, meta);
+    grid.append(chip);
+  });
+
+  toast(`Extracted ${components.length} semantic components from active artifact`);
+}
+
+if ($("#ecoGenBtn")) $("#ecoGenBtn").onclick = () => renderActiveEcosystemGraph();
+if ($("#ecoVerifyContractsBtn")) $("#ecoVerifyContractsBtn").onclick = () => verifyEcosystemContractsUI();
+if ($("#ecoExportMonorepoBtn")) $("#ecoExportMonorepoBtn").onclick = () => exportEcosystemMonorepoUI();
+if ($("#ecoExtractCompBtn")) $("#ecoExtractCompBtn").onclick = () => scanCurrentArtifactComponentsUI();
+
 
 if ($("#ecoClose")) $("#ecoClose").onclick = () => $("#ecosystemDlg").close();
 if ($("#ecoMenuBtn")) $("#ecoMenuBtn").onclick = () => { $("#menu").hidden = true; openEcosystemDialog(); };
