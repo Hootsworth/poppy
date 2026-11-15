@@ -919,12 +919,14 @@ addEventListener("unhandledrejection",e=>{const msg=(e.reason&&e.reason.message)
 function inject(html, code = SDK){
   if (typeof repairHtml === "function") html = repairHtml(html);
   if (typeof autoWireButtons === "function") html = autoWireButtons(html);
+  if (typeof injectUniversalRuntime === "function") html = injectUniversalRuntime(html);
   const tag = "<scr" + "ipt>" + code + "</scr" + "ipt>";
   return /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, m => m + tag) : tag + html;
 }
 function show(html){
   if (typeof repairHtml === "function") html = repairHtml(html);
   if (typeof autoWireButtons === "function") html = autoWireButtons(html);
+  if (typeof injectUniversalRuntime === "function") html = injectUniversalRuntime(html);
   shownAt = Date.now();
   $("#frame").srcdoc = inject(html);
   thumbLater();

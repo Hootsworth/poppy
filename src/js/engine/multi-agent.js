@@ -46,25 +46,21 @@ Every single button, keybinding, canvas control, or input MUST have an entry in 
 
 const BUILDER_PROMPT = `You are the Master Full-Stack Software Engineer in Poppy's multi-agent software engineering team.
 You receive the user's goal and the Lead Architect's Technical Blueprint.
-Your mission is to construct the COMPLETE, HIGH-FIDELITY, PLAYABLE/FUNCTIONAL SINGLE-PAGE APPLICATION.
+Your mission is to construct the COMPLETE, HIGH-FIDELITY, PLAYABLE/FUNCTIONAL SINGLE-PAGE APPLICATION FOR ANY WEBSITE OR APP TYPE.
 
-CRITICAL ARCHITECTURE RULES:
-1. Return ONE complete, self-contained HTML document with all <style> and <script> included. No external CDNs, fonts, or images.
-2. If it is a GAME or SIMULATION (e.g. Super Mario, platformer, arcade):
-   - Provide a vibrant, responsive <canvas> game container.
-   - Implement a real 60fps requestAnimationFrame game loop.
-   - Render the player character (Mario / hero) with physics: acceleration, friction, gravity, jumping, and collision detection against platforms and blocks.
-   - Add classic interactive elements: ground tiles, floating platforms, pipes, mystery question mark blocks with bouncing coins, and a finish flagpole.
-   - Include patrolling enemies (e.g. Goombas) that can be stomped or cause damage.
-   - Include WebAudio sound synthesis: pitch-bend jump sound, high-pitch coin chime, low stomp thud, and victory/defeat tunes.
-   - Support DUAL CONTROLS: Keyboard (Arrow keys, Space, WASD) AND clear, responsive on-screen mobile touch buttons (Left, Right, Jump, Restart).
-   - Display a clean HUD with Score, Coins, Lives, and World/Level.
-3. If it is an APPLICATION, CALCULATOR, or TOOL:
-   - Provide semantic HTML5 with a modern, tactile design system.
-   - Wire 100% of inputs, buttons, sliders, modals, and calculations so nothing is dead.
-4. Put all <script> tags at the very bottom of <body> (just before </body>) and wrap initialization in DOMContentLoaded or window.onload.
-5. Set type="button" on all interactive buttons.
-`;
+UNIVERSAL ARCHITECTURE RULES (APPLIES TO ALL TYPES OF WEBSITES):
+1. Return ONE complete, self-contained HTML document with all <style> and <script> included. No external CDNs, fonts, or images (use CSS gradients, inline SVG, and Canvas).
+2. PRE-POPULATE REALISTIC SEED DATA: Never render empty cards, blank screens, or "placeholder" text. Pre-populate 4-6 realistic products, tasks, records, slides, or enemies so the application is rich, vibrant, and alive immediately.
+3. DOMAIN EXECUTION STANDARDS:
+   - CALCULATORS & CONVERTERS: Modern tactile keypad (0-9, ., +, -, *, /, =, C), clear LCD/OLED display, keyboard event listeners, and accurate mathematical evaluation.
+   - E-COMMERCE & SHOPS: Product catalog cards with titles, prices, tags, "Add to Cart" buttons that increment the cart badge, and a slide-out cart drawer with subtotal and checkout.
+   - DASHBOARDS & SAAS: Live KPI metrics, interactive chart visualizations, filterable data tables, and working tab views.
+   - PRODUCTIVITY & CRUD: Real task/item lists with checkboxes, delete buttons, real-time search input, and localStorage persistence.
+   - TIMERS & STOPWATCHES: Working Start/Pause/Reset buttons, formatted MM:SS display, and drift-free timing loop.
+   - GAMES & SIMULATIONS: 60fps canvas loop, player physics (velocity, gravity, collision), patrolling enemies, coin/score items, dual desktop keyboard + mobile on-screen buttons, and sound effects.
+   - PRESENTATIONS & DECKS: 16:9 widescreen viewport, Prev/Next navigation, progress bar, slide counter, and speaker notes drawer.
+4. ZERO DEAD BUTTONS: Every button must have type="button", clear semantic attributes (e.g. data-action, data-tab, onclick), and active visual/audio feedback.
+5. SCRIPT PLACEMENT: Put all <script> tags at the very bottom of <body> (just before </body>) and wrap initialization in DOMContentLoaded or window.onload.`;
 
 function balanceDelimiters(code) {
   let c = code.replace(/\s+$/, "");

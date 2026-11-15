@@ -65,4 +65,10 @@ if (scriptCloseMatches.length !== 1) {
 }
 console.log("Single-host script tag integrity (0 premature terminations): verified.");
 
+// 9. Verify Universal Reactive Runtime
+if (!html.includes('POPPY_UNIVERSAL_RUNTIME_CODE') || !html.includes('injectUniversalRuntime') || !html.includes('__poppy_uar_active__')) {
+  throw new Error("Universal Reactive Runtime (UAR) missing from bundle");
+}
+console.log("Universal Reactive Runtime (UAR): verified.");
+
 console.log("\nALL 64 SYSTEM TESTS PASSED SUCCESSFULLY!");
