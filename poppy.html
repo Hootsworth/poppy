@@ -2599,7 +2599,7 @@ SPECIALIZED APPLICATION SPECIALTIES:
 - MULTI-USER & REALTIME APPS:
   * Wire up poppy.room for peer collaboration, room hash links (#room=...), peer cursor tracking, and state broadcasts.
 - MUSIC APPS & ITUNES SEARCH:
-  * When searching iTunes or playing music previews, NEVER call fetch() or XMLHttpRequest (Apple does not send CORS headers). ALWAYS use JSONP with a dynamic <script> tag: load https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&limit=25&callback=${callbackName}.
+  * When searching iTunes or playing music previews, NEVER call fetch() or XMLHttpRequest (Apple does not send CORS headers). ALWAYS use JSONP with a dynamic <script> tag: load https://itunes.apple.com/search?term=ENCODED_QUERY&media=music&entity=song&limit=25&callback=CALLBACK_NAME.
   * Play real 30-second audio previews using track.previewUrl, and load crisp 600x600 album artwork with track.artworkUrl100.replace('100x100bb', '600x600bb').
   * Never use bare relative filenames (like "mzaf_....m4a") for audio or images.`;
 const IDEAS = [
