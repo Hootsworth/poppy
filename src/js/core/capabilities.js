@@ -34,6 +34,26 @@ const CAPABILITY_DEFINITIONS = {
     description: "Allows connecting physical MIDI musical keyboards and synthesizers.",
     api: "navigator.requestMIDIAccess"
   },
+  serial: {
+    name: "WebSerial Hardware",
+    description: "Allows communicating with microcontrollers, Arduino, sensors and serial devices.",
+    api: "navigator.serial"
+  },
+  bluetooth: {
+    name: "WebBluetooth Device",
+    description: "Allows wireless BLE connection to heart rate monitors, IoT beacons and smart devices.",
+    api: "navigator.bluetooth"
+  },
+  tauri: {
+    name: "Tauri Native Desktop",
+    description: "Native Rust desktop integration with system windows, menus, and low-level OS APIs.",
+    api: "window.__TAURI__"
+  },
+  electron: {
+    name: "Electron Desktop",
+    description: "Cross-platform desktop application container with IPC and system tray.",
+    api: "window.electronAPI"
+  },
   storage: {
     name: "Isolated Local Persistence",
     description: "Persistent storage using namespaced IndexedDB or in-memory SQLite WASM.",

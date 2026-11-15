@@ -212,6 +212,90 @@ async function exportGithubZip() {
   toast("GitHub ready repository exported: " + a.download);
 }
 
+async function exportTauriZip() {
+  if (!current) return;
+  const title = (meta.name || (current.match(/<title>([^<]*)<\/title>/i) || [])[1] || "poppy-tauri-app").slice(0, 40).replace(/[^\w-]+/g, "-");
+  const tauriProj = typeof generateTauriProject === "function" ? generateTauriProject({ name: title }, currentFiles) : null;
+  if (!tauriProj) return;
+
+  const val = typeof validateNativeProjectBuild === "function" ? validateNativeProjectBuild(tauriProj.files, "tauri") : { valid: true };
+  if (!val.valid) {
+    toast("Tauri validation error: " + val.errors[0]);
+    return;
+  }
+
+  const zipFiles = [];
+  const enc = new TextEncoder();
+  for (const [fn, content] of Object.entries(tauriProj.files)) {
+    zipFiles.push({ name: fn, data: enc.encode(content) });
+  }
+
+  const zipBytes = await createZip(zipFiles);
+  const blob = new Blob([zipBytes], { type: "application/zip" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = title + "-tauri-app.zip";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast("Tauri 2.0 Rust desktop software exported: " + a.download);
+}
+
+async function exportElectronZip() {
+  if (!current) return;
+  const title = (meta.name || (current.match(/<title>([^<]*)<\/title>/i) || [])[1] || "poppy-electron-app").slice(0, 40).replace(/[^\w-]+/g, "-");
+  const elProj = typeof generateElectronProject === "function" ? generateElectronProject({ name: title }, currentFiles) : null;
+  if (!elProj) return;
+
+  const val = typeof validateNativeProjectBuild === "function" ? validateNativeProjectBuild(elProj.files, "electron") : { valid: true };
+  if (!val.valid) {
+    toast("Electron validation error: " + val.errors[0]);
+    return;
+  }
+
+  const zipFiles = [];
+  const enc = new TextEncoder();
+  for (const [fn, content] of Object.entries(elProj.files)) {
+    zipFiles.push({ name: fn, data: enc.encode(content) });
+  }
+
+  const zipBytes = await createZip(zipFiles);
+  const blob = new Blob([zipBytes], { type: "application/zip" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = title + "-electron-app.zip";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast("Electron desktop application bundle exported: " + a.download);
+}
+
+async function exportExpoZip() {
+  if (!current) return;
+  const title = (meta.name || (current.match(/<title>([^<]*)<\/title>/i) || [])[1] || "poppy-mobile-app").slice(0, 40).replace(/[^\w-]+/g, "-");
+  const expoProj = typeof generateExpoProject === "function" ? generateExpoProject({ name: title }, currentFiles) : null;
+  if (!expoProj) return;
+
+  const val = typeof validateNativeProjectBuild === "function" ? validateNativeProjectBuild(expoProj.files, "expo") : { valid: true };
+  if (!val.valid) {
+    toast("Expo validation error: " + val.errors[0]);
+    return;
+  }
+
+  const zipFiles = [];
+  const enc = new TextEncoder();
+  for (const [fn, content] of Object.entries(expoProj.files)) {
+    zipFiles.push({ name: fn, data: enc.encode(content) });
+  }
+
+  const zipBytes = await createZip(zipFiles);
+  const blob = new Blob([zipBytes], { type: "application/zip" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = title + "-expo-mobile.zip";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast("Expo / React Native mobile project exported: " + a.download);
+}
+
 if ($("#expBtn")) $("#expBtn").onclick = () => {
   if (!current) return;
   $("#panel").classList.remove("open");
@@ -224,6 +308,9 @@ if ($("#btnExpExtension")) $("#btnExpExtension").onclick = exportExtensionZip;
 if ($("#btnExpCliNode")) $("#btnExpCliNode").onclick = () => exportCliZip("node");
 if ($("#btnExpCliPy")) $("#btnExpCliPy").onclick = () => exportCliZip("python");
 if ($("#btnExpGithub")) $("#btnExpGithub").onclick = exportGithubZip;
+if ($("#btnExpTauri")) $("#btnExpTauri").onclick = exportTauriZip;
+if ($("#btnExpElectron")) $("#btnExpElectron").onclick = exportElectronZip;
+if ($("#btnExpExpo")) $("#btnExpExpo").onclick = exportExpoZip;
 
 function renderFileTabs(){
   const box = $("#fileTabs"); box.replaceChildren();
