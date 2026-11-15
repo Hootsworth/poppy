@@ -221,7 +221,7 @@ function repairHtml(html) {
     
     code = balanceDelimiters(code);
     code += "</scr" + "ipt>";
-    h = h.slice(0, styleTagEnd + 1) + "\n" + code;
+    h = h.slice(0, scriptTagEnd + 1) + "\n" + code;
   }
   
   // 4. Balance unclosed delimiters in script blocks without destructive line popping
@@ -287,12 +287,13 @@ function autoWireButtons(html) {
 /**
  * Runs the Multi-Agent Generation Pipeline with Archetype Injection & Staged Compilation
  */
-async function runMultiAgentPipeline(goal, note, image, onProgress) {
+async function runMultiAgentPipeline(goal, note, image, onProgress, feats = null) {
   const setStep = (text) => {
     if (typeof setNote === "function" && note) setNote(note, text);
     if (typeof onProgress === "function") onProgress(text);
   };
 
+  const featList = feats && feats.length ? "\n\nInclude exactly these approved features:\n- " + feats.join("\n- ") : "";
   const archetype = typeof detectArchetype === "function" ? detectArchetype(goal) : null;
   const archName = archetype ? archetype.name : "Universal Web Application";
   const archSpec = archetype ? `\nDomain Archetype (${archetype.name}):\n${archetype.spec}\n${archetype.fileTemplate}` : "";
@@ -302,7 +303,7 @@ async function runMultiAgentPipeline(goal, note, image, onProgress) {
   const architectMsg = [
     {
       role: "user",
-      content: `Architect a complete, production-grade technical specification for this goal:\n${goal}${archSpec}\n\nDeliver the exact state schema, game loop / canvas physics / controls if a game, interactive DOM elements with IDs, and data flow.`
+      content: `Architect a complete, production-grade technical specification for this goal:\n${goal}${featList}${archSpec}\n\nDeliver the exact state schema, game loop / canvas physics / controls if a game, interactive DOM elements with IDs, and data flow.`
     }
   ];
   let blueprintRaw = "";
@@ -325,7 +326,7 @@ async function runMultiAgentPipeline(goal, note, image, onProgress) {
   const builderMsg = [
     {
       role: "user",
-      content: `Build the complete application for this goal:\nGoal: ${goal}\n\nArchitect Blueprint:\n${JSON.stringify(blueprint, null, 2)}${archSpec}\n\nCRITICAL: You may output ONE self-contained HTML file OR a modular multi-file codebase using --- FILE: filename --- headers.\nGuarantee all HTML, CSS, and JavaScript (including 60fps canvas loop, physics, sound synthesis, and touch controls) are fully implemented with zero placeholders.`
+      content: `Build the complete application for this goal:\nGoal: ${goal}${featList}\n\nArchitect Blueprint:\n${JSON.stringify(blueprint, null, 2)}${archSpec}\n\nCRITICAL: You may output ONE self-contained HTML file OR a modular multi-file codebase using --- FILE: filename --- headers.\nGuarantee all HTML, CSS, and JavaScript (including 60fps canvas loop, physics, sound synthesis, and touch controls) are fully implemented with zero placeholders.`
     }
   ];
   let builderOut = "";

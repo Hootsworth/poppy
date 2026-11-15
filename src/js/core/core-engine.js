@@ -1922,11 +1922,25 @@ async function build(text, auto){
       ["#go", "#tweakGo"].forEach(s => $(s).disabled = false);
     }
   }
+  let feats = null;
+  if (!auto && !current && ($("#planFirst").checked || text.length > 240)) {
+    setNote(note, "Planning the features"); phase("planning");
+    try {
+      const planRaw = await collect([{role: "user", content: text, image: im}], PLAN);
+      const match = planRaw.match(/\[[\s\S]*\]/);
+      feats = match ? JSON.parse(match[0]) : null;
+    } catch {}
+    if (feats) {
+      feats = await approve(feats);
+      if (!feats) throw new Error("Plan cancelled.");
+    }
+  }
+
   const multiAgentEnabled = $("#multiAgentOn") && $("#multiAgentOn").checked;
   if (!auto && !current && multiAgentEnabled) {
     try {
       phase("building");
-      let res = await runMultiAgentPipeline(text, note, im, (step) => setNote(note, step));
+      let res = await runMultiAgentPipeline(text, note, im, (step) => setNote(note, step), feats);
       let html = typeof res === "object" && res.html ? res.html : res;
       let files = typeof res === "object" && res.files ? res.files : { "index.html": html };
       if (peek) { peek.remove(); peek = null; }
@@ -1955,12 +1969,6 @@ async function build(text, auto){
     if (current) {
       html = await editDoc(currentFiles, text, im);
     } else {
-      let feats = null;
-      if (!auto && ($("#planFirst").checked || text.length > 240)) {
-        setNote(note, "Planning the features"); phase("planning");
-        try { feats = JSON.parse((await collect([{role: "user", content: text, image: im}], PLAN)).match(/\[[\s\S]*\]/)[0]); } catch {}
-        if (feats) { feats = await approve(feats); if (!feats) throw new Error("Plan cancelled."); }
-      }
       phase("building"); setNote(note, "Growing your site");
       const out = await collect([{role: "user", content: "Build this: " + text + buildHints(text) + (feats && feats.length ? "\n\nInclude exactly these features:\n- " + feats.join("\n- ") : ""), image: im}], BUILD, peekTok);
       currentFiles = parseFiles(out);

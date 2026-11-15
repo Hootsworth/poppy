@@ -3012,11 +3012,25 @@ async function build(text, auto){
       ["#go", "#tweakGo"].forEach(s => $(s).disabled = false);
     }
   }
+  let feats = null;
+  if (!auto && !current && ($("#planFirst").checked || text.length > 240)) {
+    setNote(note, "Planning the features"); phase("planning");
+    try {
+      const planRaw = await collect([{role: "user", content: text, image: im}], PLAN);
+      const match = planRaw.match(/\[[\s\S]*\]/);
+      feats = match ? JSON.parse(match[0]) : null;
+    } catch {}
+    if (feats) {
+      feats = await approve(feats);
+      if (!feats) throw new Error("Plan cancelled.");
+    }
+  }
+
   const multiAgentEnabled = $("#multiAgentOn") && $("#multiAgentOn").checked;
   if (!auto && !current && multiAgentEnabled) {
     try {
       phase("building");
-      let res = await runMultiAgentPipeline(text, note, im, (step) => setNote(note, step));
+      let res = await runMultiAgentPipeline(text, note, im, (step) => setNote(note, step), feats);
       let html = typeof res === "object" && res.html ? res.html : res;
       let files = typeof res === "object" && res.files ? res.files : { "index.html": html };
       if (peek) { peek.remove(); peek = null; }
@@ -3045,12 +3059,6 @@ async function build(text, auto){
     if (current) {
       html = await editDoc(currentFiles, text, im);
     } else {
-      let feats = null;
-      if (!auto && ($("#planFirst").checked || text.length > 240)) {
-        setNote(note, "Planning the features"); phase("planning");
-        try { feats = JSON.parse((await collect([{role: "user", content: text, image: im}], PLAN)).match(/\[[\s\S]*\]/)[0]); } catch {}
-        if (feats) { feats = await approve(feats); if (!feats) throw new Error("Plan cancelled."); }
-      }
       phase("building"); setNote(note, "Growing your site");
       const out = await collect([{role: "user", content: "Build this: " + text + buildHints(text) + (feats && feats.length ? "\n\nInclude exactly these features:\n- " + feats.join("\n- ") : ""), image: im}], BUILD, peekTok);
       currentFiles = parseFiles(out);
@@ -5404,7 +5412,7 @@ function repairHtml(html) {
     
     code = balanceDelimiters(code);
     code += "</scr" + "ipt>";
-    h = h.slice(0, styleTagEnd + 1) + "\n" + code;
+    h = h.slice(0, scriptTagEnd + 1) + "\n" + code;
   }
   
   // 4. Balance unclosed delimiters in script blocks without destructive line popping
@@ -5470,12 +5478,13 @@ function autoWireButtons(html) {
 /**
  * Runs the Multi-Agent Generation Pipeline with Archetype Injection & Staged Compilation
  */
-async function runMultiAgentPipeline(goal, note, image, onProgress) {
+async function runMultiAgentPipeline(goal, note, image, onProgress, feats = null) {
   const setStep = (text) => {
     if (typeof setNote === "function" && note) setNote(note, text);
     if (typeof onProgress === "function") onProgress(text);
   };
 
+  const featList = feats && feats.length ? "\n\nInclude exactly these approved features:\n- " + feats.join("\n- ") : "";
   const archetype = typeof detectArchetype === "function" ? detectArchetype(goal) : null;
   const archName = archetype ? archetype.name : "Universal Web Application";
   const archSpec = archetype ? `\nDomain Archetype (${archetype.name}):\n${archetype.spec}\n${archetype.fileTemplate}` : "";
@@ -5485,7 +5494,7 @@ async function runMultiAgentPipeline(goal, note, image, onProgress) {
   const architectMsg = [
     {
       role: "user",
-      content: `Architect a complete, production-grade technical specification for this goal:\n${goal}${archSpec}\n\nDeliver the exact state schema, game loop / canvas physics / controls if a game, interactive DOM elements with IDs, and data flow.`
+      content: `Architect a complete, production-grade technical specification for this goal:\n${goal}${featList}${archSpec}\n\nDeliver the exact state schema, game loop / canvas physics / controls if a game, interactive DOM elements with IDs, and data flow.`
     }
   ];
   let blueprintRaw = "";
@@ -5508,7 +5517,7 @@ async function runMultiAgentPipeline(goal, note, image, onProgress) {
   const builderMsg = [
     {
       role: "user",
-      content: `Build the complete application for this goal:\nGoal: ${goal}\n\nArchitect Blueprint:\n${JSON.stringify(blueprint, null, 2)}${archSpec}\n\nCRITICAL: You may output ONE self-contained HTML file OR a modular multi-file codebase using --- FILE: filename --- headers.\nGuarantee all HTML, CSS, and JavaScript (including 60fps canvas loop, physics, sound synthesis, and touch controls) are fully implemented with zero placeholders.`
+      content: `Build the complete application for this goal:\nGoal: ${goal}${featList}\n\nArchitect Blueprint:\n${JSON.stringify(blueprint, null, 2)}${archSpec}\n\nCRITICAL: You may output ONE self-contained HTML file OR a modular multi-file codebase using --- FILE: filename --- headers.\nGuarantee all HTML, CSS, and JavaScript (including 60fps canvas loop, physics, sound synthesis, and touch controls) are fully implemented with zero placeholders.`
     }
   ];
   let builderOut = "";
