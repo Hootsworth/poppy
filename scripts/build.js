@@ -15,7 +15,8 @@ const cssFiles = [
   "src/css/studio.css",
   "src/css/ecosystem.css",
   "src/css/voice.css",
-  "src/css/document.css"
+  "src/css/document.css",
+  "src/css/export.css"
 ];
 cssFiles.forEach(file => {
   const content = readFile(file);
@@ -46,6 +47,7 @@ const htmlFiles = [
   "src/components/dialogs/assets.html",
   "src/components/dialogs/advanced.html",
   "src/components/dialogs/extras.html",
+  "src/components/dialogs/export.html",
   "src/components/voice.html"
 ];
 const html = htmlFiles.map(readFile).join("\n\n");
@@ -58,6 +60,7 @@ const jsFiles = [
   "src/js/engine/dispatcher.js",
   "src/js/core/core-engine.js",
   "src/js/tests/selftest.js",
+  "src/js/engine/packager.js",
   "src/js/engine/exporters.js",
   "src/js/engine/archetypes.js",
   "src/js/engine/multi-agent.js",

@@ -91,16 +91,139 @@ async function reopenZip(fileOrBuf){
   return { files: newFiles, assets: newAssets };
 }
 
-if ($("#expBtn")) $("#expBtn").onclick = async () => {
-  if (!current) return;
-  const assets = await assetList();
-  if (Object.keys(currentFiles).length > 1 || assets.length > 0) {
-    return await exportZip();
+function openExportModal() {
+  if (!current) { toast("Build an app before exporting."); return; }
+  const dlg = $("#exportDlg");
+  if (!dlg) return;
+
+  // Dynamically audit extension permissions
+  if (typeof analyzeExtensionPermissions === "function") {
+    const title = (meta.name || (current.match(/<title>([^<]*)<\/title>/i) || [])[1] || "poppy-project");
+    const extProj = typeof generateExtensionProject === "function" ? generateExtensionProject({ name: title }, currentFiles) : null;
+    if (extProj && extProj.manifestJson) {
+      const audit = analyzeExtensionPermissions(extProj.manifestJson);
+      const listEl = $("#expAuditList");
+      if (listEl) {
+        listEl.innerHTML = "";
+        audit.auditedPermissions.forEach(p => {
+          const item = document.createElement("div");
+          item.className = "exp-audit-item";
+          item.innerHTML = `<div><span class="exp-audit-name">${p.permission}</span><span class="exp-audit-desc">${p.description}</span></div><span class="exp-pill ${p.risk}">${p.risk} Risk</span>`;
+          listEl.appendChild(item);
+        });
+      }
+    }
   }
-  const t = (current.match(/<title>([^<]*)<\/title>/i) || [])[1] || "poppy-site", l = document.createElement("a");
-  l.href = URL.createObjectURL(new Blob([inject(current, SHIM)], {type: "text/html"})); l.download = t.replace(/[^\w-]+/g, "-").slice(0, 40) + ".html"; l.click();
-  setTimeout(() => URL.revokeObjectURL(l.href), 2000); toast("Exported. AI features are off in the exported copy.");
+
+  dlg.showModal();
+}
+
+async function exportSingleHtml() {
+  if (!current) return;
+  const t = (current.match(/<title>([^<]*)<\/title>/i) || [])[1] || "poppy-site";
+  const l = document.createElement("a");
+  l.href = URL.createObjectURL(new Blob([inject(current, SHIM)], { type: "text/html" }));
+  l.download = t.replace(/[^\w-]+/g, "-").slice(0, 40) + ".html";
+  l.click();
+  setTimeout(() => URL.revokeObjectURL(l.href), 2000);
+  toast("Downloaded standalone HTML document.");
+}
+
+async function exportExtensionZip() {
+  if (!current) return;
+  const title = (meta.name || (current.match(/<title>([^<]*)<\/title>/i) || [])[1] || "poppy-extension").slice(0, 40).replace(/[^\w-]+/g, "-");
+  const extProj = typeof generateExtensionProject === "function" ? generateExtensionProject({ name: title }, currentFiles) : null;
+  if (!extProj) return;
+
+  const val = typeof validateProjectBuild === "function" ? validateProjectBuild(extProj.files, "extension") : { valid: true };
+  if (!val.valid) {
+    toast("Extension validation error: " + val.errors[0]);
+    return;
+  }
+
+  const zipFiles = [];
+  const enc = new TextEncoder();
+  for (const [fn, content] of Object.entries(extProj.files)) {
+    if (fn.startsWith("icons/") && typeof DEFAULT_ICON_PNG_B64 !== "undefined" && content === DEFAULT_ICON_PNG_B64) {
+      const bin = Uint8Array.from(atob(content), c => c.charCodeAt(0));
+      zipFiles.push({ name: fn, data: bin });
+    } else {
+      zipFiles.push({ name: fn, data: enc.encode(content) });
+    }
+  }
+
+  const zipBytes = await createZip(zipFiles);
+  const blob = new Blob([zipBytes], { type: "application/zip" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = title + "-extension-mv3.zip";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast("Manifest V3 extension exported: " + a.download);
+}
+
+async function exportCliZip(language = "node") {
+  if (!current) return;
+  const title = (meta.name || (current.match(/<title>([^<]*)<\/title>/i) || [])[1] || "poppy-cli").slice(0, 40).replace(/[^\w-]+/g, "-");
+  const cliProj = typeof generateCliProject === "function" ? generateCliProject({ name: title }, language) : null;
+  if (!cliProj) return;
+
+  const val = typeof validateProjectBuild === "function" ? validateProjectBuild(cliProj.files, language === "python" ? "cli-python" : "cli-node") : { valid: true };
+  if (!val.valid) {
+    toast("CLI validation error: " + val.errors[0]);
+    return;
+  }
+
+  const zipFiles = [];
+  const enc = new TextEncoder();
+  for (const [fn, content] of Object.entries(cliProj.files)) {
+    zipFiles.push({ name: fn, data: enc.encode(content) });
+  }
+
+  const zipBytes = await createZip(zipFiles);
+  const blob = new Blob([zipBytes], { type: "application/zip" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${title}-${language}-cli.zip`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast(`${language === "python" ? "Python" : "Node.js"} CLI package exported: ${a.download}`);
+}
+
+async function exportGithubZip() {
+  if (!current) return;
+  const title = (meta.name || (current.match(/<title>([^<]*)<\/title>/i) || [])[1] || "poppy-repo").slice(0, 40).replace(/[^\w-]+/g, "-");
+  const ghProj = typeof generateGitHubRepo === "function" ? generateGitHubRepo({ name: title }, currentFiles, "web") : null;
+  if (!ghProj) return;
+
+  const zipFiles = [];
+  const enc = new TextEncoder();
+  for (const [fn, content] of Object.entries(ghProj.files)) {
+    zipFiles.push({ name: fn, data: enc.encode(content) });
+  }
+
+  const zipBytes = await createZip(zipFiles);
+  const blob = new Blob([zipBytes], { type: "application/zip" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = title + "-github-repo.zip";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast("GitHub ready repository exported: " + a.download);
+}
+
+if ($("#expBtn")) $("#expBtn").onclick = () => {
+  if (!current) return;
+  $("#panel").classList.remove("open");
+  openExportModal();
 };
+if ($("#exportClose")) $("#exportClose").onclick = () => $("#exportDlg").close();
+if ($("#btnExpSingleHtml")) $("#btnExpSingleHtml").onclick = exportSingleHtml;
+if ($("#btnExpWebZip")) $("#btnExpWebZip").onclick = exportZip;
+if ($("#btnExpExtension")) $("#btnExpExtension").onclick = exportExtensionZip;
+if ($("#btnExpCliNode")) $("#btnExpCliNode").onclick = () => exportCliZip("node");
+if ($("#btnExpCliPy")) $("#btnExpCliPy").onclick = () => exportCliZip("python");
+if ($("#btnExpGithub")) $("#btnExpGithub").onclick = exportGithubZip;
 
 function renderFileTabs(){
   const box = $("#fileTabs"); box.replaceChildren();

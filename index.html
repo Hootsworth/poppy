@@ -657,6 +657,40 @@ dialog::backdrop{background:rgba(42,13,22,.55)}
   .doc-sheet-container{padding:0;background:#fff}
   .doc-paper-sheet{box-shadow:none;border-radius:0;width:100%;min-height:auto}
 }
+
+/* ===== Poppy External Distribution Engine (Poppy 3.0): Export Dialog Styles ===== */
+#exportDlg{width:min(92vw,780px);border:1px solid #27272a;background:#09090b;color:#f4f4f5;border-radius:12px;padding:0;box-shadow:0 24px 60px rgba(0,0,0,.65);overflow:hidden}
+.exp-head{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid #27272a;background:#121215}
+.exp-head h3{margin:0;font-size:17px;font-weight:700;display:flex;align-items:center;gap:10px}
+.exp-badge{background:rgba(242,61,42,.15);color:var(--red);border:1px solid rgba(242,61,42,.3);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800;letter-spacing:.05em}
+.exp-close{background:none;border:none;color:#a1a1aa;font-size:22px;cursor:pointer;padding:4px 8px;border-radius:6px;line-height:1}
+.exp-close:hover{color:#fff;background:#27272a}
+
+.exp-body{padding:24px;max-height:calc(85vh - 80px);overflow-y:auto}
+.exp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:24px}
+.exp-card{background:#18181b;border:1px solid #27272a;border-radius:10px;padding:18px;display:flex;flex-direction:column;justify-content:space-between;transition:transform .15s,border-color .15s,background .15s;cursor:pointer}
+.exp-card:hover{border-color:var(--red);background:#202025;transform:translateY(-2px)}
+.exp-card.active{border-color:var(--red);background:rgba(242,61,42,.06)}
+.exp-card-top{margin-bottom:14px}
+.exp-tag{font-size:10px;text-transform:uppercase;font-weight:800;letter-spacing:.05em;color:#f23d2a;margin-bottom:6px}
+.exp-card h4{margin:0 0 6px 0;font-size:15px;font-weight:600;color:#fff}
+.exp-card p{margin:0;font-size:12px;color:#a1a1aa;line-height:1.4}
+.exp-action-btn{margin-top:12px;width:100%;background:#27272a;color:#f4f4f5;border:1px solid #3f3f46;border-radius:6px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s,color .15s}
+.exp-card:hover .exp-action-btn{background:var(--red);border-color:var(--red);color:#fff}
+
+.exp-section{margin-top:20px;background:#141417;border:1px solid #27272a;border-radius:10px;padding:18px}
+.exp-section h4{margin:0 0 12px 0;font-size:13px;font-weight:700;color:#e4e4e7;text-transform:uppercase;letter-spacing:.04em}
+.exp-audit-list{display:flex;flex-direction:column;gap:8px}
+.exp-audit-item{display:flex;align-items:center;justify-content:space-between;background:#18181b;padding:8px 12px;border-radius:6px;font-size:12px;border:1px solid #27272a}
+.exp-audit-name{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-weight:600;color:#f4f4f5}
+.exp-audit-desc{color:#71717a;font-size:11px;margin-left:8px}
+.exp-pill{padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:uppercase}
+.exp-pill.low{background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.3)}
+.exp-pill.medium{background:rgba(234,179,8,.15);color:#facc15;border:1px solid rgba(234,179,8,.3)}
+.exp-pill.high{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)}
+
+.exp-guide{margin-top:14px;background:#0d0d10;border:1px solid #27272a;border-radius:6px;padding:14px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;color:#d4d4d8;line-height:1.5;overflow-x:auto}
+.exp-guide pre{margin:0}
 </style>
 </head>
 <body>
@@ -1060,6 +1094,100 @@ dialog::backdrop{background:rgba(42,13,22,.55)}
 <div id="imgchip" hidden><img alt="Attached image"><button class="link" type="button" id="imgX" aria-label="Remove image">&times;</button></div>
 <dialog id="plan" aria-labelledby="planT"><div class="dh"><h2 id="planT">Here is the plan</h2></div><div class="db"><div id="planList"></div><p class="hint">Edit or untick anything, then build.</p></div><div class="acts"><button class="go" id="planOk">Build it</button><button class="link" id="planNo">Cancel</button></div></dialog>
 <dialog id="onb" aria-labelledby="onbT"><div class="dh"><h2 id="onbT"></h2><button class="x" type="button" aria-label="Close">&times;</button></div><div class="db" id="onbB"></div><div class="acts" id="onbA"></div></dialog>
+
+<dialog id="exportDlg" class="dlg" aria-labelledby="expDlgTitle">
+  <div class="exp-head">
+    <h3 id="expDlgTitle">
+      <span>Export &amp; Deliverables</span>
+      <span class="exp-badge">POPPY 3.0</span>
+    </h3>
+    <button type="button" class="exp-close" id="exportClose" aria-label="Close">&times;</button>
+  </div>
+  <div class="exp-body">
+    <div class="exp-grid">
+      <div class="exp-card" id="expCardHtml" tabindex="0" role="button">
+        <div class="exp-card-top">
+          <div class="exp-tag">Standalone Web</div>
+          <h4>Single HTML File</h4>
+          <p>Self-contained document with all styles and scripts embedded. Runs in any browser offline.</p>
+        </div>
+        <button type="button" class="exp-action-btn" id="btnExpSingleHtml">Download .html</button>
+      </div>
+
+      <div class="exp-card" id="expCardZip" tabindex="0" role="button">
+        <div class="exp-card-top">
+          <div class="exp-tag">Modular Web</div>
+          <h4>Web Project ZIP</h4>
+          <p>Full project bundle with index.html, modular stylesheets, local assets, and SQLite data.</p>
+        </div>
+        <button type="button" class="exp-action-btn" id="btnExpWebZip">Download .zip</button>
+      </div>
+
+      <div class="exp-card" id="expCardExt" tabindex="0" role="button">
+        <div class="exp-card-top">
+          <div class="exp-tag">Browser Extension</div>
+          <h4>Chrome &amp; Edge (MV3)</h4>
+          <p>Manifest V3 browser extension with action popup, background service worker, and toolbar icons.</p>
+        </div>
+        <button type="button" class="exp-action-btn" id="btnExpExtension">Download MV3 .zip</button>
+      </div>
+
+      <div class="exp-card" id="expCardCliNode" tabindex="0" role="button">
+        <div class="exp-card-top">
+          <div class="exp-tag">Terminal Tool</div>
+          <h4>Node.js CLI</h4>
+          <p>Command-line executable with package.json, argument parser, ANSI formatting, and npm link setup.</p>
+        </div>
+        <button type="button" class="exp-action-btn" id="btnExpCliNode">Download CLI .zip</button>
+      </div>
+
+      <div class="exp-card" id="expCardCliPy" tabindex="0" role="button">
+        <div class="exp-card-top">
+          <div class="exp-tag">Python Script</div>
+          <h4>Python CLI &amp; Package</h4>
+          <p>Clean Python 3 script with argparse, pyproject.toml, virtualenv scaffolding, and type hints.</p>
+        </div>
+        <button type="button" class="exp-action-btn" id="btnExpCliPy">Download Python .zip</button>
+      </div>
+
+      <div class="exp-card" id="expCardGithub" tabindex="0" role="button">
+        <div class="exp-card-top">
+          <div class="exp-tag">Source Control</div>
+          <h4>GitHub Ready Repo</h4>
+          <p>Complete Git repository structure with GitHub Actions CI workflow, .gitignore, and MIT license.</p>
+        </div>
+        <button type="button" class="exp-action-btn" id="btnExpGithub">Download Repo .zip</button>
+      </div>
+    </div>
+
+    <div class="exp-section" id="expAuditSection">
+      <h4>Extension Permission &amp; Security Audit</h4>
+      <div class="exp-audit-list" id="expAuditList">
+        <div class="exp-audit-item">
+          <div>
+            <span class="exp-audit-name">storage</span>
+            <span class="exp-audit-desc">Isolated local key-value store</span>
+          </div>
+          <span class="exp-pill low">Low Risk</span>
+        </div>
+        <div class="exp-audit-item">
+          <div>
+            <span class="exp-audit-name">activeTab</span>
+            <span class="exp-audit-desc">Temporary access on user invocation</span>
+          </div>
+          <span class="exp-pill low">Low Risk</span>
+        </div>
+      </div>
+      <div class="exp-guide" id="expGuideBox">
+        <pre id="expGuideText"># How to load your Manifest V3 extension in Chrome:
+1. Unzip the downloaded file
+2. Open chrome://extensions in Chrome
+3. Enable "Developer mode" (top right)
+4. Click "Load unpacked" and select the unzipped directory</pre>
+      </div>
+    </div>
+  </div>
+</dialog>
 
 <div id="voiceOverlay" data-mode="voice" role="dialog" aria-modal="true" aria-label="Poppy Voice Mode">
   <header class="voice-bar">
@@ -4517,6 +4645,646 @@ async function selftest(){
   const x = document.createElement("button"); x.className = "link"; x.textContent = "Close"; x.onclick = () => { out.classList.remove("open"); history.replaceState(null, "", location.pathname + location.search); }; out.append(x);
 }
 
+/* ===== Poppy External Distribution Engine (Poppy 3.0) =====
+   Provides project packaging, Chrome/Firefox Manifest V3 extension generation,
+   CLI tool packaging (Node.js & Python), GitHub repository scaffolding,
+   and automated build/permission validation.
+============================================================================= */
+
+// A 1x1 transparent PNG data buffer for default extension icons
+const DEFAULT_ICON_PNG_B64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+
+/**
+ * Analyzes permissions required by an extension manifest against Chrome Web Store security guidelines.
+ * Returns { valid: boolean, warnings: string[], errors: string[], riskScore: "low"|"medium"|"high", auditedPermissions: object[] }
+ */
+function analyzeExtensionPermissions(manifest) {
+  const errors = [];
+  const warnings = [];
+  const audited = [];
+  let riskLevel = "low";
+
+  if (!manifest || typeof manifest !== "object") {
+    return { valid: false, errors: ["Invalid manifest object"], warnings: [], riskScore: "high", auditedPermissions: [] };
+  }
+
+  // MV3 structural checks
+  if (manifest.manifest_version !== 3) {
+    errors.push("Manifest V3 requires manifest_version: 3. Found: " + manifest.manifest_version);
+  }
+  if (manifest.browser_action) {
+    errors.push("browser_action is deprecated in Manifest V3. Use 'action' instead.");
+  }
+  if (manifest.background && Array.isArray(manifest.background.scripts)) {
+    errors.push("background.scripts array is deprecated in Manifest V3. Use 'service_worker' instead.");
+  }
+
+  const permissions = Array.isArray(manifest.permissions) ? manifest.permissions : [];
+  const hostPermissions = Array.isArray(manifest.host_permissions) ? manifest.host_permissions : [];
+
+  const PERMISSION_RISK_MAP = {
+    storage: { risk: "low", desc: "Allows isolated client-side key-value persistence without cookies" },
+    activeTab: { risk: "low", desc: "Allows temporary access to current active tab on user invocation" },
+    alarms: { risk: "low", desc: "Allows periodic background event wakeups without persistent CPU" },
+    contextMenus: { risk: "low", desc: "Allows adding items to browser right-click context menu" },
+    notifications: { risk: "low", desc: "Allows displaying system desktop notifications" },
+    offscreen: { risk: "low", desc: "Allows offscreen document processing for audio/DOM parsers" },
+    scripting: { risk: "medium", desc: "Allows programmatic script injection into web pages" },
+    tabs: { risk: "medium", desc: "Allows inspecting tab URLs and status beyond current active tab" },
+    webNavigation: { risk: "medium", desc: "Allows tracking web navigation transitions" },
+    cookies: { risk: "high", desc: "Allows reading and modifying browser cookies" },
+    webRequest: { risk: "high", desc: "Allows observing in-flight HTTP network requests" },
+    debugger: { risk: "high", desc: "Allows attaching Chrome DevTools Protocol debugger to browser tabs" }
+  };
+
+  permissions.forEach(p => {
+    const info = PERMISSION_RISK_MAP[p] || { risk: "medium", desc: "Standard extension permission" };
+    audited.push({ permission: p, risk: info.risk, description: info.desc });
+    if (info.risk === "high") riskLevel = "high";
+    else if (info.risk === "medium" && riskLevel !== "high") riskLevel = "medium";
+  });
+
+  // Host permissions audit
+  hostPermissions.forEach(h => {
+    if (h === "<all_urls>" || h === "*://*/*" || h.includes("://*/*")) {
+      warnings.push("Broad host permission '" + h + "' triggers intense Chrome Web Store review. Prefer targeted domains.");
+      riskLevel = "high";
+      audited.push({ permission: h, risk: "high", description: "Universal host permission grants access to all web pages" });
+    } else {
+      audited.push({ permission: h, risk: "medium", description: "Domain host access for " + h });
+      if (riskLevel !== "high") riskLevel = "medium";
+    }
+  });
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    warnings,
+    riskScore: riskLevel,
+    auditedPermissions: audited
+  };
+}
+
+/**
+ * Extracts inline <script> blocks from HTML and returns separate clean HTML and JS content.
+ * Critical for Manifest V3 which strictly forbids inline scripts.
+ */
+function extractInlineScripts(html = "", fallbackScript = "") {
+  let combinedJs = "";
+  const scriptRegex = new RegExp("<script\\b[^>]*>([\\s\\S]*?)<\\/script>", "gi");
+  let match;
+  while ((match = scriptRegex.exec(html)) !== null) {
+    if (match[1] && match[1].trim()) {
+      combinedJs += match[1].trim() + "\n\n";
+    }
+  }
+
+  // Remove existing inline scripts and inject external script tag
+  let cleanHtml = html.replace(new RegExp("<script\\b[^>]*>[\\s\\S]*?<\\/script>", "gi"), "");
+  if (!combinedJs.trim() && fallbackScript) {
+    combinedJs = fallbackScript;
+  }
+
+  // Inject script src="popup.js" right before </body> or at end
+  const popupScriptTag = '<script src="popup.js"></scr' + 'ipt>';
+  if (/<\/body>/i.test(cleanHtml)) {
+    cleanHtml = cleanHtml.replace(/<\/body>/i, popupScriptTag + "\n</body>");
+  } else {
+    cleanHtml += "\n" + popupScriptTag;
+  }
+
+  return { html: cleanHtml, js: combinedJs || "console.log('Poppy Extension Popup loaded.');" };
+}
+
+/**
+ * Generates a full Manifest V3 browser extension project files tree.
+ */
+function generateExtensionProject(manifest = {}, sourceFiles = {}) {
+  const name = manifest.name || "Poppy Extension";
+  const slug = name.toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "poppy-extension";
+  const description = manifest.description || "Generated by Poppy Universal Creation Platform";
+
+  // Derive permissions from manifest capabilities or source files
+  const permissions = ["storage"];
+  const caps = manifest.security?.hardware || [];
+  if (caps.includes("mic") || caps.includes("audio")) permissions.push("offscreen");
+  if (manifest.source?.files?.some(f => f.content && f.content.includes("chrome.tabs"))) permissions.push("activeTab");
+
+  const manifestJson = {
+    manifest_version: 3,
+    name: name,
+    version: manifest.version || "1.0.0",
+    description: description.slice(0, 130),
+    action: {
+      default_popup: "popup.html",
+      default_icon: {
+        "16": "icons/icon-16.png",
+        "48": "icons/icon-48.png",
+        "128": "icons/icon-128.png"
+      }
+    },
+    background: {
+      service_worker: "background.js",
+      type: "module"
+    },
+    permissions,
+    icons: {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  };
+
+  const rawHtml = sourceFiles["index.html"] || "<h1>" + name + "</h1><p>Extension Popup View</p>";
+  const extracted = extractInlineScripts(rawHtml);
+
+  const backgroundJs = `// Poppy Extension Service Worker (Manifest V3)
+chrome.runtime.onInstalled.addListener(() => {
+  console.log("${name} installed successfully.");
+  chrome.storage.local.set({ installedAt: Date.now(), appName: "${name}" });
+});
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === "PING") {
+    sendResponse({ status: "OK", timestamp: Date.now() });
+  }
+  return true;
+});
+`;
+
+  const readmeMd = `# ${name} (Chrome & Edge Extension)
+
+Built with **Poppy Universal Creation Platform**.
+
+## How to Install in Chrome / Edge / Brave
+
+1. Download and unzip this archive.
+2. In your browser, navigate to: \`chrome://extensions/\` (or \`edge://extensions/\`).
+3. Toggle on **Developer mode** in the top-right corner.
+4. Click **Load unpacked** in the top-left corner.
+5. Select this unzipped project folder.
+6. Click the extension icon in your browser toolbar to open the popup.
+
+## Project Structure
+- \`manifest.json\`: Manifest V3 extension configuration and permissions.
+- \`popup.html\`: The interactive toolbar popup interface.
+- \`popup.js\`: Popup script logic.
+- \`background.js\`: Event-driven background service worker.
+- \`icons/\`: Extension toolbar and management icons.
+`;
+
+  const files = {
+    "manifest.json": JSON.stringify(manifestJson, null, 2),
+    "popup.html": extracted.html,
+    "popup.js": extracted.js,
+    "background.js": backgroundJs,
+    "README.md": readmeMd,
+    "icons/icon-16.png": DEFAULT_ICON_PNG_B64,
+    "icons/icon-48.png": DEFAULT_ICON_PNG_B64,
+    "icons/icon-128.png": DEFAULT_ICON_PNG_B64
+  };
+
+  // Carry over any extra css or js files from sourceFiles
+  Object.keys(sourceFiles).forEach(f => {
+    if (f !== "index.html" && !files[f] && !f.startsWith("icons/")) {
+      files[f] = sourceFiles[f];
+    }
+  });
+
+  return { files, slug, manifestJson };
+}
+
+/**
+ * Generates a CLI project file tree (Node.js or Python).
+ */
+function generateCliProject(manifest = {}, language = "node") {
+  const name = manifest.name || "poppy-cli";
+  const slug = name.toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "poppy-cli";
+  const desc = manifest.description || "CLI tool generated by Poppy Universal Studio";
+
+  if (language === "python") {
+    const cliPy = `#!/usr/bin/env python3
+"""
+${name}
+${desc}
+"""
+
+import sys
+import argparse
+import json
+
+def main():
+    parser = argparse.ArgumentParser(
+        prog="${slug}",
+        description="${desc}"
+    )
+    parser.add_argument("--version", action="version", version="%(prog)s 1.0.0")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose diagnostic logs")
+    
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+    
+    run_parser = subparsers.add_parser("run", help="Execute the primary workflow")
+    run_parser.add_argument("--input", "-i", type=str, default="data.json", help="Input file path")
+    run_parser.add_argument("--output", "-o", type=str, default="output.json", help="Output destination")
+    
+    status_parser = subparsers.add_parser("status", help="Display health and system status")
+
+    args = parser.parse_args()
+
+    if not args.command or args.command == "run":
+        print(f"\\033[1;32m[${slug}]\\033[0m Starting execution...")
+        print(f"Processing input from: {getattr(args, 'input', 'data.json')}")
+        print(f"\\033[1;32m[${slug}]\\033[0m Task completed successfully.")
+    elif args.command == "status":
+        status_info = {
+            "name": "${name}",
+            "version": "1.0.0",
+            "status": "ready",
+            "pythonVersion": sys.version.split()[0]
+        }
+        print(json.dumps(status_info, indent=2))
+
+if __name__ == "__main__":
+    main()
+`;
+
+    const pyproject = `[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "${slug}"
+version = "1.0.0"
+description = "${desc}"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.scripts]
+${slug} = "cli:main"
+`;
+
+    const readmeMd = `# ${name} (Python CLI)
+
+${desc}
+
+## Requirements
+- Python 3.9+
+
+## Quickstart
+
+\`\`\`bash
+# 1. Create a virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# 2. Install editable CLI command
+pip install -e .
+
+# 3. Run the tool
+${slug} --help
+${slug} run --input data.json
+${slug} status
+\`\`\`
+`;
+
+    return {
+      slug,
+      files: {
+        "cli.py": cliPy,
+        "pyproject.toml": pyproject,
+        "requirements.txt": "# Core Python standard library\\n",
+        "README.md": readmeMd,
+        ".gitignore": "__pycache__/\\n*.pyc\\nvenv/\\n.env\\n*.egg-info/\\ndist/\\nbuild/\\n"
+      }
+    };
+  }
+
+  // Default: Node.js CLI
+  const cliJs = `#!/usr/bin/env node
+
+/**
+ * ${name}
+ * ${desc}
+ */
+
+import { parseArgs } from "node:util";
+
+const USAGE = \`
+\x1b[1m\x1b[38;2;242;61;42m${name}\x1b[0m v1.0.0
+${desc}
+
+\x1b[1mUSAGE:\x1b[0m
+  ${slug} [command] [options]
+
+\x1b[1mCOMMANDS:\x1b[0m
+  run           Execute the tool's primary engine
+  status        Check system status and configuration
+  help          Display this help documentation
+
+\x1b[1mOPTIONS:\x1b[0m
+  -i, --input   Path to input data file (default: data.json)
+  -o, --output  Path to write output results (default: output.json)
+  -v, --version Print version number
+  -h, --help    Print usage guide
+\`;
+
+function main() {
+  const args = process.argv.slice(2);
+  const options = {
+    input: { type: "string", short: "i", default: "data.json" },
+    output: { type: "string", short: "o", default: "output.json" },
+    version: { type: "boolean", short: "v" },
+    help: { type: "boolean", short: "h" }
+  };
+
+  try {
+    const { values, positionals } = parseArgs({ args, options, allowPositionals: true });
+    
+    if (values.help || positionals[0] === "help") {
+      console.log(USAGE);
+      process.exit(0);
+    }
+    
+    if (values.version) {
+      console.log("1.0.0");
+      process.exit(0);
+    }
+
+    const command = positionals[0] || "run";
+
+    if (command === "run") {
+      console.log("\\x1b[1;32m[${slug}]\\x1b[0m Starting execution...");
+      console.log(\`Reading data from: \${values.input}\`);
+      console.log(\`Output will be saved to: \${values.output}\`);
+      console.log("\\x1b[1;32m[${slug}]\\x1b[0m Completed successfully.");
+    } else if (command === "status") {
+      console.log(JSON.stringify({
+        name: "${name}",
+        version: "1.0.0",
+        nodeVersion: process.version,
+        platform: process.platform,
+        status: "ready"
+      }, null, 2));
+    } else {
+      console.error(\`\\x1b[31mUnknown command: "\${command}".\\x1b[0m Run "${slug} --help" for options.\`);
+      process.exit(1);
+    }
+  } catch (err) {
+    console.error("\\x1b[31mError:\\x1b[0m " + err.message);
+    process.exit(1);
+  }
+}
+
+main();
+`;
+
+  const packageJson = {
+    name: slug,
+    version: "1.0.0",
+    description: desc,
+    type: "module",
+    bin: {
+      [slug]: "./bin/cli.js"
+    },
+    scripts: {
+      start: "node ./bin/cli.js",
+      test: "node --test"
+    },
+    engines: {
+      node: ">=18.0.0"
+    },
+    license: "MIT"
+  };
+
+  const readmeMd = `# ${name} (Node.js CLI)
+
+${desc}
+
+## Installation
+
+\`\`\`bash
+# Option 1: Link globally for local development
+npm link
+
+# Option 2: Run directly
+./bin/cli.js --help
+\`\`\`
+
+## Usage
+
+\`\`\`bash
+${slug} run --input data.json --output results.json
+${slug} status
+${slug} --help
+\`\`\`
+`;
+
+  return {
+    slug,
+    files: {
+      "package.json": JSON.stringify(packageJson, null, 2),
+      "bin/cli.js": cliJs,
+      "README.md": readmeMd,
+      ".gitignore": "node_modules/\\n.DS_Store\\n*.log\\ndist/\\n.env\\n"
+    }
+  };
+}
+
+/**
+ * Generates a full GitHub Repository scaffolding.
+ */
+function generateGitHubRepo(manifest = {}, sourceFiles = {}, projectType = "web") {
+  const name = manifest.name || "poppy-project";
+  const slug = name.toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "poppy-project";
+  const desc = manifest.description || "Created with Poppy Universal Creation Platform";
+
+  const gitignore = `node_modules/
+.DS_Store
+dist/
+build/
+*.log
+.env
+.env.local
+coverage/
+.vscode/
+`;
+
+  const ciWorkflow = `name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run validation check
+        run: |
+          echo "Validating project artifacts..."
+          test -f README.md && echo "README verified."
+`;
+
+  const licenseText = `MIT License
+
+Copyright (c) ${new Date().getFullYear()} ${name} Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+`;
+
+  const readmeMd = `# ${name}
+
+${desc}
+
+## Overview
+This repository was scaffolded and verified by the **Poppy Universal Creation Platform**.
+
+## Getting Started
+\`\`\`bash
+# 1. Clone the repository
+git clone https://github.com/<your-username>/${slug}.git
+cd ${slug}
+
+# 2. View in browser or serve locally
+# Open index.html in any modern browser
+\`\`\`
+
+## Architecture
+- Standalone zero-dependency runtime
+- Strict client-side sandbox execution
+- Offline-first local storage
+
+## License
+MIT
+`;
+
+  const files = {
+    ...sourceFiles,
+    ".gitignore": gitignore,
+    ".github/workflows/ci.yml": ciWorkflow,
+    "LICENSE": licenseText
+  };
+
+  if (!files["README.md"]) {
+    files["README.md"] = readmeMd;
+  }
+
+  return { slug, files };
+}
+
+/**
+ * Validates a generated project tree before packaging to ensure zero missing dependencies or bad configs.
+ */
+function validateProjectBuild(files = {}, projectType = "extension") {
+  const errors = [];
+  const warnings = [];
+
+  if (projectType === "extension") {
+    if (!files["manifest.json"]) {
+      errors.push("Missing manifest.json in extension project");
+    } else {
+      try {
+        const m = JSON.parse(files["manifest.json"]);
+        const audit = analyzeExtensionPermissions(m);
+        errors.push(...audit.errors);
+        warnings.push(...audit.warnings);
+      } catch (err) {
+        errors.push("manifest.json contains invalid JSON: " + err.message);
+      }
+    }
+
+    if (!files["popup.html"]) errors.push("Missing popup.html");
+    if (!files["background.js"]) errors.push("Missing background.js");
+
+    // Check for forbidden inline script in popup.html
+    const inlineScriptCheck = new RegExp("<script\\b(?![^>]*\\bsrc=)[^>]*>[\\s\\S]+?<\\/script>", "i");
+    if (files["popup.html"] && inlineScriptCheck.test(files["popup.html"])) {
+      errors.push("popup.html contains forbidden inline script. MV3 requires external script file (e.g. popup.js).");
+    }
+  } else if (projectType === "cli-node") {
+    if (!files["package.json"]) {
+      errors.push("Missing package.json in Node CLI project");
+    } else {
+      try {
+        const pkg = JSON.parse(files["package.json"]);
+        if (!pkg.bin || Object.keys(pkg.bin).length === 0) errors.push("package.json requires a 'bin' mapping");
+      } catch (err) {
+        errors.push("package.json contains invalid JSON: " + err.message);
+      }
+    }
+    const binFile = files["bin/cli.js"] || files["cli.js"];
+    if (!binFile) {
+      errors.push("Missing executable entrypoint (bin/cli.js)");
+    } else if (!binFile.startsWith("#!/usr/bin/env node")) {
+      errors.push("Executable entrypoint must begin with shebang '#!/usr/bin/env node'");
+    }
+  } else if (projectType === "cli-python") {
+    if (!files["cli.py"]) {
+      errors.push("Missing cli.py entrypoint in Python project");
+    } else if (!files["cli.py"].startsWith("#!/usr/bin/env python")) {
+      errors.push("cli.py must begin with shebang '#!/usr/bin/env python3'");
+    }
+    if (!files["README.md"]) warnings.push("Python projects should include README.md setup instructions");
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+if (typeof module !== "undefined") {
+  module.exports = {
+    analyzeExtensionPermissions,
+    extractInlineScripts,
+    generateExtensionProject,
+    generateCliProject,
+    generateGitHubRepo,
+    validateProjectBuild
+  };
+}
+
+if (typeof window !== "undefined") {
+  window.analyzeExtensionPermissions = analyzeExtensionPermissions;
+  window.extractInlineScripts = extractInlineScripts;
+  window.generateExtensionProject = generateExtensionProject;
+  window.generateCliProject = generateCliProject;
+  window.generateGitHubRepo = generateGitHubRepo;
+  window.validateProjectBuild = validateProjectBuild;
+}
+
 const SHIM = `(()=>{const L=k=>"poppy:"+k;window.poppy={
   store:{get:async k=>{try{const v=localStorage.getItem(L(k));return v==null?undefined:JSON.parse(v)}catch(e){}},set:async(k,v)=>{try{localStorage.setItem(L(k),JSON.stringify(v))}catch(e){}return true},delete:async k=>{try{localStorage.removeItem(L(k))}catch(e){}return true},list:async(p="")=>{try{return Object.keys(localStorage).filter(k=>k.startsWith("poppy:"+p)).map(k=>k.slice(6))}catch(e){return[]}}},
   db:{query:async()=>[],exec:async()=>({changes:0}),migrate:async()=>({success:true,applied:0}),export:async()=>new Uint8Array(),import:async()=>true},
@@ -4610,16 +5378,139 @@ async function reopenZip(fileOrBuf){
   return { files: newFiles, assets: newAssets };
 }
 
-if ($("#expBtn")) $("#expBtn").onclick = async () => {
-  if (!current) return;
-  const assets = await assetList();
-  if (Object.keys(currentFiles).length > 1 || assets.length > 0) {
-    return await exportZip();
+function openExportModal() {
+  if (!current) { toast("Build an app before exporting."); return; }
+  const dlg = $("#exportDlg");
+  if (!dlg) return;
+
+  // Dynamically audit extension permissions
+  if (typeof analyzeExtensionPermissions === "function") {
+    const title = (meta.name || (current.match(/<title>([^<]*)<\/title>/i) || [])[1] || "poppy-project");
+    const extProj = typeof generateExtensionProject === "function" ? generateExtensionProject({ name: title }, currentFiles) : null;
+    if (extProj && extProj.manifestJson) {
+      const audit = analyzeExtensionPermissions(extProj.manifestJson);
+      const listEl = $("#expAuditList");
+      if (listEl) {
+        listEl.innerHTML = "";
+        audit.auditedPermissions.forEach(p => {
+          const item = document.createElement("div");
+          item.className = "exp-audit-item";
+          item.innerHTML = `<div><span class="exp-audit-name">${p.permission}</span><span class="exp-audit-desc">${p.description}</span></div><span class="exp-pill ${p.risk}">${p.risk} Risk</span>`;
+          listEl.appendChild(item);
+        });
+      }
+    }
   }
-  const t = (current.match(/<title>([^<]*)<\/title>/i) || [])[1] || "poppy-site", l = document.createElement("a");
-  l.href = URL.createObjectURL(new Blob([inject(current, SHIM)], {type: "text/html"})); l.download = t.replace(/[^\w-]+/g, "-").slice(0, 40) + ".html"; l.click();
-  setTimeout(() => URL.revokeObjectURL(l.href), 2000); toast("Exported. AI features are off in the exported copy.");
+
+  dlg.showModal();
+}
+
+async function exportSingleHtml() {
+  if (!current) return;
+  const t = (current.match(/<title>([^<]*)<\/title>/i) || [])[1] || "poppy-site";
+  const l = document.createElement("a");
+  l.href = URL.createObjectURL(new Blob([inject(current, SHIM)], { type: "text/html" }));
+  l.download = t.replace(/[^\w-]+/g, "-").slice(0, 40) + ".html";
+  l.click();
+  setTimeout(() => URL.revokeObjectURL(l.href), 2000);
+  toast("Downloaded standalone HTML document.");
+}
+
+async function exportExtensionZip() {
+  if (!current) return;
+  const title = (meta.name || (current.match(/<title>([^<]*)<\/title>/i) || [])[1] || "poppy-extension").slice(0, 40).replace(/[^\w-]+/g, "-");
+  const extProj = typeof generateExtensionProject === "function" ? generateExtensionProject({ name: title }, currentFiles) : null;
+  if (!extProj) return;
+
+  const val = typeof validateProjectBuild === "function" ? validateProjectBuild(extProj.files, "extension") : { valid: true };
+  if (!val.valid) {
+    toast("Extension validation error: " + val.errors[0]);
+    return;
+  }
+
+  const zipFiles = [];
+  const enc = new TextEncoder();
+  for (const [fn, content] of Object.entries(extProj.files)) {
+    if (fn.startsWith("icons/") && typeof DEFAULT_ICON_PNG_B64 !== "undefined" && content === DEFAULT_ICON_PNG_B64) {
+      const bin = Uint8Array.from(atob(content), c => c.charCodeAt(0));
+      zipFiles.push({ name: fn, data: bin });
+    } else {
+      zipFiles.push({ name: fn, data: enc.encode(content) });
+    }
+  }
+
+  const zipBytes = await createZip(zipFiles);
+  const blob = new Blob([zipBytes], { type: "application/zip" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = title + "-extension-mv3.zip";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast("Manifest V3 extension exported: " + a.download);
+}
+
+async function exportCliZip(language = "node") {
+  if (!current) return;
+  const title = (meta.name || (current.match(/<title>([^<]*)<\/title>/i) || [])[1] || "poppy-cli").slice(0, 40).replace(/[^\w-]+/g, "-");
+  const cliProj = typeof generateCliProject === "function" ? generateCliProject({ name: title }, language) : null;
+  if (!cliProj) return;
+
+  const val = typeof validateProjectBuild === "function" ? validateProjectBuild(cliProj.files, language === "python" ? "cli-python" : "cli-node") : { valid: true };
+  if (!val.valid) {
+    toast("CLI validation error: " + val.errors[0]);
+    return;
+  }
+
+  const zipFiles = [];
+  const enc = new TextEncoder();
+  for (const [fn, content] of Object.entries(cliProj.files)) {
+    zipFiles.push({ name: fn, data: enc.encode(content) });
+  }
+
+  const zipBytes = await createZip(zipFiles);
+  const blob = new Blob([zipBytes], { type: "application/zip" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${title}-${language}-cli.zip`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast(`${language === "python" ? "Python" : "Node.js"} CLI package exported: ${a.download}`);
+}
+
+async function exportGithubZip() {
+  if (!current) return;
+  const title = (meta.name || (current.match(/<title>([^<]*)<\/title>/i) || [])[1] || "poppy-repo").slice(0, 40).replace(/[^\w-]+/g, "-");
+  const ghProj = typeof generateGitHubRepo === "function" ? generateGitHubRepo({ name: title }, currentFiles, "web") : null;
+  if (!ghProj) return;
+
+  const zipFiles = [];
+  const enc = new TextEncoder();
+  for (const [fn, content] of Object.entries(ghProj.files)) {
+    zipFiles.push({ name: fn, data: enc.encode(content) });
+  }
+
+  const zipBytes = await createZip(zipFiles);
+  const blob = new Blob([zipBytes], { type: "application/zip" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = title + "-github-repo.zip";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast("GitHub ready repository exported: " + a.download);
+}
+
+if ($("#expBtn")) $("#expBtn").onclick = () => {
+  if (!current) return;
+  $("#panel").classList.remove("open");
+  openExportModal();
 };
+if ($("#exportClose")) $("#exportClose").onclick = () => $("#exportDlg").close();
+if ($("#btnExpSingleHtml")) $("#btnExpSingleHtml").onclick = exportSingleHtml;
+if ($("#btnExpWebZip")) $("#btnExpWebZip").onclick = exportZip;
+if ($("#btnExpExtension")) $("#btnExpExtension").onclick = exportExtensionZip;
+if ($("#btnExpCliNode")) $("#btnExpCliNode").onclick = () => exportCliZip("node");
+if ($("#btnExpCliPy")) $("#btnExpCliPy").onclick = () => exportCliZip("python");
+if ($("#btnExpGithub")) $("#btnExpGithub").onclick = exportGithubZip;
 
 function renderFileTabs(){
   const box = $("#fileTabs"); box.replaceChildren();

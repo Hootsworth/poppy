@@ -1,0 +1,93 @@
+<dialog id="exportDlg" class="dlg" aria-labelledby="expDlgTitle">
+  <div class="exp-head">
+    <h3 id="expDlgTitle">
+      <span>Export &amp; Deliverables</span>
+      <span class="exp-badge">POPPY 3.0</span>
+    </h3>
+    <button type="button" class="exp-close" id="exportClose" aria-label="Close">&times;</button>
+  </div>
+  <div class="exp-body">
+    <div class="exp-grid">
+      <div class="exp-card" id="expCardHtml" tabindex="0" role="button">
+        <div class="exp-card-top">
+          <div class="exp-tag">Standalone Web</div>
+          <h4>Single HTML File</h4>
+          <p>Self-contained document with all styles and scripts embedded. Runs in any browser offline.</p>
+        </div>
+        <button type="button" class="exp-action-btn" id="btnExpSingleHtml">Download .html</button>
+      </div>
+
+      <div class="exp-card" id="expCardZip" tabindex="0" role="button">
+        <div class="exp-card-top">
+          <div class="exp-tag">Modular Web</div>
+          <h4>Web Project ZIP</h4>
+          <p>Full project bundle with index.html, modular stylesheets, local assets, and SQLite data.</p>
+        </div>
+        <button type="button" class="exp-action-btn" id="btnExpWebZip">Download .zip</button>
+      </div>
+
+      <div class="exp-card" id="expCardExt" tabindex="0" role="button">
+        <div class="exp-card-top">
+          <div class="exp-tag">Browser Extension</div>
+          <h4>Chrome &amp; Edge (MV3)</h4>
+          <p>Manifest V3 browser extension with action popup, background service worker, and toolbar icons.</p>
+        </div>
+        <button type="button" class="exp-action-btn" id="btnExpExtension">Download MV3 .zip</button>
+      </div>
+
+      <div class="exp-card" id="expCardCliNode" tabindex="0" role="button">
+        <div class="exp-card-top">
+          <div class="exp-tag">Terminal Tool</div>
+          <h4>Node.js CLI</h4>
+          <p>Command-line executable with package.json, argument parser, ANSI formatting, and npm link setup.</p>
+        </div>
+        <button type="button" class="exp-action-btn" id="btnExpCliNode">Download CLI .zip</button>
+      </div>
+
+      <div class="exp-card" id="expCardCliPy" tabindex="0" role="button">
+        <div class="exp-card-top">
+          <div class="exp-tag">Python Script</div>
+          <h4>Python CLI &amp; Package</h4>
+          <p>Clean Python 3 script with argparse, pyproject.toml, virtualenv scaffolding, and type hints.</p>
+        </div>
+        <button type="button" class="exp-action-btn" id="btnExpCliPy">Download Python .zip</button>
+      </div>
+
+      <div class="exp-card" id="expCardGithub" tabindex="0" role="button">
+        <div class="exp-card-top">
+          <div class="exp-tag">Source Control</div>
+          <h4>GitHub Ready Repo</h4>
+          <p>Complete Git repository structure with GitHub Actions CI workflow, .gitignore, and MIT license.</p>
+        </div>
+        <button type="button" class="exp-action-btn" id="btnExpGithub">Download Repo .zip</button>
+      </div>
+    </div>
+
+    <div class="exp-section" id="expAuditSection">
+      <h4>Extension Permission &amp; Security Audit</h4>
+      <div class="exp-audit-list" id="expAuditList">
+        <div class="exp-audit-item">
+          <div>
+            <span class="exp-audit-name">storage</span>
+            <span class="exp-audit-desc">Isolated local key-value store</span>
+          </div>
+          <span class="exp-pill low">Low Risk</span>
+        </div>
+        <div class="exp-audit-item">
+          <div>
+            <span class="exp-audit-name">activeTab</span>
+            <span class="exp-audit-desc">Temporary access on user invocation</span>
+          </div>
+          <span class="exp-pill low">Low Risk</span>
+        </div>
+      </div>
+      <div class="exp-guide" id="expGuideBox">
+        <pre id="expGuideText"># How to load your Manifest V3 extension in Chrome:
+1. Unzip the downloaded file
+2. Open chrome://extensions in Chrome
+3. Enable "Developer mode" (top right)
+4. Click "Load unpacked" and select the unzipped directory</pre>
+      </div>
+    </div>
+  </div>
+</dialog>
