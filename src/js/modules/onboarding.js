@@ -76,7 +76,7 @@ function obStart(opts = {}){
             o.innerHTML = mono(id, c.n[0].toUpperCase());
             wrap.append(o);
             if (ring.classList.contains("r1")) {
-              const sp = el("i", "sp");
+              const sp = el("i", "s4-spoke");
               sp.style.cssText = "--a:" + a + "deg;--d:" + (i * .4) + "s;--R:" + R;
               ring.append(sp);
             }

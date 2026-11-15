@@ -52,13 +52,13 @@ module.exports = async function handler(req, res) {
     res.statusCode = 503;
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify({
-      error: "Backend Meta API key is not configured. Please add META_API_KEY (or POPPY_AI_KEY) to your GitHub Secrets / environment, or add your own key in Switch AI."
+      error: "Backend Meta API key is not configured. Please add META_API_KEY (or POPPY_AI_KEY) to your GitHub Secrets / environment, or add your own key in Pick your AI."
     }));
     return;
   }
 
-  const model = process.env.META_MODEL || "Muse Spark 1.3 Contributor";
-  const baseUrl = (process.env.META_BASE_URL || "https://api.llama.com/compat/v1").replace(/\/+$/, "");
+  const model = process.env.META_MODEL || "muse-spark-1.3-contributor";
+  const baseUrl = (process.env.META_BASE_URL || "https://api.meta.ai/v1").replace(/\/+$/, "");
 
   // 3. Enforce Strict Weekly Limit (3 Generations per Week per Client)
   const currentWeek = getWeekKey();
@@ -123,7 +123,7 @@ module.exports = async function handler(req, res) {
       stream: true,
       max_tokens: 16000,
       messages: [
-        { role: "system", content: system },
+        { role: "developer", content: system },
         ...messages.map(m => ({ role: m.role === "model" ? "assistant" : m.role, content: m.content }))
       ]
     };

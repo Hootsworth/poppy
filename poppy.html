@@ -181,7 +181,7 @@ dialog::backdrop{background:rgba(42,13,22,.55)}
 .db{flex:1;min-height:0;overflow:auto;padding:6px 22px 18px;scrollbar-width:thin;scrollbar-color:var(--ink) transparent}
 .db::-webkit-scrollbar{width:12px}.db::-webkit-scrollbar-track{background:transparent}.db::-webkit-scrollbar-thumb{background:var(--ink);border-radius:99px;border:4px solid var(--white)}
 .acts{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:14px 22px 20px;border-top:2px solid var(--line);flex:none}
-.acts .sp{margin-left:auto}
+.acts .sp,.acts .acts-right,#closeDlg{margin-left:auto}
 .fld{display:grid;gap:6px;margin:0 0 14px;font-weight:700;font-size:.9rem}
 .fld input,.fld select,.in{width:100%;min-height:44px;padding:9px 14px;border-radius:14px;border:2px solid var(--ink);background:#fff;font-weight:600;font-size:1rem}
 .fld input:focus-visible,.fld select:focus-visible,.in:focus-visible{outline:3px solid var(--red);outline-offset:0}
@@ -468,8 +468,8 @@ dialog::backdrop{background:rgba(42,13,22,.55)}
 .s4b .i{width:calc(var(--sz)*.13);height:calc(var(--sz)*.13);margin:calc(var(--sz)*-.065) 0 0 calc(var(--sz)*-.065);border-radius:26%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:calc(var(--sz)*.055);border:2px solid currentColor;box-shadow:0 3px 0 #0003;animation:spin var(--od) linear infinite reverse}
 .r2 .s4b .i{animation-direction:normal}
 .s4b.pop .o{animation:pop .6s var(--ease) both;animation-delay:var(--d)}
-.s4 .sp{position:absolute;left:50%;top:50%;width:var(--R);height:2px;transform-origin:0 50%;transform:rotate(calc(var(--a) - 90deg));background:linear-gradient(90deg,transparent,currentColor);opacity:.3}
-.s4 .sp::after{content:"";position:absolute;top:-3px;left:0;width:8px;height:8px;border-radius:50%;background:currentColor;animation:pk 2.6s ease-in infinite;animation-delay:var(--d)}
+.s4 .s4-spoke{position:absolute;left:50%;top:50%;width:var(--R);height:2px;transform-origin:0 50%;transform:rotate(calc(var(--a) - 90deg));background:linear-gradient(90deg,transparent,currentColor);opacity:.3}
+.s4 .s4-spoke::after{content:"";position:absolute;top:-3px;left:0;width:8px;height:8px;border-radius:50%;background:currentColor;animation:pk 2.6s ease-in infinite;animation-delay:var(--d)}
 @keyframes pk{0%{left:100%;opacity:0}15%{opacity:1}100%{left:0;opacity:0}}
 .s4c{position:absolute;left:50%;top:50%;width:26%;transform:translate(-50%,-50%);z-index:2}.s4c svg{width:100%;display:block;overflow:visible}
 .s4c .rg{position:absolute;inset:0;border-radius:50%;border:2px solid currentColor;animation:ringp 2.2s ease-out infinite;opacity:0}.s4c .rg+.rg{animation-delay:1.1s}
@@ -1309,7 +1309,7 @@ dialog::backdrop{background:rgba(42,13,22,.55)}
 <p class="hint" id="meterLine"></p>
 <label class="fld"><span>Daily token limit (0 means no limit)</span><input id="cap" type="number" min="0" step="10000" inputmode="numeric"></label>
 <div class="opts" style="flex-direction:column;align-items:flex-start;gap:12px;margin:2px 0 16px"><label class="sw"><input type="checkbox" id="qaOn" role="switch"><span class="trk"></span><span>Test the site before showing it</span></label><label class="sw"><input type="checkbox" id="vrOn" role="switch"><span class="trk"></span><span>Design review from screenshots</span></label></div>
-<p class="hint" id="hint" aria-live="polite"></p><button class="link sm" id="replayIntro" type="button" style="margin-top:6px;display:inline-block">Replay the intro</button><p class="hint">Keys stay in this browser and go only to the provider you pick. Keep this file private and don't host it publicly.</p></div><div class="acts"><button class="go" id="saveKey">Use this one</button><button class="link" id="testKey" type="button">Test key</button><button class="link sp" id="closeDlg">Cancel</button></div></dialog>
+<p class="hint" id="hint" aria-live="polite"></p><button class="link sm" id="replayIntro" type="button" style="margin-top:6px;display:inline-block">Replay the intro</button><p class="hint">Keys stay in this browser and go only to the provider you pick. Keep this file private and don't host it publicly.</p></div><div class="acts"><button class="go" id="saveKey">Use this one</button><button class="link" id="testKey" type="button">Test key</button><button class="link acts-right" id="closeDlg">Cancel</button></div></dialog>
 
 <dialog id="cmp" aria-labelledby="cmpT"><div class="dh"><h2 id="cmpT">Compare two models</h2><button class="x" type="button" aria-label="Close">&times;</button></div><div class="db"><label class="fld"><span>What should both build?</span><input id="cmpText" placeholder="A tiny kanban board" autocomplete="off"></label><div class="cc"><label class="fld"><span>Model A</span><select id="cA"></select></label><label class="fld"><span>Model B</span><select id="cB"></select></label></div>
 <div class="cg" id="cmpOut" hidden><div class="cp"><div class="st" id="sA" aria-live="polite"></div><iframe id="fA" sandbox="allow-scripts" title="Result A"></iframe><button class="go" id="kA" disabled>Keep this one</button></div><div class="cp"><div class="st" id="sB" aria-live="polite"></div><iframe id="fB" sandbox="allow-scripts" title="Result B"></iframe><button class="go" id="kB" disabled>Keep this one</button></div></div></div><div class="acts"><button class="go" id="cmpRun">Run both</button><button class="link" id="cmpClose">Close</button></div></dialog>
@@ -2495,7 +2495,7 @@ const PROVIDERS = {
   anthropic: {name: "Anthropic", model: "claude-sonnet-4-6", hint: "Get a key at console.anthropic.com."},
   openai: {name: "OpenAI", model: "gpt-4.1", hint: "Get a key at platform.openai.com."},
   gemini: {name: "Gemini", model: "gemini-2.0-flash", hint: "Get a key at aistudio.google.com."},
-  meta: {name: "Meta", model: "Muse Spark 1.3 Contributor", hint: "Meta AI. Default model: Muse Spark 1.3 Contributor."}
+  meta: {name: "Meta", model: "muse-spark-1.3-contributor", hint: "Meta Model API (api.meta.ai). Paste your Meta API key. Default model: muse-spark-1.3-contributor."}
 };
 if (ls.get("poppy.key") && !ls.get("poppy.key.anthropic")) ls.set("poppy.key.anthropic", ls.get("poppy.key"));
 const prov = () => ls.get("poppy.prov") || "anthropic";
@@ -2505,6 +2505,13 @@ const modelOf = p => {
   if (p === "gemini" && (m === "gemini-2.5-pro" || m === "gemini-pro" || !m)) {
     m = "gemini-2.0-flash";
     ls.set("poppy.model.gemini", m);
+  }
+  if (p === "meta") {
+    if (!m || /muse\s*spark\s*1\.?3\s*(contributor)?/i.test(m)) {
+      m = "muse-spark-1.3-contributor";
+    } else {
+      m = m.trim().toLowerCase().replace(/\s+/g, "-");
+    }
   }
   return m;
 };
@@ -2828,8 +2835,9 @@ async function* streamRaw(messages, system = SYSTEM, pv = prov()){
   if (!key) {
     const quota = getWeeklyQuota();
     if (quota.count >= 3) {
+      if (typeof showTab === "function") showTab(p);
       if ($("#dlg")) $("#dlg").showModal();
-      throw new Error("Weekly free limit reached (3/3 builds used this week). Add your own API key in Switch AI to keep building without limits!");
+      throw new Error("Weekly free limit reached (3/3 builds used this week). Add your own API key in Pick your AI to keep building without limits!");
     }
 
     const backendUrl = window.POPPY_BACKEND_URL || "/api/generate";
@@ -2841,17 +2849,31 @@ async function* streamRaw(messages, system = SYSTEM, pv = prov()){
         body: JSON.stringify({ messages, system })
       });
     } catch {
-      throw new Error("Add your " + P.name + " API key in Switch AI to start building.");
+      if (typeof showTab === "function") showTab(p);
+      if ($("#dlg")) $("#dlg").showModal();
+      throw new Error("Add your " + P.name + " API key to start building.");
     }
 
     if (!proxyRes.ok) {
       let errText = "";
       try { const ej = await proxyRes.json(); errText = ej.error || ""; } catch {}
       if (proxyRes.status === 429) {
+        if (typeof showTab === "function") showTab(p);
         if ($("#dlg")) $("#dlg").showModal();
-        throw new Error(errText || "Weekly free limit reached (3/3 builds used this week). Add your own API key in Switch AI to continue unlimited builds!");
+        throw new Error(errText || "Weekly free limit reached (3/3 builds used this week). Add your own API key to continue unlimited builds!");
       }
-      throw new Error(errText || `Backend proxy error (${proxyRes.status}). Add your own API key in Switch AI.`);
+      if (proxyRes.status === 405 || proxyRes.status === 404) {
+        if (typeof showTab === "function") showTab("meta");
+        if ($("#dlg")) $("#dlg").showModal();
+        if ($("#key")) $("#key").focus();
+        throw new Error("No backend AI proxy server is active on this host. To build with Meta AI, please enter your Meta API key in the Meta tab below (default model: muse-spark-1.3-contributor).");
+      }
+      if (proxyRes.status === 503) {
+        if (typeof showTab === "function") showTab("meta");
+        if ($("#dlg")) $("#dlg").showModal();
+        throw new Error(errText || "Backend Meta API key is not configured. Add META_API_KEY in backend environment, or enter your Meta key below.");
+      }
+      throw new Error(errText || `Backend proxy error (${proxyRes.status}). Add your API key in Pick your AI to continue.`);
     }
 
     const rd = proxyRes.body.getReader(), dec = new TextDecoder();
@@ -2890,17 +2912,20 @@ async function* streamRaw(messages, system = SYSTEM, pv = prov()){
     headers["x-goog-api-key"] = key;
     body = {systemInstruction: {parts: [{text: system}]}, contents: messages.map(m => ({role: m.role === "assistant" ? "model" : "user", parts: [...(m.image ? [{inline_data: {mime_type: m.image.mime, data: m.image.b64}}] : []), {text: m.content}]})), generationConfig: {maxOutputTokens: 16000}};
   } else {
-    url = p === "openai" ? "https://api.openai.com/v1/chat/completions" : "https://api.llama.com/compat/v1/chat/completions";
+    url = p === "openai" ? "https://api.openai.com/v1/chat/completions" : "https://api.meta.ai/v1/chat/completions";
     headers.authorization = "Bearer " + key;
-    body = {model, stream: true, messages: chat};
+    const formattedMessages = p === "meta"
+      ? [{role: "developer", content: system}, ...messages.map(m => vis(p, m))]
+      : chat;
+    body = {model, stream: true, messages: formattedMessages};
     body[p === "openai" ? "max_completion_tokens" : "max_tokens"] = 16000;
   }
   let r;
   try { r = await fetch(url, {method: "POST", headers, body: JSON.stringify(body)}); }
-  catch { throw new Error(navigator.onLine === false ? "You're offline. Check your connection and try again." : "Couldn't reach " + P.name + "." + (p === "meta" ? " Meta's API may block calls straight from a browser (CORS), so try another provider." : " Check your connection, or a browser extension may be blocking it.")); }
+  catch { throw new Error(navigator.onLine === false ? "You're offline. Check your connection and try again." : "Couldn't reach " + P.name + "." + (p === "meta" ? " Direct browser calls to api.meta.ai may be blocked by CORS unless calling through the proxy gateway." : " Check your connection, or a browser extension may be blocking it.")); }
   if (!r.ok) {
     let m = ""; try { const j = await r.json(); m = j.error?.message || j[0]?.error?.message || "" } catch {}
-    throw new Error([401, 403].includes(r.status) || /api key|api_key|authentication/i.test(m) ? P.name + " rejected that API key. Check it in Switch AI." : r.status === 429 ? P.name + " says you are out of quota or going too fast. Wait a minute and try again." : r.status === 404 ? "Model " + model + " wasn't found at " + P.name + ". Pick another one in Switch AI." : r.status >= 500 ? P.name + " is having trouble right now. Try again shortly." : (m || P.name + " returned an error (" + r.status + ")."));
+    throw new Error([401, 403].includes(r.status) || /api key|api_key|authentication/i.test(m) ? P.name + " rejected that API key. Check it in Pick your AI." : r.status === 429 ? P.name + " says you are out of quota or going too fast. Wait a minute and try again." : r.status === 404 ? "Model " + model + " wasn't found at " + P.name + ". Pick another one in Pick your AI." : r.status >= 500 ? P.name + " is having trouble right now. Try again shortly." : (m || P.name + " returned an error (" + r.status + ")."));
   }
   const rd = r.body.getReader(), dec = new TextDecoder(); let buf = "";
   for (;;) {
@@ -3375,7 +3400,7 @@ function dlgAsk({title, text, yes = "Allow", no = "Not now", input}){
 }
 async function ask(cap){ const k = "poppy.perm." + siteId + "." + cap; let v = ls.get(k); if (!v) { v = (await dlgAsk({title: "Allow " + cap + "?", text: "This site wants to use your " + cap + ". You can reset these choices in Connectors."})) ? "1" : "0"; ls.set(k, v); } if (v !== "1") throw new Error("Permission for " + cap + " was denied."); }
 async function listModels(p, key){
-  const C = {anthropic: ["https://api.anthropic.com/v1/models?limit=100", {"x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true"}], openai: ["https://api.openai.com/v1/models", {authorization: "Bearer " + key}], gemini: ["https://generativelanguage.googleapis.com/v1beta/models?pageSize=100", {"x-goog-api-key": key}], meta: ["https://api.llama.com/compat/v1/models", {authorization: "Bearer " + key}]}[p];
+  const C = {anthropic: ["https://api.anthropic.com/v1/models?limit=100", {"x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true"}], openai: ["https://api.openai.com/v1/models", {authorization: "Bearer " + key}], gemini: ["https://generativelanguage.googleapis.com/v1beta/models?pageSize=100", {"x-goog-api-key": key}], meta: ["https://api.meta.ai/v1/models", {authorization: "Bearer " + key}]}[p];
   const j = await (await fetch(C[0], {headers: C[1]})).json();
   return (j.data || j.models || []).map(m => String(m.id || m.name || "").replace(/^models\//, "")).filter(Boolean);
 }
@@ -11984,7 +12009,7 @@ function obStart(opts = {}){
             o.innerHTML = mono(id, c.n[0].toUpperCase());
             wrap.append(o);
             if (ring.classList.contains("r1")) {
-              const sp = el("i", "sp");
+              const sp = el("i", "s4-spoke");
               sp.style.cssText = "--a:" + a + "deg;--d:" + (i * .4) + "s;--R:" + R;
               ring.append(sp);
             }

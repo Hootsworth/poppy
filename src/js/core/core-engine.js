@@ -48,7 +48,7 @@ const PROVIDERS = {
   anthropic: {name: "Anthropic", model: "claude-sonnet-4-6", hint: "Get a key at console.anthropic.com."},
   openai: {name: "OpenAI", model: "gpt-4.1", hint: "Get a key at platform.openai.com."},
   gemini: {name: "Gemini", model: "gemini-2.0-flash", hint: "Get a key at aistudio.google.com."},
-  meta: {name: "Meta", model: "Muse Spark 1.3 Contributor", hint: "Meta AI. Default model: Muse Spark 1.3 Contributor."}
+  meta: {name: "Meta", model: "muse-spark-1.3-contributor", hint: "Meta Model API (api.meta.ai). Paste your Meta API key. Default model: muse-spark-1.3-contributor."}
 };
 if (ls.get("poppy.key") && !ls.get("poppy.key.anthropic")) ls.set("poppy.key.anthropic", ls.get("poppy.key"));
 const prov = () => ls.get("poppy.prov") || "anthropic";
@@ -58,6 +58,13 @@ const modelOf = p => {
   if (p === "gemini" && (m === "gemini-2.5-pro" || m === "gemini-pro" || !m)) {
     m = "gemini-2.0-flash";
     ls.set("poppy.model.gemini", m);
+  }
+  if (p === "meta") {
+    if (!m || /muse\s*spark\s*1\.?3\s*(contributor)?/i.test(m)) {
+      m = "muse-spark-1.3-contributor";
+    } else {
+      m = m.trim().toLowerCase().replace(/\s+/g, "-");
+    }
   }
   return m;
 };
@@ -381,8 +388,9 @@ async function* streamRaw(messages, system = SYSTEM, pv = prov()){
   if (!key) {
     const quota = getWeeklyQuota();
     if (quota.count >= 3) {
+      if (typeof showTab === "function") showTab(p);
       if ($("#dlg")) $("#dlg").showModal();
-      throw new Error("Weekly free limit reached (3/3 builds used this week). Add your own API key in Switch AI to keep building without limits!");
+      throw new Error("Weekly free limit reached (3/3 builds used this week). Add your own API key in Pick your AI to keep building without limits!");
     }
 
     const backendUrl = window.POPPY_BACKEND_URL || "/api/generate";
@@ -394,17 +402,31 @@ async function* streamRaw(messages, system = SYSTEM, pv = prov()){
         body: JSON.stringify({ messages, system })
       });
     } catch {
-      throw new Error("Add your " + P.name + " API key in Switch AI to start building.");
+      if (typeof showTab === "function") showTab(p);
+      if ($("#dlg")) $("#dlg").showModal();
+      throw new Error("Add your " + P.name + " API key to start building.");
     }
 
     if (!proxyRes.ok) {
       let errText = "";
       try { const ej = await proxyRes.json(); errText = ej.error || ""; } catch {}
       if (proxyRes.status === 429) {
+        if (typeof showTab === "function") showTab(p);
         if ($("#dlg")) $("#dlg").showModal();
-        throw new Error(errText || "Weekly free limit reached (3/3 builds used this week). Add your own API key in Switch AI to continue unlimited builds!");
+        throw new Error(errText || "Weekly free limit reached (3/3 builds used this week). Add your own API key to continue unlimited builds!");
       }
-      throw new Error(errText || `Backend proxy error (${proxyRes.status}). Add your own API key in Switch AI.`);
+      if (proxyRes.status === 405 || proxyRes.status === 404) {
+        if (typeof showTab === "function") showTab("meta");
+        if ($("#dlg")) $("#dlg").showModal();
+        if ($("#key")) $("#key").focus();
+        throw new Error("No backend AI proxy server is active on this host. To build with Meta AI, please enter your Meta API key in the Meta tab below (default model: muse-spark-1.3-contributor).");
+      }
+      if (proxyRes.status === 503) {
+        if (typeof showTab === "function") showTab("meta");
+        if ($("#dlg")) $("#dlg").showModal();
+        throw new Error(errText || "Backend Meta API key is not configured. Add META_API_KEY in backend environment, or enter your Meta key below.");
+      }
+      throw new Error(errText || `Backend proxy error (${proxyRes.status}). Add your API key in Pick your AI to continue.`);
     }
 
     const rd = proxyRes.body.getReader(), dec = new TextDecoder();
@@ -443,17 +465,20 @@ async function* streamRaw(messages, system = SYSTEM, pv = prov()){
     headers["x-goog-api-key"] = key;
     body = {systemInstruction: {parts: [{text: system}]}, contents: messages.map(m => ({role: m.role === "assistant" ? "model" : "user", parts: [...(m.image ? [{inline_data: {mime_type: m.image.mime, data: m.image.b64}}] : []), {text: m.content}]})), generationConfig: {maxOutputTokens: 16000}};
   } else {
-    url = p === "openai" ? "https://api.openai.com/v1/chat/completions" : "https://api.llama.com/compat/v1/chat/completions";
+    url = p === "openai" ? "https://api.openai.com/v1/chat/completions" : "https://api.meta.ai/v1/chat/completions";
     headers.authorization = "Bearer " + key;
-    body = {model, stream: true, messages: chat};
+    const formattedMessages = p === "meta"
+      ? [{role: "developer", content: system}, ...messages.map(m => vis(p, m))]
+      : chat;
+    body = {model, stream: true, messages: formattedMessages};
     body[p === "openai" ? "max_completion_tokens" : "max_tokens"] = 16000;
   }
   let r;
   try { r = await fetch(url, {method: "POST", headers, body: JSON.stringify(body)}); }
-  catch { throw new Error(navigator.onLine === false ? "You're offline. Check your connection and try again." : "Couldn't reach " + P.name + "." + (p === "meta" ? " Meta's API may block calls straight from a browser (CORS), so try another provider." : " Check your connection, or a browser extension may be blocking it.")); }
+  catch { throw new Error(navigator.onLine === false ? "You're offline. Check your connection and try again." : "Couldn't reach " + P.name + "." + (p === "meta" ? " Direct browser calls to api.meta.ai may be blocked by CORS unless calling through the proxy gateway." : " Check your connection, or a browser extension may be blocking it.")); }
   if (!r.ok) {
     let m = ""; try { const j = await r.json(); m = j.error?.message || j[0]?.error?.message || "" } catch {}
-    throw new Error([401, 403].includes(r.status) || /api key|api_key|authentication/i.test(m) ? P.name + " rejected that API key. Check it in Switch AI." : r.status === 429 ? P.name + " says you are out of quota or going too fast. Wait a minute and try again." : r.status === 404 ? "Model " + model + " wasn't found at " + P.name + ". Pick another one in Switch AI." : r.status >= 500 ? P.name + " is having trouble right now. Try again shortly." : (m || P.name + " returned an error (" + r.status + ")."));
+    throw new Error([401, 403].includes(r.status) || /api key|api_key|authentication/i.test(m) ? P.name + " rejected that API key. Check it in Pick your AI." : r.status === 429 ? P.name + " says you are out of quota or going too fast. Wait a minute and try again." : r.status === 404 ? "Model " + model + " wasn't found at " + P.name + ". Pick another one in Pick your AI." : r.status >= 500 ? P.name + " is having trouble right now. Try again shortly." : (m || P.name + " returned an error (" + r.status + ")."));
   }
   const rd = r.body.getReader(), dec = new TextDecoder(); let buf = "";
   for (;;) {
@@ -928,7 +953,7 @@ function dlgAsk({title, text, yes = "Allow", no = "Not now", input}){
 }
 async function ask(cap){ const k = "poppy.perm." + siteId + "." + cap; let v = ls.get(k); if (!v) { v = (await dlgAsk({title: "Allow " + cap + "?", text: "This site wants to use your " + cap + ". You can reset these choices in Connectors."})) ? "1" : "0"; ls.set(k, v); } if (v !== "1") throw new Error("Permission for " + cap + " was denied."); }
 async function listModels(p, key){
-  const C = {anthropic: ["https://api.anthropic.com/v1/models?limit=100", {"x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true"}], openai: ["https://api.openai.com/v1/models", {authorization: "Bearer " + key}], gemini: ["https://generativelanguage.googleapis.com/v1beta/models?pageSize=100", {"x-goog-api-key": key}], meta: ["https://api.llama.com/compat/v1/models", {authorization: "Bearer " + key}]}[p];
+  const C = {anthropic: ["https://api.anthropic.com/v1/models?limit=100", {"x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true"}], openai: ["https://api.openai.com/v1/models", {authorization: "Bearer " + key}], gemini: ["https://generativelanguage.googleapis.com/v1beta/models?pageSize=100", {"x-goog-api-key": key}], meta: ["https://api.meta.ai/v1/models", {authorization: "Bearer " + key}]}[p];
   const j = await (await fetch(C[0], {headers: C[1]})).json();
   return (j.data || j.models || []).map(m => String(m.id || m.name || "").replace(/^models\//, "")).filter(Boolean);
 }

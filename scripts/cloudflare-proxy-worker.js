@@ -33,8 +33,8 @@ export default {
       });
     }
 
-    const model = env.META_MODEL || "Muse Spark 1.3 Contributor";
-    const baseUrl = (env.META_BASE_URL || "https://api.llama.com/compat/v1").replace(/\/+$/, "");
+    const model = env.META_MODEL || "muse-spark-1.3-contributor";
+    const baseUrl = (env.META_BASE_URL || "https://api.meta.ai/v1").replace(/\/+$/, "");
 
     // 2. Client Weekly Quota (3 Generations / Week)
     const clientIp = request.headers.get("cf-connecting-ip") || "anonymous";
@@ -84,7 +84,7 @@ export default {
       stream: true,
       max_tokens: 16000,
       messages: [
-        { role: "system", content: system },
+        { role: "developer", content: system },
         ...messages.map(m => ({ role: m.role === "model" ? "assistant" : m.role, content: m.content }))
       ]
     };

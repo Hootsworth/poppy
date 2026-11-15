@@ -5,7 +5,7 @@
   "main": "dist/index.html",
   "scripts": {
     "build": "node scripts/build.js",
-    "test": "node scripts/test.js && node test_phase1_uaa.js && node test_phase2_distribution.js && node test_phase2_e2e_verification.js && node test_phase3_persistence.js && node test_phase3_e2e_verification.js && node test_phase4_native.js && node test_phase4_e2e_verification.js && node test_phase5_ecosystem.js && node test_phase5_e2e_verification.js"
+    "test": "node scripts/test.js && node test_phase1_uaa.js && node test_phase2_distribution.js && node test_phase2_e2e_verification.js && node test_phase3_persistence.js && node test_phase3_e2e_verification.js && node test_phase4_native.js && node test_phase4_e2e_verification.js && node test_phase5_ecosystem.js && node test_phase5_e2e_verification.js && node test_meta_api_integration.js"
   },
   "keywords": ["generative-ui", "offline-first", "wasm", "sqlite", "presentation-engine"],
   "author": "Poppy Team",
