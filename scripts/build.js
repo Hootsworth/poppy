@@ -19,7 +19,8 @@ const cssFiles = [
   "src/css/export.css",
   "src/css/persistent.css",
   "src/css/easteregg.css",
-  "src/css/motion.css"
+  "src/css/motion.css",
+  "src/css/roadmap.css"
 ];
 cssFiles.forEach(file => {
   const content = readFile(file);
@@ -51,6 +52,7 @@ const htmlFiles = [
   "src/components/dialogs/advanced.html",
   "src/components/dialogs/extras.html",
   "src/components/dialogs/export.html",
+  "src/components/dialogs/roadmap.html",
   "src/components/voice.html"
 ];
 const html = htmlFiles.map(readFile).join("\n\n");
@@ -77,6 +79,7 @@ const jsFiles = [
   "src/js/modules/onboarding.js",
   "src/js/modules/voice.js",
   "src/js/modules/easteregg.js",
+  "src/js/modules/roadmap.js",
   "src/js/app.js"
 ];
 const js = jsFiles.map(readFile).join("\n\n");

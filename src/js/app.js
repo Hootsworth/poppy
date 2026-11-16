@@ -28,6 +28,8 @@ function route(){
   } else if (location.hash.startsWith("#room=")) {
     const r = location.hash.slice(6);
     if (r) switchRoom(decodeURIComponent(r));
+  } else if (location.hash === "#roadmap") {
+    if (typeof openPoppyRoadmap === "function") openPoppyRoadmap();
   }
 }
 addEventListener("hashchange", route); route();

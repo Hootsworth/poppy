@@ -1,0 +1,229 @@
+<dialog id="roadmapDlg" aria-labelledby="roadmapT" style="width:min(960px,calc(100vw - 24px));max-height:min(90vh,840px)">
+  <div class="dh">
+    <div style="display:flex;align-items:center;gap:12px">
+      <h2 id="roadmapT">Poppy Roadmap: 6.0 to 11.0</h2>
+      <span class="lib-count-badge" style="background:var(--red);color:#fff">Future Blooms</span>
+    </div>
+    <button class="x" type="button" aria-label="Close" id="roadmapClose">&times;</button>
+  </div>
+  <div class="db roadmap-db">
+    <div class="roadmap-hero">
+      <h3>Poppy, six blooms from here.</h3>
+      <p>Poppy 5.0 turns a sentence into a working app. The next six versions teach those apps to remember, listen, sync, adapt, act and spread. Count the petals: each bloom carries its version number.</p>
+    </div>
+
+    <div class="roadmap-tabs-bar" id="roadmapTabs">
+      <button type="button" class="roadmap-tab-btn active" data-tab="blooms">Major Blooms (6.0 - 11.0)</button>
+      <button type="button" class="roadmap-tab-btn" data-tab="points">Point Releases (5.1 - 5.5)</button>
+      <button type="button" class="roadmap-tab-btn" data-tab="seeds">Seeds in the Soil</button>
+      <button type="button" class="roadmap-tab-btn" data-tab="history">The Roots (1.0 - 5.0)</button>
+    </div>
+
+    <!-- Section 1: Major Blooms 6.0 to 11.0 -->
+    <div id="roadmapTabBlooms" class="roadmap-tab-content">
+      <div class="roadmap-timeline">
+        
+        <!-- 6.0: Rewind -->
+        <article class="roadmap-card">
+          <div class="roadmap-card-head">
+            <span class="roadmap-ver-badge">6.0 &middot; Rewind</span>
+            <span class="bd" style="font-size:0.75rem;padding:2px 8px">Timeline Engine</span>
+          </div>
+          <p class="roadmap-tagline">Every site gets a timeline, so no build is ever a one-shot.</p>
+          <ul class="roadmap-bullets">
+            <li class="roadmap-bullet">Scrub through any build like a video and see exactly when the app changed.</li>
+            <li class="roadmap-bullet">Branch from any frame to try a different idea without losing the one you love.</li>
+            <li class="roadmap-bullet">A visual diff shows which pixels moved and the exact code behind them.</li>
+          </ul>
+          <pre class="roadmap-code"><code>poppy.history.fork("frame-12", { name: "dark theme" });</code></pre>
+          <p class="roadmap-why">Why it matters: A build stops being a result and becomes a workspace with memory.</p>
+        </article>
+
+        <!-- 7.0: Sketch -->
+        <article class="roadmap-card">
+          <div class="roadmap-card-head">
+            <span class="roadmap-ver-badge">7.0 &middot; Sketch</span>
+            <span class="bd" style="font-size:0.75rem;padding:2px 8px">Multimodal Input</span>
+          </div>
+          <p class="roadmap-tagline">Draw it, say it, point at it. Poppy builds from whatever you have in hand.</p>
+          <ul class="roadmap-bullets">
+            <li class="roadmap-bullet">Sketch on a canvas or drop in a whiteboard photo and get real components, not a traced image.</li>
+            <li class="roadmap-bullet">Talk through a screen out loud and watch it assemble as you speak.</li>
+            <li class="roadmap-bullet">Tap anything in a live app and say "make this a drawer" to change just that part.</li>
+          </ul>
+          <pre class="roadmap-code"><code>const part = await poppy.lens.pick();
+await poppy.ai("turn this into a drawer", { target: part });</code></pre>
+          <p class="roadmap-why">Why it matters: The text prompt box is no longer the only way in.</p>
+        </article>
+
+        <!-- 8.0: Mesh -->
+        <article class="roadmap-card">
+          <div class="roadmap-card-head">
+            <span class="roadmap-ver-badge">8.0 &middot; Mesh</span>
+            <span class="bd" style="font-size:0.75rem;padding:2px 8px">Serverless P2P CRDT</span>
+          </div>
+          <p class="roadmap-tagline">Every app is multiplayer by default, with or without a connection.</p>
+          <ul class="roadmap-bullets">
+            <li class="roadmap-bullet">Shared state merges instead of overwriting, built on the same WebRTC rooms Poppy already uses.</li>
+            <li class="roadmap-bullet">Edits made offline on a phone and a laptop reconcile when either comes back online.</li>
+            <li class="roadmap-bullet">Share a link and collaborators get cursors, presence, and comments for free.</li>
+          </ul>
+          <pre class="roadmap-code"><code>const board = await poppy.sync("board", { merge: "crdt" });
+board.on("change", render);</code></pre>
+          <p class="roadmap-why">Why it matters: Collaboration moves from a game feature into the foundation of every app.</p>
+        </article>
+
+        <!-- 9.0: Organisms -->
+        <article class="roadmap-card">
+          <div class="roadmap-card-head">
+            <span class="roadmap-ver-badge">9.0 &middot; Organisms</span>
+            <span class="bd" style="font-size:0.75rem;padding:2px 8px">Self-Improvement</span>
+          </div>
+          <p class="roadmap-tagline">Apps that notice where people struggle and quietly propose a fix.</p>
+          <ul class="roadmap-bullets">
+            <li class="roadmap-bullet">Friction sensing spots dead taps, rage clicks, and abandoned flows with on-device data.</li>
+            <li class="roadmap-bullet">Poppy drafts a patch, runs the verify probe on it, and shows a before and after.</li>
+            <li class="roadmap-bullet">Approve with one tap, or let fixes you trust apply themselves autonomously.</li>
+          </ul>
+          <pre class="roadmap-code"><code>poppy.evolve.watch({ signals: ["dead-tap", "rage-click"] });
+poppy.evolve.onProposal(p => p.preview());</code></pre>
+          <p class="roadmap-why">Why it matters: Self-repair grows into self-improvement; the app keeps getting better after shipping.</p>
+        </article>
+
+        <!-- 10.0: Agents -->
+        <article class="roadmap-card">
+          <div class="roadmap-card-head">
+            <span class="roadmap-ver-badge">10.0 &middot; Agents</span>
+            <span class="bd" style="font-size:0.75rem;padding:2px 8px">Local WebGPU Hands</span>
+          </div>
+          <p class="roadmap-tagline">Give apps hands, with a leash you control.</p>
+          <ul class="roadmap-bullets">
+            <li class="roadmap-bullet">Tool-using agents run on local WebGPU models and fall back to the cloud when needed.</li>
+            <li class="roadmap-bullet">Each app declares what it may touch, and every action lands in a revocable ledger.</li>
+            <li class="roadmap-bullet">Agents drive other Poppy apps through the same typed contracts verify-contracts already checks.</li>
+          </ul>
+          <pre class="roadmap-code"><code>const agent = poppy.agent({ can: ["store.read", "notify"] });
+await agent.run("remind me when stock runs low");</code></pre>
+          <p class="roadmap-why">Why it matters: Apps shift from showing information to acting on it safely.</p>
+        </article>
+
+        <!-- 11.0: Commons -->
+        <article class="roadmap-card">
+          <div class="roadmap-card-head">
+            <span class="roadmap-ver-badge">11.0 &middot; Commons</span>
+            <span class="bd" style="font-size:0.75rem;padding:2px 8px">Signed Remix Graph</span>
+          </div>
+          <p class="roadmap-tagline">A remix graph for single-file software.</p>
+          <ul class="roadmap-bullets">
+            <li class="roadmap-bullet">Publish signed cartridges that carry provenance and trace every fork back to its root.</li>
+            <li class="roadmap-bullet">Pull in versioned blocks like a leaderboard, synth, or P2P lobby, and compose them like parts.</li>
+            <li class="roadmap-bullet">Credit flows back through the graph, so one good idea lives inside a thousand remixes.</li>
+          </ul>
+          <pre class="roadmap-code"><code>const lobby = await poppy.use("block:@you/lobby@2");
+lobby.mount("#players");</code></pre>
+          <p class="roadmap-why">Why it matters: Poppy grows into a place where software compounds and connects.</p>
+        </article>
+
+      </div>
+    </div>
+
+    <!-- Section 2: Point Releases 5.1 to 5.5 -->
+    <div id="roadmapTabPoints" class="roadmap-tab-content" style="display:none">
+      <div class="roadmap-timeline">
+        <div class="roadmap-card">
+          <div class="roadmap-card-head"><span class="roadmap-ver-badge">5.1</span><b>A Stricter Verify Probe</b></div>
+          <p class="roadmap-tagline">Checks contrast, tap-target size, keyboard focus, and frame-time budgets, then repairs whatever fails.</p>
+        </div>
+        <div class="roadmap-card">
+          <div class="roadmap-card-head"><span class="roadmap-ver-badge">5.2</span><b>The Starter Shelf</b></div>
+          <p class="roadmap-tagline">Hand-tuned starting points, like a kanban board, a synth, a tank duel, and a pitch deck, to remix instead of prompting from nothing.</p>
+        </div>
+        <div class="roadmap-card">
+          <div class="roadmap-card-head"><span class="roadmap-ver-badge">5.3</span><b>Size and Cost Meter</b></div>
+          <p class="roadmap-tagline">Shows how heavy an app is and how many AI calls it makes before you share it.</p>
+        </div>
+        <div class="roadmap-card">
+          <div class="roadmap-card-head"><span class="roadmap-ver-badge">5.4</span><b>Explain Mode</b></div>
+          <p class="roadmap-tagline">Hover any element and Poppy says in plain words what its code does.</p>
+        </div>
+        <div class="roadmap-card">
+          <div class="roadmap-card-head"><span class="roadmap-ver-badge">5.5</span><b>Export Presets</b></div>
+          <p class="roadmap-tagline">Remember the target you always pick, like a PWA for phones or Tauri for desktop, per project.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Seeds in the Soil -->
+    <div id="roadmapTabSeeds" class="roadmap-tab-content" style="display:none">
+      <p class="hint">Ideas and experiments that have not been promised a version number yet:</p>
+      <div class="roadmap-grid-sub">
+        <div class="roadmap-sub-card">
+          <b>Poppy Reality</b>
+          <span>Export any app to WebXR so an interactive dashboard or 3D tool can float above your desk.</span>
+        </div>
+        <div class="roadmap-sub-card">
+          <b>Poppy Tutor</b>
+          <span>A build mode that narrates each design decision and quizzes you on the code it just wrote.</span>
+        </div>
+        <div class="roadmap-sub-card">
+          <b>Poppy Pocket</b>
+          <span>Fully offline builds on a phone, powered by an efficient on-device small language model.</span>
+        </div>
+        <div class="roadmap-sub-card">
+          <b>Poppy Hardware</b>
+          <span>WebSerial, WebUSB, and Bluetooth bridges so apps can talk directly to Arduino and ESP32 boards.</span>
+        </div>
+        <div class="roadmap-sub-card">
+          <b>Poppy Sound</b>
+          <span>Audio-first generative apps, synths, and reactive instruments built natively on Web Audio API.</span>
+        </div>
+        <div class="roadmap-sub-card">
+          <b>Poppy Classroom</b>
+          <span>Shared workspaces where teachers and teams can scrub through student timelines and collaborate.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: History 1.0 to 5.0 -->
+    <div id="roadmapTabHistory" class="roadmap-tab-content" style="display:none">
+      <div class="roadmap-timeline">
+        <div class="roadmap-card">
+          <div class="roadmap-card-head"><span class="roadmap-ver-badge">1.0</span><b>It Started as One File</b></div>
+          <p class="roadmap-tagline">A prompt went in. A page came out. Single poppy.html, no server, no build step.</p>
+        </div>
+        <div class="roadmap-card">
+          <div class="roadmap-card-head"><span class="roadmap-ver-badge">2.0</span><b>The Bridge SDK</b></div>
+          <p class="roadmap-tagline">window.poppy gave generated apps state, speech, storage, geolocation, and AI features.</p>
+        </div>
+        <div class="roadmap-card">
+          <div class="roadmap-card-head"><span class="roadmap-ver-badge">3.0</span><b>The Workshop</b></div>
+          <p class="roadmap-tagline">Gallery, versions, and multi-artifact organization.</p>
+        </div>
+        <div class="roadmap-card">
+          <div class="roadmap-card-head"><span class="roadmap-ver-badge">4.0</span><b>External Distribution</b></div>
+          <p class="roadmap-tagline">Export to Chrome Extensions (MV3), CLI tools, Tauri 2.0 Rust, Electron, Expo mobile, and PWAs.</p>
+        </div>
+        <div class="roadmap-card">
+          <div class="roadmap-card-head"><span class="roadmap-ver-badge">5.0</span><b>Creation Engine (Current)</b></div>
+          <p class="roadmap-tagline">Silent verify probe, autonomous self-repair, multi-agent engine, in-browser SQLite, P2P WebRTC.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Invariants Guarantee -->
+    <div class="roadmap-invariants-box">
+      <h4>What Never Changes &middot; Six Permanent Promises</h4>
+      <ul class="roadmap-invariants-list">
+        <li class="roadmap-invariant-item"><b>One file stays one file:</b> Every app can still ship as a standalone HTML file.</li>
+        <li class="roadmap-invariant-item"><b>Offline first:</b> Nothing needs a server unless you explicitly add one.</li>
+        <li class="roadmap-invariant-item"><b>Your data stays yours:</b> Stores and friction signals live on your device.</li>
+        <li class="roadmap-invariant-item"><b>No dead buttons:</b> The zero-dead-button guarantee only gets stricter.</li>
+        <li class="roadmap-invariant-item"><b>Old apps keep running:</b> Anything built on 5.0 works in all future versions.</li>
+        <li class="roadmap-invariant-item"><b>You approve what changes:</b> Patches, agent actions, and publishes wait for your yes.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="acts">
+    <button class="go sp" id="roadmapDoneBtn" type="button">Close</button>
+  </div>
+</dialog>
