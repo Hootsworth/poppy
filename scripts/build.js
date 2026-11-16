@@ -98,8 +98,6 @@ const bundle = `<!DOCTYPE html>
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <link rel="icon" href="favicon.ico">
 <link rel="icon" type="image/png" href="data:image/png;base64,${fav32B64}">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
 <style>
 ${css}
 </style>
@@ -149,15 +147,6 @@ if (fs.existsSync(path.join(__dirname, "..", "manifest.json"))) {
 }
 if (fs.existsSync(path.join(__dirname, "..", "roadmap.html"))) {
   fs.copyFileSync(path.join(__dirname, "..", "roadmap.html"), path.join(__dirname, "..", "dist", "roadmap.html"));
-}
-if (fs.existsSync(path.join(__dirname, "..", "self-repair.html"))) {
-  fs.copyFileSync(path.join(__dirname, "..", "self-repair.html"), path.join(__dirname, "..", "dist", "self-repair.html"));
-}
-if (fs.existsSync(path.join(__dirname, "..", "brand-kit.html"))) {
-  fs.copyFileSync(path.join(__dirname, "..", "brand-kit.html"), path.join(__dirname, "..", "dist", "brand-kit.html"));
-}
-if (fs.existsSync(path.join(__dirname, "..", "changelog.html"))) {
-  fs.copyFileSync(path.join(__dirname, "..", "changelog.html"), path.join(__dirname, "..", "dist", "changelog.html"));
 }
 
 console.log(`Build complete! Output written to index.html, poppy.html, dist/index.html, and favicon.ico (${bundle.length} bytes). Verified exactly 1 script closing tag.`);
