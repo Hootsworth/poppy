@@ -19,8 +19,7 @@ const cssFiles = [
   "src/css/export.css",
   "src/css/persistent.css",
   "src/css/easteregg.css",
-  "src/css/motion.css",
-  "src/css/roadmap.css"
+  "src/css/motion.css"
 ];
 cssFiles.forEach(file => {
   const content = readFile(file);
@@ -52,7 +51,6 @@ const htmlFiles = [
   "src/components/dialogs/advanced.html",
   "src/components/dialogs/extras.html",
   "src/components/dialogs/export.html",
-  "src/components/dialogs/roadmap.html",
   "src/components/voice.html"
 ];
 const html = htmlFiles.map(readFile).join("\n\n");
@@ -146,6 +144,9 @@ if (fs.existsSync(path.join(__dirname, "..", "sw.js"))) {
 }
 if (fs.existsSync(path.join(__dirname, "..", "manifest.json"))) {
   fs.copyFileSync(path.join(__dirname, "..", "manifest.json"), path.join(__dirname, "..", "dist", "manifest.json"));
+}
+if (fs.existsSync(path.join(__dirname, "..", "roadmap.html"))) {
+  fs.copyFileSync(path.join(__dirname, "..", "roadmap.html"), path.join(__dirname, "..", "dist", "roadmap.html"));
 }
 
 console.log(`Build complete! Output written to index.html, poppy.html, dist/index.html, and favicon.ico (${bundle.length} bytes). Verified exactly 1 script closing tag.`);

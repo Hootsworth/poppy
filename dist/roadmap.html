@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Poppy roadmap: 6.0 to 11.0</title>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+<style>
+:root{--bg:#f6f1fc;--fg:#1d1233;--mut:#5f5278;--line:#d9cdee;--card:#fff;--l:48%;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#170f26;--fg:#f4ecff;--mut:#b9abd2;--line:#3a2b57;--card:#221637;--l:64%}}
+:root[data-theme="dark"]{--bg:#170f26;--fg:#f4ecff;--mut:#b9abd2;--line:#3a2b57;--card:#221637;--l:64%}
+html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 18px/1.65 Newsreader,Georgia,serif;overflow-x:hidden}
+h1,h2,.vn{font-family:"Bricolage Grotesque","Arial Narrow",ui-sans-serif,sans-serif;font-weight:800;margin:0;letter-spacing:-.03em}
+.back-nav{position:fixed;top:18px;left:24px;z-index:999}
+.back-nav a{display:inline-flex;align-items:center;gap:6px;font:700 15px "Bricolage Grotesque",sans-serif;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 20px;text-decoration:none;box-shadow:0 3px 12px rgba(29,18,51,.08);transition:transform .2s,box-shadow .2s}
+.back-nav a:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(29,18,51,.12)}
+header{--h:350;display:grid;grid-template-columns:1.1fr .9fr;gap:24px;align-items:center;min-height:90vh;padding:7vh 6vw}
+h1{font-size:clamp(46px,8.5vw,112px);line-height:.94}
+.sub{max-width:34em;font-size:clamp(18px,2vw,22px);color:var(--mut);margin:28px 0 0}
+.big svg{width:100%;max-width:470px;display:block;margin:auto;overflow:visible}
+.spin{animation:spin 70s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pt{fill:hsl(var(--h) 85% var(--l));stroke:var(--bg);stroke-width:1.2;transform:scale(0);transition:transform 1s cubic-bezier(.2,1.5,.4,1) calc(var(--i)*80ms)}
+.in .pt{transform:scale(1)}
+.po{fill:hsl(46 95% 58%)}
+main{position:relative;padding:0 6vw 10vh}
+.stem{position:absolute;left:calc(6vw + 35px);top:0;bottom:0;width:2px;background:var(--line)}
+.stem i{display:block;width:100%;height:var(--p,0%);background:var(--mut)}
+section{position:relative;display:grid;grid-template-columns:72px 1fr;gap:0 22px;padding:11vh 0 4vh;--ac:hsl(var(--h) 85% var(--l))}
+.gut svg{position:sticky;top:24vh;width:72px;height:72px;background:var(--bg);border-radius:50%;overflow:visible;display:block}
+.hd{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 22px}
+.vn{font-size:clamp(60px,10vw,128px);line-height:1;color:var(--ac)}
+h2{font-size:clamp(30px,4.6vw,56px);line-height:1}
+.tag{font-size:clamp(20px,2.3vw,26px);margin:14px 0 0;max-width:30em}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:34px;align-items:center;margin-top:30px}
+ul{list-style:none;margin:0;padding:0}
+li{border-left:3px solid var(--ac);padding:2px 0 2px 16px;margin:0 0 18px;max-width:34em}
+.vis{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:14px}
+pre{margin:26px 0 0;padding:14px 18px;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--ac);border-radius:6px;overflow-x:auto;font:14px/1.55 ui-monospace,Menlo,Consolas,monospace}
+.why{max-width:38em;color:var(--mut);margin:22px 0 0}
+.rws{margin-top:26px;max-width:44em}
+.rw{display:flex;gap:18px;padding:14px 0;border-top:1px solid var(--line)}
+.pv{font:800 26px "Bricolage Grotesque",sans-serif;color:var(--ac);min-width:58px}
+.rw b{display:block;font:700 20px "Bricolage Grotesque",sans-serif}
+.rw span:not(.pv){color:var(--mut)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;margin-top:26px}
+.cd{border:1px solid var(--line);border-top:3px solid var(--ac);border-radius:4px 4px 18px 18px;padding:16px 18px;background:var(--card)}
+.cd b{display:block;font:700 20px "Bricolage Grotesque",sans-serif}
+.cd span{display:block;color:var(--mut);font-size:16px;line-height:1.5}
+.v.sp{width:34px;height:34px;margin-bottom:6px}
+.sp .tr{stroke-width:2}
+footer{--l:64%;background:var(--fg);color:var(--bg);margin-top:6vh;padding:12vh 6vw 0;overflow:hidden;text-align:center}
+footer h2{font-size:clamp(34px,6vw,76px);line-height:1}
+footer p{max-width:34em;margin:20px auto 0;opacity:.8}
+.act{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:30px}
+.act a,.act button{font:700 16px "Bricolage Grotesque",sans-serif;border:2px solid var(--bg);color:var(--bg);background:transparent;border-radius:999px;padding:10px 22px;cursor:pointer;text-decoration:none;transition:background .3s,color .3s}
+.act a:hover,.act button:hover{background:var(--bg);color:var(--fg)}
+.act a:focus-visible,.act button:focus-visible{outline:3px solid var(--bg);outline-offset:3px}
+.gd{margin-top:8vh}
+.gd svg{width:100%;display:block;overflow:visible}
+.gd .pt{stroke:var(--fg)}
+.gd text{fill:var(--bg);font:700 15px "Bricolage Grotesque",sans-serif;opacity:.75}
+.sw{animation:sw 5s ease-in-out infinite alternate}
+@keyframes sw{from{transform:rotate(-2.5deg)}to{transform:rotate(2.5deg)}}
+.bl{transition:transform .9s cubic-bezier(.2,1.4,.4,1);cursor:pointer;transform-box:fill-box;transform-origin:center}
+.bl:hover{transform:rotate(70deg) scale(1.15)}
+.wm{font-family:"Bricolage Grotesque","Arial Narrow",sans-serif;font-weight:800;font-size:clamp(90px,27vw,380px);line-height:.8;letter-spacing:-.05em;color:transparent;-webkit-text-stroke:2px var(--bg);margin:2vh 0 -.17em;transition:color .6s;user-select:none}
+.wm:hover{color:var(--bg)}
+section.ch{padding-top:9vh}
+.ch h2{font-size:clamp(36px,6vw,76px);line-height:1}
+.pr{max-width:36em;margin:18px 0 0}
+.pr.m{color:var(--mut);margin:22px 0 8px}
+.chips{margin:0 0 6px}
+.chip{display:inline-block;border:1px solid var(--ac);background:var(--card);border-radius:999px;padding:3px 15px;margin:0 8px 10px 0;font-size:16px;opacity:0;transform:scale(.8);transition:opacity .5s,transform .6s cubic-bezier(.2,1.6,.4,1);transition-delay:calc(var(--i)*50ms)}
+.in .chip{opacity:1;transform:none}
+.v{width:100%;display:block}
+.l{fill:none;stroke:var(--line);stroke-width:2;stroke-linecap:round}.l.f{stroke:var(--ac)}
+.dot{fill:var(--ac);offset-distance:0%;animation:go var(--d,4s) linear infinite alternate}
+@keyframes go{to{offset-distance:100%}}
+.nd{fill:var(--card);stroke:var(--ac);stroke-width:2.5}
+.pl,.co,.bd{transform-box:fill-box;transform-origin:center}
+.co{fill:var(--ac)}
+.pl{animation:pl 2.4s ease-in-out infinite}
+@keyframes pl{50%{transform:scale(1.22)}}
+.sk{fill:none;stroke:var(--ac);stroke-width:2.5;stroke-linecap:round;stroke-dasharray:1;animation:dr 6s ease infinite}
+@keyframes dr{0%{stroke-dashoffset:1;opacity:1}35%,55%{stroke-dashoffset:0;opacity:1}75%,100%{stroke-dashoffset:0;opacity:0}}
+.cr{opacity:0;animation:cr 6s ease infinite}
+.cr rect,.cr circle{stroke:var(--ac);stroke-width:2;fill:none}
+.cr .fl{fill:var(--ac);stroke:none;opacity:.8}
+@keyframes cr{0%,45%{opacity:0}62%,88%{opacity:1}100%{opacity:0}}
+.br{animation:br 3s ease-in-out infinite}
+@keyframes br{50%{transform:scale(1.14)}}
+.rp{fill:none;stroke:var(--ac);stroke-width:2;transform-box:fill-box;transform-origin:center;animation:rp 4s ease-out infinite}
+@keyframes rp{from{transform:scale(1);opacity:.8}to{transform:scale(3.4);opacity:0}}
+.bd{fill:var(--ac);animation:bd 5s ease-in-out infinite}
+@keyframes bd{0%,100%{transform:translate(0,0) scale(.3);opacity:0}50%{transform:translate(var(--x),var(--y)) scale(1);opacity:1}}
+.orb{transform-origin:150px 95px;animation:spin var(--s) linear infinite}
+.orb circle{fill:var(--ac)}
+.tr{fill:none;stroke:var(--ac);stroke-width:3;stroke-linecap:round;stroke-dasharray:1;animation:tr 7s ease infinite;animation-delay:calc(var(--k)*.35s)}
+@keyframes tr{0%{stroke-dashoffset:1;opacity:1}30%,80%{stroke-dashoffset:0;opacity:1}95%,100%{stroke-dashoffset:0;opacity:0}}
+.lf{fill:var(--ac);transform-box:fill-box;transform-origin:center;animation:lf 7s ease infinite;animation-delay:calc(var(--k)*.35s)}
+@keyframes lf{0%,28%{transform:scale(0)}40%,80%{transform:scale(1)}95%,100%{transform:scale(0)}}
+.v *{animation-play-state:paused}
+.in .v *{animation-play-state:running}
+@media(max-width:760px){
+header{grid-template-columns:1fr;min-height:auto}
+section{grid-template-columns:52px 1fr;gap:0 14px}
+.gut svg{width:52px;height:52px}
+.stem{left:calc(6vw + 25px)}
+.cols{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.pt{transform:scale(1)}.cr{opacity:1}.sk{stroke-dashoffset:0}.chip{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<nav class="back-nav" aria-label="Back to home"><a href="index.html">&larr; Back to Poppy</a></nav>
+<header id="top">
+  <div>
+    <h1>Poppy, six blooms from here.</h1>
+    <p class="sub">Poppy 5.0 turns a sentence into a working app. The next six versions teach those apps to remember, listen, sync, adapt, act and spread. Count the petals: each bloom carries its version number.</p>
+  </div>
+  <div class="big"><svg viewBox="-100 -100 200 200" id="hb" role="img" aria-label="A five-petal poppy bloom"></svg></div>
+</header>
+<main id="m"><div class="stem"><i></i></div></main>
+<footer id="end">
+  <h2>Describe it. Watch it bloom.</h2>
+  <p>5.0 stays the root: one file, one SDK, one verify probe. This roadmap is a direction, not a contract, and every bloom below is where Poppy is headed from here.</p>
+  <div class="act"><button id="rp" type="button">Replay the garden</button><a href="index.html">Back to Poppy</a><a href="#top">Back to the first bloom</a></div>
+  <div class="gd" id="gd"></div>
+  <div class="wm" aria-hidden="true">Poppy</div>
+</footer>
+<script>
+const V=[
+{n:6,h:350,nm:"Rewind",v:"rw",tag:"Every site gets a timeline, so no build is ever a one-shot.",
+b:["Scrub through any build like a video and see exactly when the app changed.","Branch from any frame to try a different idea without losing the one you love.","A visual diff shows which pixels moved and the exact code behind them."],
+code:'poppy.history.fork("frame-12", { name: "dark theme" });',
+why:"This is a major version because a build stops being a result and becomes a workspace with memory."},
+{n:7,h:24,nm:"Sketch",v:"sk",tag:"Draw it, say it, point at it. Poppy builds from whatever you have in hand.",
+b:["Sketch on a canvas or drop in a whiteboard photo and get real components, not a traced image.","Talk through a screen out loud and watch it assemble as you speak.","Tap anything in a live app and say \u201cmake this a drawer\u201d to change just that part."],
+code:'const part = await poppy.lens.pick();\nawait poppy.ai("turn this into a drawer", { target: part });',
+why:"This is a major version because the prompt box is no longer the only way in."},
+{n:8,h:190,nm:"Mesh",v:"ms",tag:"Every app is multiplayer by default, with or without a connection.",
+b:["Shared state merges instead of overwriting, built on the same WebRTC rooms Poppy already uses.","Edits made offline on a phone and a laptop reconcile when either comes back online.","Share a link and collaborators get cursors, presence and comments for free."],
+code:'const board = await poppy.sync("board", { merge: "crdt" });\nboard.on("change", render);',
+why:"This is a major version because collaboration moves from a game feature into the foundation of every app."},
+{n:9,h:130,nm:"Organisms",v:"og",tag:"Apps that notice where people struggle and quietly propose a fix.",
+b:["Friction sensing spots dead taps, rage clicks and abandoned flows, and the data never leaves the device.","Poppy drafts a patch, runs the verify probe on it, and shows a before and after.","Approve with one tap, or let fixes you trust apply themselves."],
+code:'poppy.evolve.watch({ signals: ["dead-tap", "rage-click"] });\npoppy.evolve.onProposal(p => p.preview());',
+why:"This is a major version because self-repair grows into self-improvement: the app keeps getting better after you ship it."},
+{n:10,h:265,nm:"Agents",v:"ag",tag:"Give apps hands, with a leash you control.",
+b:["Tool-using agents run on local WebGPU models and fall back to the cloud when needed.","Each app declares what it may touch, and every action lands in a ledger you can revoke.","Agents drive other Poppy apps through the same typed contracts verify-contracts already checks."],
+code:'const agent = poppy.agent({ can: ["store.read", "notify"] });\nawait agent.run("remind me when stock runs low");',
+why:"This is a major version because apps shift from showing information to acting on it, safely."},
+{n:11,h:320,nm:"Commons",v:"cm",tag:"A remix graph for single-file software.",
+b:["Publish signed cartridges that carry provenance and trace every fork back to its root.","Pull in versioned blocks such as a leaderboard, a synth or a P2P lobby, and compose them like parts.","Credit flows back through the graph, so one good idea can live inside a thousand remixes."],
+code:'const lobby = await poppy.use("block:@you/lobby@2");\nlobby.mount("#players");',
+why:"This is a major version because Poppy grows from a tool one person uses into a place where software compounds."}
+];
+const pet=(n,r)=>{let s="";for(let i=0;i<n;i++)s+=`<g transform="rotate(${360*i/n})"><ellipse class="pt" style="--i:${i}" cx="0" cy="${-r*.55}" rx="${r*.24}" ry="${r*.5}"/></g>`;return s+`<circle class="po" r="${r*.13}"/>`};
+const vis={
+rw:()=>`<path class="l" d="M20 95H280"/><path class="l f" d="M100 95C130 95 130 45 170 45H280"/><path class="l f" d="M170 95C195 95 195 145 225 145H280"/>${[60,100,170,230].map(x=>`<circle class="nd" cx="${x}" cy="95" r="5"/>`).join("")}<circle class="dot" r="8" style='offset-path:path("M20 95H280");--d:5s'/><circle class="dot" r="5" style='offset-path:path("M100 95C130 95 130 45 170 45H280");--d:4s;opacity:.7'/>`,
+sk:()=>`<path class="sk" pathLength="1" d="M40 40Q150 32 262 42Q268 100 260 150Q150 158 42 148Q34 95 40 40"/><path class="sk" pathLength="1" d="M60 72q8-16 16-2t16 0"/><path class="sk" pathLength="1" d="M110 70q40-4 80 2M110 88q25-3 50 1"/><g class="cr"><rect x="40" y="40" width="222" height="108" rx="12"/><circle cx="72" cy="72" r="12" class="fl"/><rect x="96" y="64" width="100" height="8" rx="4" class="fl"/><rect x="96" y="80" width="70" height="8" rx="4" class="fl"/><rect x="60" y="110" width="182" height="24" rx="12" class="fl"/></g>`,
+ms:()=>{const P=["M50 95L150 35","M150 35L250 95","M250 95L150 155","M150 155L50 95","M150 35L150 155"];return P.map(d=>`<path class="l" d="${d}"/>`).join("")+P.map((d,i)=>`<circle class="dot" r="5" style='offset-path:path("${d}");--d:${2.6+i*.4}s;animation-delay:-${i*.7}s'/>`).join("")+[[50,95],[150,35],[250,95],[150,155]].map(([x,y],i)=>`<circle class="nd pl" cx="${x}" cy="${y}" r="13" style="animation-delay:-${i*.5}s"/>`).join("")},
+og:()=>`<circle class="rp" cx="150" cy="95" r="26"/><circle class="rp" cx="150" cy="95" r="26" style="animation-delay:-2s"/><circle class="co br" cx="150" cy="95" r="26"/>`+[[-90,-45,0],[95,-30,1.6],[-20,70,3.2]].map(([x,y,d])=>`<circle class="bd" cx="150" cy="95" r="10" style="--x:${x}px;--y:${y}px;animation-delay:-${d}s"/>`).join(""),
+ag:()=>`<circle class="l" cx="150" cy="95" r="45"/><circle class="l" cx="150" cy="95" r="70"/><circle class="l f" cx="150" cy="95" r="88" stroke-dasharray="3 9"/><circle class="co" cx="150" cy="95" r="18"/><g class="orb" style="--s:7s"><circle cx="195" cy="95" r="6"/></g><g class="orb" style="--s:12s;animation-direction:reverse"><circle cx="150" cy="25" r="5"/></g><g class="orb" style="--s:18s"><circle cx="238" cy="95" r="4"/></g>`,
+cm:()=>{const T=["M150 175V110","M150 110C150 88 90 92 80 60","M150 110C150 82 150 70 150 35","M150 110C150 88 210 92 220 60","M80 60C70 46 60 40 50 28","M220 60C230 46 240 40 252 28"],L=[[80,60],[150,35],[220,60],[50,28],[252,28]];return `<path class="l" d="M60 175H240"/>`+T.map((d,i)=>`<path class="tr" pathLength="1" d="${d}" style="--k:${i}"/>`).join("")+L.map(([x,y],i)=>`<circle class="lf" cx="${x}" cy="${y}" r="7" style="--k:${i+3}"/>`).join("")}
+};
+document.getElementById("hb").innerHTML=`<g class="spin">${pet(5,92)}</g>`;
+const m=document.getElementById("m");
+const chips=a=>`<div class="chips">${a.map((c,i)=>`<span class="chip" style="--i:${i}">${c}</span>`).join("")}</div>`;
+const C=[
+{p:1,h:350,t:"It started as one file.",l:"A prompt went in. A page came out.",x:["Poppy began with a stubborn idea: the whole product should fit in a single poppy.html. No build step, no server, no install. You describe a site, an AI writes it, and it appears right next to your words.","It was small and a little fragile, but the feeling was right. The distance between a thought and a working thing was one sentence."]},
+{p:2,h:12,t:"Then it learned to reach outside the page.",l:"The bridge: Poppy\u2019s first SDK.",x:["A page on its own can\u2019t remember, speak or know where it is. So Poppy grew a bridge, a window.poppy object that every app could call to store data, ask an AI, send notifications and touch the device.","Suddenly the things it built weren\u2019t mockups. They had state, voices and senses."]},
+{p:3,h:24,t:"Then it got a workshop.",l:"A gallery and a workspace to live in.",x:["Once you could build many things, you needed somewhere to keep them. The gallery and workspace turned a pile of generated pages into a collection you could open, organise and keep improving."]},
+{p:4,h:36,t:"Then it learned to travel.",l:"Compare, share, install and connect.",x:["Apps stopped being locked inside Poppy. You could compare builds side by side, share one, install it as a PWA on your phone, and wire it to outside services through connectors.","That is when it stopped being a demo and became a place where finished things leave from."]},
+{p:5,h:350,t:"Today, it is Poppy 5.0.",l:"A creation engine, not just a site builder.",x:["Describe what you want and Poppy builds it. Before you ever see the result, a silent verify probe runs it in a headless sandbox, and if something breaks, Poppy repairs it on its own."],e:`<p class="pr m">It builds</p>${chips(["Web apps and SaaS tools","60 FPS arcade games","Keynote-style decks and PDFs","SQLite dashboards","P2P multiplayer","Music players","Multi-service ecosystems"])}<p class="pr m">It ships as</p>${chips(["Standalone HTML","Chrome extension","Node and Python CLI","Tauri desktop app","Electron desktop app","Expo mobile app","Offline PWA"])}<p class="pr m">Every app can call</p>${chips(["poppy.ai","poppy.store","poppy.db","poppy.room","poppy.speak","poppy.notify","poppy.geo","poppy.listen","poppy.files","poppy.use"])}`},
+{p:0,h:350,t:"Now, the next six blooms.",l:"Everything above is the root. Here is where it grows.",x:[]}
+];
+m.insertAdjacentHTML("beforeend",C.map(o=>`<section class="ch" style="--h:${o.h}"><div class="gut"><svg viewBox="-40 -40 80 80" aria-hidden="true">${pet(o.p,34)}</svg></div><div><h2>${o.t}</h2><p class="tag">${o.l}</p>${o.x.map(t=>`<p class="pr">${t}</p>`).join("")}${o.e||""}</div></section>`).join(""));
+m.insertAdjacentHTML("beforeend",V.map(o=>`<section id="v${o.n}" style="--h:${o.h}"><div class="gut"><svg viewBox="-40 -40 80 80" aria-hidden="true">${pet(o.n,34)}</svg></div><div><div class="hd"><span class="vn">${o.n}.0</span><h2>${o.nm}</h2></div><p class="tag">${o.tag}</p><div class="cols"><ul>${o.b.map(t=>`<li>${t}</li>`).join("")}</ul><div class="vis"><svg class="v" viewBox="0 0 300 190" aria-hidden="true">${vis[o.v]()}</svg></div></div><pre><code>${o.code}</code></pre><p class="why">${o.why}</p></div></section>`).join(""));
+const rows=a=>`<div class='rws'>${a.map(([v,t,d])=>`<div class='rw'><span class='pv'>${v}</span><div><b>${t}</b><span>${d}</span></div></div>`).join('')}</div>`;
+const seeds=a=>`<div class='cards'>${a.map(([t,d],i)=>`<div class='cd'><svg class='v sp' viewBox='0 0 30 30' aria-hidden='true'><path class='tr' pathLength='1' style='--k:${i}' d='M15 28V14C15 8 10 6 5 6C5 12 9 14 15 16M15 14C15 9 19 6 25 6C25 11 21 14 15 15'/></svg><b>${t}</b><span>${d}</span></div>`).join('')}</div>`;
+const X=[
+{h:45,t:'Between the blooms',l:'Point releases that ship while the big ones grow.',e:rows([['5.1','A stricter verify probe','Checks contrast, tap-target size, keyboard focus and frame-time budgets, then repairs whatever fails.'],['5.2','The starter shelf','Hand-tuned starting points, like a kanban board, a synth, a tank duel and a pitch deck, to remix instead of prompting from nothing.'],['5.3','Size and cost meter','Shows how heavy an app is and how many AI calls it makes before you share it.'],['5.4','Explain mode','Hover any element and Poppy says in plain words what its code does.'],['5.5','Export presets','Remember the target you always pick, like a PWA for phones or Tauri for desktop, per project.']])},
+{h:150,t:'Seeds in the soil',l:'Ideas that haven\u2019t been promised a version number yet.',e:seeds([['Poppy Reality','Export any app to WebXR so a dashboard can float above your desk.'],['Poppy Tutor','A build mode that narrates each decision and quizzes you on the code it just wrote.'],['Poppy Pocket','Fully offline builds on a phone, powered by a small on-device model.'],['Poppy Hardware','WebSerial, WebUSB and Bluetooth bridges so apps can talk to Arduino and ESP32 boards.'],['Poppy Sound','Audio-first apps and generative instruments built on Web Audio.'],['Poppy Classroom','Shared workspaces where a teacher can scrub through every student\u2019s Rewind timeline.']])},
+{h:300,t:'What never changes',l:'Six promises that hold in every version.',e:`<ul style='margin-top:26px'><li><b>One file stays one file.</b> Every app can still ship as a single HTML document.</li><li><b>Offline first.</b> Nothing needs a server unless you add one.</li><li><b>Your data stays yours.</b> Stores and friction signals live on your device by default.</li><li><b>No dead buttons.</b> The zero-dead-button guarantee only gets stricter.</li><li><b>Old apps keep running.</b> Anything built on 5.0 works in every version after it.</li><li><b>You approve what changes.</b> Patches, agent actions and publishes wait for your yes.</li></ul>`}
+];
+m.insertAdjacentHTML('beforeend',X.map(o=>`<section class='ch' style='--h:${o.h}'><div class='gut'><svg viewBox='-40 -40 80 80' aria-hidden='true'>${pet(0,34)}</svg></div><div><h2>${o.t}</h2><p class='tag'>${o.l}</p>${o.e}</div></section>`).join(''));
+const G=[[5,350],[6,350],[7,24],[8,190],[9,130],[10,265],[11,320]];
+document.getElementById('gd').innerHTML=`<svg viewBox='0 -10 1100 245' role='img' aria-label='Seven blooms, from five petals to eleven'><path d='M10 210H1090' stroke='var(--bg)' stroke-opacity='.35' stroke-width='2' fill='none'/>${G.map(([n,h],i)=>{const x=100+i*150,sh=80+(n-5)*14,y=210-sh,r=34+(n-5)*2.5;return `<g class='sw' style='--h:${h};transform-origin:${x}px 210px;animation-delay:-${i*.8}s'><path d='M${x} 210C${x} ${210-sh*.5} ${x+10} ${y+sh*.3} ${x} ${y}' stroke='var(--bg)' stroke-opacity='.45' stroke-width='3' fill='none'/><g transform='translate(${x} ${y})'><g class='bl'>${pet(n,r)}</g></g></g><text x='${x}' y='232' text-anchor='middle'>${n}.0${n==5?' (now)':''}</text>`}).join('')}</svg>`;
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add("in")}),{threshold:.2});
+document.querySelectorAll("section").forEach(s=>io.observe(s));
+const ft=document.getElementById('end');io.observe(ft);
+document.getElementById('rp').onclick=()=>{ft.classList.remove('in');setTimeout(()=>ft.classList.add('in'),500)};
+requestAnimationFrame(()=>document.getElementById("top").classList.add("in"));
+const bar=m.querySelector(".stem i");
+const upd=()=>{const r=m.getBoundingClientRect();const p=Math.max(0,Math.min(1,(innerHeight*.55-r.top)/r.height));bar.style.height=p*100+"%"};
+addEventListener("scroll",upd,{passive:true});addEventListener("resize",upd);upd();
+</script>
+</body>
+</html>

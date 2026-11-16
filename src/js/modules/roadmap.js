@@ -1,18 +1,16 @@
-// Poppy Roadmap Module: 6.0 to 11.0 Dialog & Navigation
+// Poppy Roadmap Module: 6.0 to 11.0 Navigation
 (() => {
-  const dlg = document.getElementById("roadmapDlg");
-  if (!dlg) return;
-
   function openRoadmap() {
-    dlg.showModal();
-  }
-
-  function closeRoadmap() {
-    dlg.close();
+    window.location.href = "roadmap.html";
   }
 
   const openBtn = document.getElementById("roadmapBtn");
-  if (openBtn) openBtn.onclick = openRoadmap;
+  if (openBtn) {
+    openBtn.onclick = (e) => {
+      // Allow standard link navigation or programmatic redirect
+      openRoadmap();
+    };
+  }
 
   const menuBtn = document.getElementById("roadmapMenuBtn");
   if (menuBtn) {
@@ -22,31 +20,6 @@
       openRoadmap();
     };
   }
-
-  const closeBtn = document.getElementById("roadmapClose");
-  if (closeBtn) closeBtn.onclick = closeRoadmap;
-
-  const doneBtn = document.getElementById("roadmapDoneBtn");
-  if (doneBtn) doneBtn.onclick = closeRoadmap;
-
-  const tabs = document.querySelectorAll("#roadmapTabs .roadmap-tab-btn");
-  const contents = {
-    blooms: document.getElementById("roadmapTabBlooms"),
-    points: document.getElementById("roadmapTabPoints"),
-    seeds: document.getElementById("roadmapTabSeeds"),
-    history: document.getElementById("roadmapTabHistory")
-  };
-
-  tabs.forEach(btn => {
-    btn.onclick = () => {
-      tabs.forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      const target = btn.dataset.tab;
-      Object.keys(contents).forEach(k => {
-        if (contents[k]) contents[k].style.display = k === target ? "block" : "none";
-      });
-    };
-  });
 
   function checkHash() {
     if (window.location.hash === "#roadmap") {
