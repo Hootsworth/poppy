@@ -480,6 +480,54 @@ function buildRepairPrompt(r, promptOpts) {
   return out.length ? "Your app was run in a browser sandbox and failed these checks. Fix exactly these problems and return the full corrected document.\n\n" + out.join("\n\n") : "";
 }
 
+/**
+ * Sanitizes HTML & SVG attributes and fixes common LLM malformations:
+ * 1. Escaped quotes inside attributes (e.g. viewBox="\"0 0 24 24\"", d="\"M10.325...", viewBox=\"0 0 24 24\")
+ * 2. Missing elliptical arc sweep-flags in path d attributes (e.g. "a3 3 0 0 6 0", "a3 3 0 0 3-")
+ */
+function sanitizeSvgAndAttributes(html) {
+  if (!html || typeof html !== "string") return html;
+  let h = html;
+
+  // 1. Normalize escaped attribute assignments:
+  // e.g. viewBox=\"0 0 24 24\" -> viewBox="0 0 24 24"
+  // e.g. d=\"M...\" -> d="M..."
+  // e.g. class=\"...\" -> class="..."
+  h = h.replace(/=\\+["']/g, '="');
+  h = h.replace(/([a-zA-Z0-9_:-]+)\s*=\s*\\+["']([\s\S]*?)\\+["'](?=[\s\/>])/g, '$1="$2"');
+
+  // 2. Fix nested/escaped quotes inside any HTML/SVG attributes:
+  // e.g. attr="\"value\"" -> attr="value"
+  // e.g. attr="\"value"   -> attr="value"
+  // e.g. attr='\"value\'' -> attr='value'
+  // e.g. attr="\\\"value\\\"" -> attr="value"
+  h = h.replace(/([a-zA-Z0-9_:-]+)\s*=\s*(["'])(?:\\*["']|&quot;)+([\s\S]*?)(?:\\*["']|&quot;)*\2/g, '$1=$2$3$2');
+  h = h.replace(/([a-zA-Z0-9_:-]+)\s*=\s*(["'])([\s\S]*?)(?:\\*["']|&quot;)+\2/g, '$1=$2$3$2');
+
+  // 3. Specifically sanitize viewBox and d (and other SVG numeric/path attributes):
+  // Clean any residual backslashes, quotes, or HTML entities from viewBox and d:
+  h = h.replace(/\b(viewBox|d|points|transform|fill|stroke)\s*=\s*(["'])([\s\S]*?)\2/gi, (match, attr, q, val) => {
+    let clean = val;
+    // Strip leading/trailing escaped or unescaped quotes, backslashes, entities
+    clean = clean.replace(/^(?:[\s\\"'&]|&quot;)+/g, '');
+    clean = clean.replace(/(?:[\s\\"'&]|&quot;)+$/g, '');
+    // Clean any remaining internal escaped quotes: e.g. \"
+    clean = clean.replace(/\\+["']/g, ' ');
+
+    // 4. For path "d" attribute, repair malformed arc syntax:
+    if (attr.toLowerCase() === 'd') {
+      // Fix missing sweep-flag when rx ry rot flag1 are followed by coordinate (number >= 2 or negative)
+      clean = clean.replace(/([aA]\s*\d+(?:\.\d+)?[\s,]+\d+(?:\.\d+)?[\s,]+-?\d+(?:\.\d+)?[\s,]+[01])([\s,]+)([2-9]|\d{2,}|-[0-9])/g, "$1 0$2$3");
+      clean = clean.replace(/([aA]\s*\d+(?:\.\d+)?[\s,]+\d+(?:\.\d+)?[\s,]+-?\d+(?:\.\d+)?[\s,]+[01])([\s,]+)([2-9])/g, "$1 0$2$3");
+      clean = clean.replace(/([aA]\s*\d+(?:\.\d+)?[\s,]+\d+(?:\.\d+)?[\s,]+-?\d+(?:\.\d+)?[\s,]+[01])(-[0-9])/g, "$1 0 $2");
+    }
+
+    return `${attr}=${q}${clean}${q}`;
+  });
+
+  return h;
+}
+
 const exported = {
   initProbe,
   runProbe,
@@ -492,7 +540,8 @@ const exported = {
   auditContrast,
   auditTapTargets,
   auditKeyboardFocus,
-  auditPerformanceBudget
+  auditPerformanceBudget,
+  sanitizeSvgAndAttributes
 };
 
 if (typeof module !== "undefined") module.exports = exported;

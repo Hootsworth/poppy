@@ -333,6 +333,51 @@ function burst(x, y){
   }
 }
 
+function sanitizeSvgAndAttributes(html) {
+  if (!html || typeof html !== "string") return html;
+  let h = html;
+
+  // 1. Normalize escaped attribute assignments:
+  // e.g. viewBox=\"0 0 24 24\" -> viewBox="0 0 24 24"
+  // e.g. d=\"M...\" -> d="M..."
+  // e.g. class=\"...\" -> class="..."
+  h = h.replace(/=\\+["']/g, '="');
+  h = h.replace(/([a-zA-Z0-9_:-]+)\s*=\s*\\+["']([\s\S]*?)\\+["'](?=[\s\/>])/g, '$1="$2"');
+
+  // 2. Fix nested/escaped quotes inside any HTML/SVG attributes:
+  // e.g. attr="\"value\"" -> attr="value"
+  // e.g. attr="\"value"   -> attr="value"
+  // e.g. attr='\"value\'' -> attr='value'
+  // e.g. attr="\\\"value\\\"" -> attr="value"
+  h = h.replace(/([a-zA-Z0-9_:-]+)\s*=\s*(["'])(?:\\*["']|&quot;)+([\s\S]*?)(?:\\*["']|&quot;)*\2/g, '$1=$2$3$2');
+  h = h.replace(/([a-zA-Z0-9_:-]+)\s*=\s*(["'])([\s\S]*?)(?:\\*["']|&quot;)+\2/g, '$1=$2$3$2');
+
+  // 3. Specifically sanitize viewBox and d (and other SVG numeric/path attributes):
+  // Clean any residual backslashes, quotes, or HTML entities from viewBox and d:
+  h = h.replace(/\b(viewBox|d|points|transform|fill|stroke)\s*=\s*(["'])([\s\S]*?)\2/gi, (match, attr, q, val) => {
+    let clean = val;
+    // Strip leading/trailing escaped or unescaped quotes, backslashes, entities
+    clean = clean.replace(/^(?:[\s\\"'&]|&quot;)+/g, '');
+    clean = clean.replace(/(?:[\s\\"'&]|&quot;)+$/g, '');
+    // Clean any remaining internal escaped quotes: e.g. \"
+    clean = clean.replace(/\\+["']/g, ' ');
+
+    // 4. For path "d" attribute, repair malformed arc syntax:
+    if (attr.toLowerCase() === 'd') {
+      // Fix missing sweep-flag when rx ry rot flag1 are followed by coordinate (number >= 2 or negative)
+      clean = clean.replace(/([aA]\s*\d+(?:\.\d+)?[\s,]+\d+(?:\.\d+)?[\s,]+-?\d+(?:\.\d+)?[\s,]+[01])([\s,]+)([2-9]|\d{2,}|-[0-9])/g, "$1 0$2$3");
+      clean = clean.replace(/([aA]\s*\d+(?:\.\d+)?[\s,]+\d+(?:\.\d+)?[\s,]+-?\d+(?:\.\d+)?[\s,]+[01])([\s,]+)([2-9])/g, "$1 0$2$3");
+      clean = clean.replace(/([aA]\s*\d+(?:\.\d+)?[\s,]+\d+(?:\.\d+)?[\s,]+-?\d+(?:\.\d+)?[\s,]+[01])(-[0-9])/g, "$1 0 $2");
+    }
+
+    return `${attr}=${q}${clean}${q}`;
+  });
+
+  return h;
+}
+if (typeof window !== "undefined") window.sanitizeSvgAndAttributes = sanitizeSvgAndAttributes;
+if (typeof module !== "undefined" && module.exports) module.exports.sanitizeSvgAndAttributes = sanitizeSvgAndAttributes;
+
 function extractHtml(t){
   if (!t || typeof t !== "string") return "";
 
@@ -343,8 +388,7 @@ function extractHtml(t){
     if (/<(!doctype|html|body|main|div|style|script)\b/i.test(code)) {
       const start = code.search(/<!doctype|<html/i);
       let res = (start >= 0 ? code.slice(start) : code).trim();
-      if (/=\\"|viewBox=\\"|d=\\"|class=\\"|id=\\"/i.test(res)) res = res.replace(/\\"/g, '"');
-      return res;
+      return sanitizeSvgAndAttributes(res);
     }
   }
 
@@ -355,21 +399,18 @@ function extractHtml(t){
     const endIdx = raw.search(/<\/html>/i);
     if (endIdx > 0) raw = raw.slice(0, endIdx + 7);
     let res = raw.trim();
-    if (/=\\"|viewBox=\\"|d=\\"|class=\\"|id=\\"/i.test(res)) res = res.replace(/\\"/g, '"');
-    return res;
+    return sanitizeSvgAndAttributes(res);
   }
 
   // 3. Fallback to any content with HTML tags
   if (/<[a-z!]/i.test(t)) {
     const fIdx = t.indexOf("<");
     let res = t.slice(fIdx).trim();
-    if (/=\\"|viewBox=\\"|d=\\"|class=\\"|id=\\"/i.test(res)) res = res.replace(/\\"/g, '"');
-    return res;
+    return sanitizeSvgAndAttributes(res);
   }
 
   let res = t.trim();
-  if (/=\\"|viewBox=\\"|d=\\"|class=\\"|id=\\"/i.test(res)) res = res.replace(/\\"/g, '"');
-  return res;
+  return sanitizeSvgAndAttributes(res);
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -1738,9 +1779,7 @@ function bundleFiles(files, assetMap = {}){
 }
 function parseFiles(t){
   if (!t || typeof t !== "string") return { "index.html": "" };
-  if (/=\\"|viewBox=\\"|d=\\"|class=\\"|id=\\"/i.test(t)) {
-    t = t.replace(/\\"/g, '"');
-  }
+  t = sanitizeSvgAndAttributes(t);
   const fileRe = /(?:^|\n)(?:---|===)\s*FILE:\s*([^\n\r]+?)\s*(?:---|===)\s*\n([\s\S]*?)(?=(?:\n(?:---|===)\s*FILE:)|$)/gi;
   let m = fileRe.exec(t);
   if (m) {

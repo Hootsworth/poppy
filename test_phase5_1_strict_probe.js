@@ -18,7 +18,8 @@ const {
   auditContrast,
   auditTapTargets,
   auditKeyboardFocus,
-  auditPerformanceBudget
+  auditPerformanceBudget,
+  sanitizeSvgAndAttributes
 } = require("./src/js/engine/verify-probe.js");
 
 console.log("==================================================================");
@@ -264,8 +265,10 @@ const itAsync = async (desc, fn) => {
     assert.ok(poppyHtml.includes("auditTapTargets"), "poppy.html must contain auditTapTargets");
     assert.ok(poppyHtml.includes("auditKeyboardFocus"), "poppy.html must contain auditKeyboardFocus");
     assert.ok(poppyHtml.includes("auditPerformanceBudget"), "poppy.html must contain auditPerformanceBudget");
+    assert.ok(poppyHtml.includes("sanitizeSvgAndAttributes"), "poppy.html must contain sanitizeSvgAndAttributes");
 
     assert.ok(distHtml.includes("auditContrast"), "dist/index.html must contain auditContrast");
+    assert.ok(distHtml.includes("sanitizeSvgAndAttributes"), "dist/index.html must contain sanitizeSvgAndAttributes");
 
     const emojiRegex = /[\u{1F300}-\u{1F9FF}]/gu;
     assert.strictEqual([...poppyHtml.matchAll(emojiRegex)].length, 0, "Zero emojis in poppy.html");
@@ -273,6 +276,53 @@ const itAsync = async (desc, fn) => {
 
     const scriptTags = [...poppyHtml.matchAll(/<\/script>/gi)];
     assert.strictEqual(scriptTags.length, 1, "Exactly 1 closing script tag in production bundle");
+  });
+
+  console.log("\n--- Suite 7: SVG Parsing & Attribute Sanitization Pipeline ---");
+
+  it("sanitizeSvgAndAttributes repairs escaped quotes in viewBox and d attributes", () => {
+    // Error 2: <svg> attribute viewBox: Expected number, "\"0"
+    const svgWithEscapedViewBox = '<svg viewBox="\\"0 0 24 24\\""><rect x="0" y="0" width="24" height="24"/></svg>';
+    const cleanedSvg = sanitizeSvgAndAttributes(svgWithEscapedViewBox);
+    assert.strictEqual(cleanedSvg, '<svg viewBox="0 0 24 24"><rect x="0" y="0" width="24" height="24"/></svg>');
+
+    // Error 3: <path> attribute d: Expected moveto path command ('M' or 'm'), "\"M10.325"
+    const pathWithEscapedM10 = '<path d="\\"M10.325 3.25L12 5z\\"">';
+    const cleanedM10 = sanitizeSvgAndAttributes(pathWithEscapedM10);
+    assert.strictEqual(cleanedM10, '<path d="M10.325 3.25L12 5z">');
+
+    // Error 4: <path> attribute d: Expected moveto path command ('M' or 'm'), "\"M15"
+    const pathWithEscapedM15 = '<path d="\\"M15 12a3 3 0 0 0-3-3z\\"">';
+    const cleanedM15 = sanitizeSvgAndAttributes(pathWithEscapedM15);
+    assert.strictEqual(cleanedM15, '<path d="M15 12a3 3 0 0 0-3-3z">');
+
+    // Triple backslash test
+    const tripleEscaped = '<svg viewBox="\\\\\\"0 0 24 24\\\\\\""><path d="\\\\\\"M15 12z\\\\\\""></svg>';
+    assert.strictEqual(sanitizeSvgAndAttributes(tripleEscaped), '<svg viewBox="0 0 24 24"><path d="M15 12z"></svg>');
+  });
+
+  it("sanitizeSvgAndAttributes repairs malformed SVG arc commands with missing sweep flags", () => {
+    // Error 1: <path> attribute d: Expected arc flag ('0' or '1'), "…0-3 3v8a3 3 0 0 6 0V4a3 3 0 0 3-…"
+    const malformedArc = '<path d="M8 0a3 3 0 0 0-3 3v8a3 3 0 0 6 0V4a3 3 0 0 3-3z">';
+    const repairedArc = sanitizeSvgAndAttributes(malformedArc);
+    // In both "a3 3 0 0 6 0" and "a3 3 0 0 3-3z", the missing sweep flag "0" must be inserted
+    assert.strictEqual(repairedArc, '<path d="M8 0a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0 3-3z">');
+
+    // Test with glued minus sign: a3 3 0 0-3
+    const gluedMinus = '<path d="a3 3 0 0-3 3"/>';
+    assert.strictEqual(sanitizeSvgAndAttributes(gluedMinus), '<path d="a3 3 0 0 0 -3 3"/>');
+
+    // Test with space before minus sign: a3 3 0 0 -3
+    const spacedMinus = '<path d="a3 3 0 0 -3 3"/>';
+    assert.strictEqual(sanitizeSvgAndAttributes(spacedMinus), '<path d="a3 3 0 0 0 -3 3"/>');
+  });
+
+  it("preserves standard valid SVG paths and attributes without distortion", () => {
+    const validSvg = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><circle cx="12" cy="12" r="10"/></svg>';
+    assert.strictEqual(sanitizeSvgAndAttributes(validSvg), validSvg);
+
+    const validArc = '<path d="A 45 45 0 0 1 100 120" />';
+    assert.strictEqual(sanitizeSvgAndAttributes(validArc), validArc);
   });
 
   console.log("==================================================================");

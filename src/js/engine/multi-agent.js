@@ -185,12 +185,23 @@ function repairHtml(html) {
   if (!html || typeof html !== "string") return html;
   let h = html.trim();
   
-  // 0. Sanitize escaped JSON/model attribute quotes:
-  // e.g. viewBox=\"0 0 24 24\" -> viewBox="0 0 24 24"
-  // e.g. d=\"M10.325...\" -> d="M10.325..."
-  if (/=\\"|viewBox=\\"|d=\\"|class=\\"|id=\\"/i.test(h)) {
-    h = h.replace(/\\"/g, '"');
-    h = h.replace(/(viewBox|d|class|id|fill|stroke)="+\\*(.*?)"/gi, '$1="$2"');
+  // 0. Sanitize SVG attributes, escaped quotes, and repair malformed arc syntax
+  if (typeof sanitizeSvgAndAttributes === "function") {
+    h = sanitizeSvgAndAttributes(h);
+  } else {
+    h = h.replace(/=\\+["']/g, '="');
+    h = h.replace(/([a-zA-Z0-9_:-]+)\s*=\s*\\+["']([\s\S]*?)\\+["'](?=[\s\/>])/g, '$1="$2"');
+    h = h.replace(/([a-zA-Z0-9_:-]+)\s*=\s*(["'])(?:\\*["']|&quot;)+([\s\S]*?)(?:\\*["']|&quot;)*\2/g, '$1=$2$3$2');
+    h = h.replace(/([a-zA-Z0-9_:-]+)\s*=\s*(["'])([\s\S]*?)(?:\\*["']|&quot;)+\2/g, '$1=$2$3$2');
+    h = h.replace(/\b(viewBox|d|points|transform|fill|stroke)\s*=\s*(["'])([\s\S]*?)\2/gi, (match, attr, q, val) => {
+      let clean = val.replace(/^(?:[\s\\"'&]|&quot;)+/g, '').replace(/(?:[\s\\"'&]|&quot;)+$/g, '').replace(/\\+["']/g, ' ');
+      if (attr.toLowerCase() === 'd') {
+        clean = clean.replace(/([aA]\s*\d+(?:\.\d+)?[\s,]+\d+(?:\.\d+)?[\s,]+-?\d+(?:\.\d+)?[\s,]+[01])([\s,]+)([2-9]|\d{2,}|-[0-9])/g, "$1 0$2$3");
+        clean = clean.replace(/([aA]\s*\d+(?:\.\d+)?[\s,]+\d+(?:\.\d+)?[\s,]+-?\d+(?:\.\d+)?[\s,]+[01])([\s,]+)([2-9])/g, "$1 0$2$3");
+        clean = clean.replace(/([aA]\s*\d+(?:\.\d+)?[\s,]+\d+(?:\.\d+)?[\s,]+-?\d+(?:\.\d+)?[\s,]+[01])(-[0-9])/g, "$1 0 $2");
+      }
+      return `${attr}=${q}${clean}${q}`;
+    });
   }
 
   // 1. Check for unclosed style tags
