@@ -1887,6 +1887,19 @@ function probe(html, w = 390, scale = null, assertions = []){
           const failed = probeRes.assertionResults.filter(a => !a.passed);
           failed.forEach(a => issues.push(`Assertion failed: ${a.description} (${a.error || "did not meet condition"})`));
         }
+        if (probeRes.contrast && probeRes.contrast.failed && probeRes.contrast.failed.length) {
+          issues.push(`Contrast failure: ${probeRes.contrast.failed[0].element} has low contrast (${probeRes.contrast.failed[0].ratio}:1)`);
+        }
+        if (probeRes.tapTargets && probeRes.tapTargets.small && probeRes.tapTargets.small.length) {
+          issues.push(`Tap target too small: ${probeRes.tapTargets.small[0].element} (${probeRes.tapTargets.small[0].width}x${probeRes.tapTargets.small[0].height}px < 44px)`);
+        }
+        if (probeRes.focusRings && probeRes.focusRings.missing && probeRes.focusRings.missing.length) {
+          issues.push(`Focus ring missing: ${probeRes.focusRings.missing[0].element}`);
+        }
+        if (probeRes.performance && (probeRes.performance.overflow || probeRes.performance.jank)) {
+          if (probeRes.performance.overflow) issues.push("Horizontal layout overflow on phone viewport");
+          if (probeRes.performance.jank) issues.push(`Frame time budget exceeded (${probeRes.performance.maxFrameMs}ms > 50ms)`);
+        }
       }
       if (qa) {
         if (qa.t < 15 && !qa.v) issues.push("The page renders blank: no visible text or controls after load.");

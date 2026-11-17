@@ -2318,13 +2318,227 @@ if (typeof window !== "undefined") {
   window.getIsolatedStorageKey = getIsolatedStorageKey;
 }
 
-/* ===== Poppy Verify Probe =====
-   Runs INSIDE a rendered app and reports what actually happens.
-   Used two ways:
-     - Node eval (eval.js):  page.addInitScript(initProbe); page.evaluate(runProbe)
-     - poppy.html (Phase 2): embed "(" + initProbe + ")()" in <head> of the preview,
-       then post "(" + runProbe + ")()" results back via postMessage.
+/* ===== Poppy Verify Probe (Poppy 5.1 Stricter Edition) =====
+   Runs INSIDE a rendered app and reports what actually happens:
+     - Runtime errors & unhandled rejections
+     - Dead buttons & state mutation tracking
+     - Canvas animation & keyboard reactivity
+     - Architect assertions
+     - [5.1] WCAG AA Color Contrast ratio auditing
+     - [5.1] Touch & Tap Target size budgeting (>= 44x44px)
+     - [5.1] Keyboard Focus Ring & outline visibility
+     - [5.1] Frame-time budgets & horizontal layout overflow
    Pure observation: it never fakes behaviour. */
+
+function parseColor(str) {
+  if (!str || typeof str !== "string") return { r: 0, g: 0, b: 0, a: 1 };
+  const s = str.trim().toLowerCase();
+  if (s === "transparent" || s === "rgba(0, 0, 0, 0)") return { r: 0, g: 0, b: 0, a: 0 };
+  const rgbaMatch = s.match(/rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/);
+  if (rgbaMatch) {
+    return {
+      r: Math.round(parseFloat(rgbaMatch[1])),
+      g: Math.round(parseFloat(rgbaMatch[2])),
+      b: Math.round(parseFloat(rgbaMatch[3])),
+      a: rgbaMatch[4] !== undefined ? parseFloat(rgbaMatch[4]) : 1
+    };
+  }
+  if (s.startsWith("#")) {
+    let hex = s.slice(1);
+    if (hex.length === 3 || hex.length === 4) {
+      hex = hex.split("").map(c => c + c).join("");
+    }
+    if (hex.length >= 6) {
+      return {
+        r: parseInt(hex.slice(0, 2), 16),
+        g: parseInt(hex.slice(2, 4), 16),
+        b: parseInt(hex.slice(4, 6), 16),
+        a: hex.length >= 8 ? parseInt(hex.slice(6, 8), 16) / 255 : 1
+      };
+    }
+  }
+  return { r: 0, g: 0, b: 0, a: 1 };
+}
+
+function getLuminance(rgb) {
+  const vals = [rgb.r, rgb.g, rgb.b].map(v => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * vals[0] + 0.7152 * vals[1] + 0.0722 * vals[2];
+}
+
+function getContrastRatio(fgRgb, bgRgb) {
+  const l1 = getLuminance(fgRgb);
+  const l2 = getLuminance(bgRgb);
+  const max = Math.max(l1, l2);
+  const min = Math.min(l1, l2);
+  return +((max + 0.05) / (min + 0.05)).toFixed(2);
+}
+
+function getEffectiveBgColor(el, getCs) {
+  let curr = el;
+  let bg = { r: 255, g: 255, b: 255, a: 1 };
+  while (curr && curr.nodeType === 1) {
+    try {
+      const cs = getCs(curr);
+      if (cs && cs.backgroundColor) {
+        const parsed = parseColor(cs.backgroundColor);
+        if (parsed.a > 0.05) {
+          if (parsed.a >= 0.99) return parsed;
+          // Composite alpha over background
+          bg = {
+            r: Math.round(parsed.r * parsed.a + bg.r * (1 - parsed.a)),
+            g: Math.round(parsed.g * parsed.a + bg.g * (1 - parsed.a)),
+            b: Math.round(parsed.b * parsed.a + bg.b * (1 - parsed.a)),
+            a: 1
+          };
+          return bg;
+        }
+      }
+    } catch (e) {}
+    curr = curr.parentElement;
+  }
+  return bg;
+}
+
+function auditContrast(doc, getCs, describeFn) {
+  const failed = [];
+  let total = 0;
+  if (!doc || !doc.querySelectorAll) return { total: 0, failed: [] };
+  const textEls = doc.querySelectorAll("p, span, h1, h2, h3, h4, h5, h6, a, button, label, li, td, th");
+  const seen = new Set();
+
+  for (const el of textEls) {
+    if (!el || !el.getBoundingClientRect) continue;
+    const txt = (el.innerText || el.textContent || "").trim();
+    if (!txt || txt.length < 2) continue;
+    const cs = getCs(el);
+    if (!cs || cs.display === "none" || cs.visibility === "hidden" || cs.opacity === "0") continue;
+    const rect = el.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) continue;
+
+    const desc = describeFn(el);
+    if (seen.has(desc)) continue;
+    seen.add(desc);
+    total++;
+
+    const fg = parseColor(cs.color || "#000000");
+    const bg = getEffectiveBgColor(el, getCs);
+    const ratio = getContrastRatio(fg, bg);
+
+    const fSize = parseFloat(cs.fontSize || "16");
+    const isBold = parseInt(cs.fontWeight || "400", 10) >= 700 || cs.fontWeight === "bold";
+    const isLargeText = fSize >= 24 || (fSize >= 18.66 && isBold);
+    const required = isLargeText ? 3.0 : 4.5;
+
+    if (ratio < required) {
+      failed.push({
+        element: desc,
+        ratio,
+        required,
+        fg: `rgb(${fg.r},${fg.g},${fg.b})`,
+        bg: `rgb(${bg.r},${bg.g},${bg.b})`
+      });
+    }
+  }
+  return { total, failed };
+}
+
+function auditTapTargets(doc, getCs, describeFn) {
+  const small = [];
+  let total = 0;
+  if (!doc || !doc.querySelectorAll) return { total: 0, small: [] };
+  const targets = doc.querySelectorAll("button, input[type=button], input[type=submit], a[href], [role=button], [data-action]");
+
+  for (const el of targets) {
+    if (!el || !el.getBoundingClientRect) continue;
+    const cs = getCs(el);
+    if (!cs || cs.display === "none" || cs.visibility === "hidden" || el.disabled) continue;
+    const rect = el.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) continue;
+    total++;
+
+    const w = Math.round(rect.width);
+    const h = Math.round(rect.height);
+    // Standard touch budget minimum is 44x44px
+    if (w < 44 || h < 44) {
+      small.push({
+        element: describeFn(el),
+        width: w,
+        height: h,
+        required: "44x44px"
+      });
+    }
+  }
+  return { total, small };
+}
+
+function auditKeyboardFocus(doc, getCs, describeFn) {
+  const missing = [];
+  let total = 0;
+  if (!doc || !doc.querySelectorAll) return { total: 0, missing: [] };
+  const focusables = doc.querySelectorAll("button, a[href], input, select, textarea, [tabindex]");
+
+  for (const el of focusables) {
+    if (!el || !el.getBoundingClientRect) continue;
+    const cs = getCs(el);
+    if (!cs || cs.display === "none" || cs.visibility === "hidden" || el.disabled) continue;
+    const tabIdx = parseInt(el.getAttribute ? el.getAttribute("tabindex") || "0" : "0", 10);
+    if (tabIdx < 0) continue;
+    total++;
+
+    const outlineStyle = cs.outlineStyle || "none";
+    const outlineWidth = parseFloat(cs.outlineWidth || "0");
+    const boxShadow = cs.boxShadow || "none";
+
+    // Detect outline: none without fallback focus shadow or ring
+    if ((outlineStyle === "none" || outlineWidth === 0) && boxShadow === "none") {
+      missing.push({
+        element: describeFn(el),
+        reason: "No visible outline or box-shadow focus indicator"
+      });
+    }
+  }
+  return { total, missing };
+}
+
+async function auditPerformanceBudget(win, doc) {
+  let avgFrameMs = 16.6;
+  let maxFrameMs = 16.6;
+  let jank = false;
+  let overflow = false;
+
+  try {
+    if (doc && doc.documentElement && win && typeof win.innerWidth === "number") {
+      const scrollW = doc.documentElement.scrollWidth || 0;
+      if (scrollW > win.innerWidth + 6) {
+        overflow = true;
+      }
+    }
+
+    if (win && typeof win.requestAnimationFrame === "function" && win.performance && typeof win.performance.now === "function") {
+      const frames = [];
+      let last = win.performance.now();
+      for (let i = 0; i < 5; i++) {
+        await new Promise(r => win.requestAnimationFrame(r));
+        const now = win.performance.now();
+        frames.push(now - last);
+        last = now;
+      }
+      if (frames.length) {
+        const sum = frames.reduce((a, b) => a + b, 0);
+        avgFrameMs = +(sum / frames.length).toFixed(1);
+        maxFrameMs = +Math.max(...frames).toFixed(1);
+        if (maxFrameMs > 50 || avgFrameMs > 25) {
+          jank = true;
+        }
+      }
+    }
+  } catch (e) {}
+
+  return { avgFrameMs, maxFrameMs, jank, overflow };
+}
 
 function initProbe() {
   if (window.__pp_probe) return;
@@ -2336,7 +2550,6 @@ function initProbe() {
   console.error = function () { push("console.error: " + [].slice.call(arguments).join(" ")); return ce.apply(console, arguments); };
   window.alert = window.confirm = () => true;
   window.prompt = () => "test";
-  // bubble phase on window => runs AFTER the app's own handlers; only stops navigation
   window.addEventListener("submit", e => { if (!e.defaultPrevented) e.preventDefault(); });
   window.addEventListener("click", e => {
     const a = e.target && e.target.closest && e.target.closest("a[href]");
@@ -2370,36 +2583,47 @@ async function runProbe(opts) {
   };
   const sig = () => {
     let s = document.body ? document.body.innerHTML : "";
-    document.querySelectorAll("input,textarea,select").forEach(i => { s += "|" + (/checkbox|radio/.test(i.type) ? i.checked : i.value); });
+    if (document.querySelectorAll) {
+      document.querySelectorAll("input,textarea,select").forEach(i => { s += "|" + (/checkbox|radio/.test(i.type) ? i.checked : i.value); });
+    }
     try { s += "|" + JSON.stringify(localStorage); } catch (e) {}
-    document.querySelectorAll("canvas").forEach(c => { s += "|" + canvasHash(c); });
+    if (document.querySelectorAll) {
+      document.querySelectorAll("canvas").forEach(c => { s += "|" + canvasHash(c); });
+    }
     return s;
   };
+  const getCs = typeof getComputedStyle === "function" ? getComputedStyle : () => ({ visibility: "visible", display: "block" });
   const visible = el => {
-    const r = el.getBoundingClientRect(), cs = getComputedStyle(el);
+    if (!el || !el.getBoundingClientRect) return false;
+    const r = el.getBoundingClientRect(), cs = getCs(el);
     return r.width > 0 && r.height > 0 && cs.visibility !== "hidden" && cs.display !== "none" && !el.disabled;
   };
   const describe = el =>
-    (el.id ? "#" + el.id : el.tagName.toLowerCase() + (el.className && typeof el.className === "string" ? "." + el.className.trim().split(/\s+/)[0] : "")) +
-    ' "' + ((el.innerText || el.value || el.getAttribute("aria-label") || "").trim().slice(0, 24)) + '"';
+    (el.id ? "#" + el.id : (el.tagName ? el.tagName.toLowerCase() : "element") + (el.className && typeof el.className === "string" ? "." + el.className.trim().split(/\s+/)[0] : "")) +
+    ' "' + (((el.innerText || el.value || (el.getAttribute ? el.getAttribute("aria-label") : "") || "").trim()).slice(0, 24)) + '"';
 
   // --- render checks
-  const text = (document.body ? document.body.innerText : "").trim();
+  const text = (document.body ? document.body.innerText || document.body.textContent || "" : "").trim();
   const render = {
     textLen: text.length,
-    visual: !!document.querySelector("canvas,svg,img,video,table,input,button"),
+    visual: document.querySelector ? !!document.querySelector("canvas,svg,img,video,table,input,button") : false,
     placeholder: /Interactive application loaded\. All controls and modules are active\./.test(text)
   };
 
   // --- pre-fill inputs so calculators/forms have something to work with
-  document.querySelectorAll("input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=range]),textarea").forEach(i => {
-    if (!visible(i) || i.value) return;
-    i.value = i.type === "number" ? String(i.min && +i.min > 5 ? i.min : 5) : i.type === "email" ? "a@b.co" : "test";
-    i.dispatchEvent(new Event("input", { bubbles: true })); i.dispatchEvent(new Event("change", { bubbles: true }));
-  });
+  if (document.querySelectorAll) {
+    document.querySelectorAll("input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=range]),textarea").forEach(i => {
+      if (!visible(i) || i.value) return;
+      i.value = i.type === "number" ? String(i.min && +i.min > 5 ? i.min : 5) : i.type === "email" ? "a@b.co" : "test";
+      if (typeof i.dispatchEvent === "function" && typeof Event !== "undefined") {
+        i.dispatchEvent(new Event("input", { bubbles: true }));
+        i.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    });
+  }
 
   // --- click every visible control, one at a time
-  const els = [...document.querySelectorAll("button,input[type=button],input[type=submit],[role=button],[data-action]")].filter(visible).slice(0, opts.maxButtons || 40);
+  const els = (document.querySelectorAll ? [...document.querySelectorAll("button,input[type=button],input[type=submit],[role=button],[data-action]")] : []).filter(visible).slice(0, opts.maxButtons || 40);
   const dead = [], exempt = [], clickErrors = [];
   for (const el of els) {
     if (!el.isConnected) continue;
@@ -2408,14 +2632,13 @@ async function runProbe(opts) {
     await sleep(60);
     if (log.errors.length > n) log.errors.slice(n).forEach(m => clickErrors.push(describe(el) + " -> " + m));
     else if (sig() === before) {
-      // restart/reset/stop at initial state legitimately changes nothing
       if (/^(restart|reset|new game|play again|stop|pause|cancel|close)\b/i.test((el.innerText || el.value || "").trim())) exempt.push(describe(el));
       else dead.push(describe(el));
     }
   }
 
   // --- canvas: does it animate on its own, or react to keys?
-  const canvases = [...document.querySelectorAll("canvas")].filter(visible);
+  const canvases = (document.querySelectorAll ? [...document.querySelectorAll("canvas")] : []).filter(visible);
   const canvas = { present: canvases.length > 0, animating: false, reactsToKeys: false };
   if (canvases.length) {
     const h0 = canvasHash(canvases[0]); await sleep(300);
@@ -2423,21 +2646,23 @@ async function runProbe(opts) {
     const h1 = canvasHash(canvases[0]);
     for (const k of ["ArrowRight", " ", "ArrowUp", "Enter"]) {
       for (const t of [window, document]) {
-        t.dispatchEvent(new KeyboardEvent("keydown", { key: k, code: k === " " ? "Space" : k, bubbles: true }));
-        t.dispatchEvent(new KeyboardEvent("keyup", { key: k, code: k === " " ? "Space" : k, bubbles: true }));
+        if (typeof t.dispatchEvent === "function" && typeof KeyboardEvent !== "undefined") {
+          t.dispatchEvent(new KeyboardEvent("keydown", { key: k, code: k === " " ? "Space" : k, bubbles: true }));
+          t.dispatchEvent(new KeyboardEvent("keyup", { key: k, code: k === " " ? "Space" : k, bubbles: true }));
+        }
       }
       await sleep(120);
     }
     canvas.reactsToKeys = canvasHash(canvases[0]) !== h1;
   }
 
-  // --- verify explicit Architect assertions if provided
+  // --- Architect assertions
   const assertionResults = [];
   if (Array.isArray(opts.assertions) && opts.assertions.length) {
     for (const a of opts.assertions) {
       let passed = false, errorMsg = "";
       try {
-        const target = a.selector ? document.querySelector(a.selector) : null;
+        const target = a.selector && document.querySelector ? document.querySelector(a.selector) : null;
         if (a.expectedState === "dom-exists") {
           passed = !!target;
           if (!passed) errorMsg = `Element ${a.selector} not found in DOM`;
@@ -2458,11 +2683,32 @@ async function runProbe(opts) {
     }
   }
 
-  return { loadErrors, clickErrors, buttons: { total: els.length, dead }, canvas, render, assertionResults };
+  // --- [5.1] Strict Audits: Contrast, Tap Targets, Focus Rings, Performance
+  const contrast = auditContrast(document, getCs, describe);
+  const tapTargets = auditTapTargets(document, getCs, describe);
+  const focusRings = auditKeyboardFocus(document, getCs, describe);
+  const performance = await auditPerformanceBudget(window, document);
+  const isStrict = !!(opts.strict || opts.strictChecks || opts.strict51);
+
+  return {
+    loadErrors,
+    clickErrors,
+    buttons: { total: els.length, dead },
+    canvas,
+    render,
+    assertionResults,
+    contrast,
+    tapTargets,
+    focusRings,
+    performance,
+    strict: isStrict,
+    opts
+  };
 }
 
-function scoreProbe(r) {
+function scoreProbe(r, scoreOpts) {
   r = r || {};
+  scoreOpts = scoreOpts || {};
   const loadErrors = Array.isArray(r.loadErrors) ? r.loadErrors : [];
   const clickErrors = Array.isArray(r.clickErrors) ? r.clickErrors : [];
   const render = r.render || { textLen: 0, visual: false, placeholder: false };
@@ -2472,18 +2718,44 @@ function scoreProbe(r) {
 
   const load = loadErrors.length === 0;
   const rendered = !render.placeholder && (render.textLen >= 15 || render.visual);
-  // an always-animating canvas masks click effects, so only judge buttons on non-animating pages
   const judgeButtons = !(canvas.present && canvas.animating);
   const deadRatio = judgeButtons && buttons.total ? (buttons.dead || []).length / buttons.total : 0;
   const canvasOk = !canvas.present || canvas.animating || canvas.reactsToKeys;
   const assertionsOk = assertions.length === 0 || assertions.every(a => a.passed);
   const interaction = clickErrors.length === 0 && deadRatio <= 0.34 && canvasOk && assertionsOk;
-  return { load, render: rendered, interaction, pass: load && rendered && interaction, deadRatio: +deadRatio.toFixed(2), assertionsPassed: assertionsOk };
+  const standardPass = load && rendered && interaction;
+
+  // 5.1 Strict Scoring
+  const contrastPass = !r.contrast || (r.contrast.failed || []).length === 0;
+  const tapTargetsPass = !r.tapTargets || (r.tapTargets.small || []).length === 0;
+  const focusPass = !r.focusRings || (r.focusRings.missing || []).length === 0;
+  const perfPass = !r.performance || (!r.performance.overflow && !r.performance.jank);
+  const strictPass = contrastPass && tapTargetsPass && focusPass && perfPass;
+
+  const isStrict = !!(scoreOpts.strict || (r.opts && r.opts.strict) || r.strict);
+  const finalPass = isStrict ? (standardPass && strictPass) : standardPass;
+
+  return {
+    load,
+    render: rendered,
+    interaction,
+    pass: finalPass,
+    deadRatio: +deadRatio.toFixed(2),
+    assertionsPassed: assertionsOk,
+    strict: {
+      contrast: contrastPass,
+      tapTargets: tapTargetsPass,
+      focus: focusPass,
+      performance: perfPass,
+      pass: strictPass
+    }
+  };
 }
 
 /* Feed this back to the model for ONE repair turn. */
-function buildRepairPrompt(r) {
+function buildRepairPrompt(r, promptOpts) {
   r = r || {};
+  promptOpts = promptOpts || {};
   const out = [];
   const render = r.render || {};
   const loadErrors = Array.isArray(r.loadErrors) ? r.loadErrors : [];
@@ -2491,17 +2763,60 @@ function buildRepairPrompt(r) {
   const buttons = r.buttons || { dead: [] };
   const canvas = r.canvas || {};
   const failedAsserts = (r.assertionResults || []).filter(a => !a.passed);
+
   if (render.placeholder) out.push("The page rendered only a generic placeholder; build the real UI.");
   if (loadErrors.length) out.push("Errors on load:\n- " + loadErrors.join("\n- "));
   if (clickErrors.length) out.push("Errors when clicking controls:\n- " + clickErrors.join("\n- "));
   if (buttons.dead && buttons.dead.length) out.push("Controls that did nothing when clicked (no DOM, input, storage or canvas change):\n- " + buttons.dead.join("\n- "));
   if (canvas.present && !canvas.animating && !canvas.reactsToKeys) out.push("The canvas never changes: no animation loop and no response to keyboard input.");
   if (failedAsserts.length) out.push("Failed Architectural Assertions:\n- " + failedAsserts.map(a => `${a.description} (${a.error || "failed"})`).join("\n- "));
+
+  // [5.1] Strict Verify Diagnostics
+  const includeStrict = !!(promptOpts.strict || (r.opts && (r.opts.strict || r.opts.strict51)) || r.strict);
+  if (includeStrict) {
+    if (r.contrast && Array.isArray(r.contrast.failed) && r.contrast.failed.length) {
+      out.push("Color Contrast Violations (fails WCAG AA threshold):\n- " +
+        r.contrast.failed.slice(0, 4).map(c => `${c.element}: contrast ratio ${c.ratio}:1 (required: ${c.required}:1). Increase foreground/background contrast.`).join("\n- "));
+    }
+
+    if (r.tapTargets && Array.isArray(r.tapTargets.small) && r.tapTargets.small.length) {
+      out.push("Touch / Tap Target Size Violations (minimum 44x44px budget):\n- " +
+        r.tapTargets.small.slice(0, 4).map(t => `${t.element}: current size is ${t.width}x${t.height}px. Increase padding or min-width/min-height to at least 44px.`).join("\n- "));
+    }
+
+    if (r.focusRings && Array.isArray(r.focusRings.missing) && r.focusRings.missing.length) {
+      out.push("Missing Keyboard Focus Indicators (Accessibility):\n- " +
+        r.focusRings.missing.slice(0, 4).map(f => `${f.element}: outline is disabled without a visible focus-visible indicator. Add :focus-visible { outline: 2px solid ... }`).join("\n- "));
+    }
+
+    if (r.performance && (r.performance.overflow || r.performance.jank)) {
+      const pIssues = [];
+      if (r.performance.overflow) pIssues.push("Horizontal layout overflow detected: content exceeds viewport width causing accidental horizontal scrolling.");
+      if (r.performance.jank) pIssues.push(`Frame time budget exceeded (${r.performance.maxFrameMs}ms > 50ms): optimize animation loops and reduce layout thrashing.`);
+      out.push("Performance & Layout Budget Violations:\n- " + pIssues.join("\n- "));
+    }
+  }
+
   return out.length ? "Your app was run in a browser sandbox and failed these checks. Fix exactly these problems and return the full corrected document.\n\n" + out.join("\n\n") : "";
 }
 
-if (typeof module !== "undefined") module.exports = { initProbe, runProbe, scoreProbe, buildRepairPrompt };
-if (typeof window !== "undefined") Object.assign(window, { initProbe, runProbe, scoreProbe, buildRepairPrompt });
+const exported = {
+  initProbe,
+  runProbe,
+  scoreProbe,
+  buildRepairPrompt,
+  parseColor,
+  getLuminance,
+  getContrastRatio,
+  getEffectiveBgColor,
+  auditContrast,
+  auditTapTargets,
+  auditKeyboardFocus,
+  auditPerformanceBudget
+};
+
+if (typeof module !== "undefined") module.exports = exported;
+if (typeof window !== "undefined") Object.assign(window, exported);
 
 /* ===== Poppy Universal Artifact Architecture (UAA): Runtime Dispatcher =====
    Decouples execution from the standard website iframe. Dispatches artifacts
@@ -4528,6 +4843,19 @@ function probe(html, w = 390, scale = null, assertions = []){
         if (probeRes.assertionResults && probeRes.assertionResults.length) {
           const failed = probeRes.assertionResults.filter(a => !a.passed);
           failed.forEach(a => issues.push(`Assertion failed: ${a.description} (${a.error || "did not meet condition"})`));
+        }
+        if (probeRes.contrast && probeRes.contrast.failed && probeRes.contrast.failed.length) {
+          issues.push(`Contrast failure: ${probeRes.contrast.failed[0].element} has low contrast (${probeRes.contrast.failed[0].ratio}:1)`);
+        }
+        if (probeRes.tapTargets && probeRes.tapTargets.small && probeRes.tapTargets.small.length) {
+          issues.push(`Tap target too small: ${probeRes.tapTargets.small[0].element} (${probeRes.tapTargets.small[0].width}x${probeRes.tapTargets.small[0].height}px < 44px)`);
+        }
+        if (probeRes.focusRings && probeRes.focusRings.missing && probeRes.focusRings.missing.length) {
+          issues.push(`Focus ring missing: ${probeRes.focusRings.missing[0].element}`);
+        }
+        if (probeRes.performance && (probeRes.performance.overflow || probeRes.performance.jank)) {
+          if (probeRes.performance.overflow) issues.push("Horizontal layout overflow on phone viewport");
+          if (probeRes.performance.jank) issues.push(`Frame time budget exceeded (${probeRes.performance.maxFrameMs}ms > 50ms)`);
         }
       }
       if (qa) {
