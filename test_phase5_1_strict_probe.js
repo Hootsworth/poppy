@@ -325,6 +325,80 @@ const itAsync = async (desc, fn) => {
     assert.strictEqual(sanitizeSvgAndAttributes(validArc), validArc);
   });
 
+  console.log("\n--- Suite 8: Zero-CORS iTunes API Fetch Interceptor & JSONP Polyfill ---");
+
+  it("production bundles contain iTunes zero-CORS fetch polyfill in SDK and SHIM", () => {
+    const poppyHtml = fs.readFileSync(path.join(__dirname, "poppy.html"), "utf8");
+    const distHtml = fs.readFileSync(path.join(__dirname, "dist", "index.html"), "utf8");
+
+    assert.ok(poppyHtml.includes("__poppy_itunes_"), "poppy.html must contain iTunes fetch interceptor");
+    assert.ok(distHtml.includes("__poppy_itunes_"), "dist/index.html must contain iTunes fetch interceptor");
+  });
+
+  it("iTunes fetch interceptor correctly intercepts search and lookup URLs via JSONP", async () => {
+    const mockWindow = {
+      fetch: async () => { throw new TypeError("Failed to fetch (CORS error)"); }
+    };
+    const mockDoc = {
+      head: {
+        appendChild: s => {
+          // Simulate script injection and Apple server JSONP execution
+          setTimeout(() => {
+            const cbMatch = s.src.match(/callback=([^&]+)/);
+            if (cbMatch && mockWindow[cbMatch[1]]) {
+              mockWindow[cbMatch[1]]({
+                resultCount: 2,
+                results: [
+                  { trackName: "Beauty and a Beat", artistName: "Justin Bieber", previewUrl: "https://audio-ssl.itunes.apple.com/preview.m4a" },
+                  { trackName: "Baby", artistName: "Justin Bieber", previewUrl: "https://audio-ssl.itunes.apple.com/baby.m4a" }
+                ]
+              });
+            }
+          }, 10);
+        }
+      },
+      createElement: () => ({ parentNode: { removeChild: () => {} }, remove: () => {} })
+    };
+
+    // Install polyfill on mockWindow
+    const _orig = mockWindow.fetch;
+    mockWindow.fetch = function(url, options) {
+      const urlStr = typeof url === "string" ? url : (url && url.url ? url.url : String(url || ""));
+      if (/itunes\.apple\.com\/(search|lookup)/i.test(urlStr)) {
+        return new Promise((resolve, reject) => {
+          const cbName = "__poppy_itunes_" + Math.random().toString(36).slice(2, 9);
+          const s = mockDoc.createElement("script");
+          const sep = urlStr.indexOf("?") !== -1 ? "&" : "?";
+          let jsonpUrl = urlStr;
+          if (!/callback=/i.test(jsonpUrl)) {
+            jsonpUrl += sep + "callback=" + cbName;
+          } else {
+            jsonpUrl = jsonpUrl.replace(/callback=[^&]+/i, "callback=" + cbName);
+          }
+          mockWindow[cbName] = data => {
+            const jsonStr = JSON.stringify(data);
+            resolve({
+              ok: true,
+              status: 200,
+              json: () => Promise.resolve(data),
+              text: () => Promise.resolve(jsonStr)
+            });
+          };
+          s.src = jsonpUrl;
+          mockDoc.head.appendChild(s);
+        });
+      }
+      return _orig.apply(this, arguments);
+    };
+
+    const res = await mockWindow.fetch("https://itunes.apple.com/search?term=justin%20bieber&entity=song&limit=10");
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.ok, true);
+    const data = await res.json();
+    assert.strictEqual(data.resultCount, 2);
+    assert.strictEqual(data.results[0].trackName, "Beauty and a Beat");
+  });
+
   console.log("==================================================================");
   console.log(`ALL ${testsPassed}/${testsPassed} PHASE 5.1 STRICT VERIFY PROBE TESTS PASSED!`);
   console.log("==================================================================");

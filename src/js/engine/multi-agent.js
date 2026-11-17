@@ -65,6 +65,7 @@ UNIVERSAL ARCHITECTURE RULES (APPLIES TO ALL TYPES OF WEBSITES):
    - TIMERS & STOPWATCHES: Working Start/Pause/Reset buttons, formatted MM:SS display, and drift-free timing loop.
    - GAMES & SIMULATIONS: 60fps canvas loop, player physics (velocity, gravity, collision), patrolling enemies, coin/score items, dual desktop keyboard + mobile on-screen buttons, and sound effects.
    - PRESENTATIONS & DECKS: 16:9 widescreen viewport, Prev/Next navigation, progress bar, slide counter, and speaker notes drawer.
+   - MUSIC & AUDIO PLAYERS: If querying the iTunes Search API (itunes.apple.com), NEVER call fetch() or XMLHttpRequest (Apple does not send CORS headers and modern browsers block fetch from origin null). ALWAYS use JSONP with dynamic script tags (https://itunes.apple.com/search?term=QUERY&media=music&entity=song&limit=10&callback=CALLBACK). Play real 30s audio previews with track.previewUrl, and load crisp 600x600 cover art with track.artworkUrl100.replace('100x100bb', '600x600bb'). Pre-populate 4-6 realistic seed tracks so the player works immediately.
 4. ZERO DEAD BUTTONS & EVENT ARCHITECTURE:
    - Place all <script> tags at the very bottom of <body> (just before </body>).
    - Attach event listeners via JavaScript (e.g. element.addEventListener('click', handler) or element.onclick = handler) OR assign handlers to window (e.g. window.calculate = function() { ... }).
@@ -202,6 +203,18 @@ function repairHtml(html) {
       }
       return `${attr}=${q}${clean}${q}`;
     });
+  }
+
+  // 0.5. Ensure zero-CORS iTunes API fetch polyfill is present if itunes.apple.com is referenced
+  if (/itunes\.apple\.com/i.test(h) && !/__poppy_itunes_/i.test(h)) {
+    const polyfill = `<script>(()=>{try{const _f=window.fetch;window.fetch=function(u,o){const s=typeof u==="string"?u:(u&&u.url?u.url:String(u||""));if(/itunes\\.apple\\.com\\/(search|lookup)/i.test(s)){return new Promise((res,rej)=>{const cb="__poppy_itunes_"+Math.random().toString(36).slice(2,9);const el=document.createElement("script");const sep=s.includes("?")?"&":"?";const ju=s+(!/callback=/i.test(s)?sep+"callback="+cb:s.replace(/callback=[^&]+/i,"callback="+cb));const tm=setTimeout(()=>{cu();rej(new TypeError("iTunes API timeout"))},10000);function cu(){clearTimeout(tm);try{delete window[cb]}catch(e){}if(el.parentNode)el.remove()}window[cb]=d=>{cu();const j=JSON.stringify(d);res({ok:true,status:200,statusText:"OK",headers:{get:()=>"application/json"},json:()=>Promise.resolve(d),text:()=>Promise.resolve(j),blob:()=>Promise.resolve(new Blob([j],{type:"application/json"})),clone:function(){return this}})};el.onerror=()=>{cu();rej(new TypeError("Failed to load resource: net::ERR_FAILED"))};el.src=ju;(document.head||document.body||document.documentElement).appendChild(el)})}return _f?_f.apply(this,arguments):Promise.reject(new TypeError("fetch not supported"))}}catch(e){}})();</scr` + `ipt>`;
+    if (/<head\b[^>]*>/i.test(h)) {
+      h = h.replace(/<head\b[^>]*>/i, m => m + "\n" + polyfill);
+    } else if (/<body\b[^>]*>/i.test(h)) {
+      h = h.replace(/<body\b[^>]*>/i, m => m + "\n" + polyfill);
+    } else {
+      h = polyfill + "\n" + h;
+    }
   }
 
   // 1. Check for unclosed style tags

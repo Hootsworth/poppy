@@ -700,6 +700,62 @@ if(!lsSafe){
     Object.defineProperty(window,"sessionStorage",{value:window.localStorage,configurable:true,writable:true});
   }catch(e){}
 }
+try {
+  const _poppy_orig_fetch = window.fetch;
+  window.fetch = function(url, options) {
+    const urlStr = typeof url === "string" ? url : (url && url.url ? url.url : String(url || ""));
+    if (/itunes\\.apple\\.com\\/(search|lookup)/i.test(urlStr)) {
+      return new Promise((resolve, reject) => {
+        const cbName = "__poppy_itunes_" + Math.random().toString(36).slice(2, 9);
+        const s = document.createElement("script");
+        const sep = urlStr.indexOf("?") !== -1 ? "&" : "?";
+        let jsonpUrl = urlStr;
+        if (!/callback=/i.test(jsonpUrl)) {
+          jsonpUrl += sep + "callback=" + cbName;
+        } else {
+          jsonpUrl = jsonpUrl.replace(/callback=[^&]+/i, "callback=" + cbName);
+        }
+        const timer = setTimeout(() => {
+          cleanup();
+          reject(new TypeError("iTunes API request timed out"));
+        }, 10000);
+        function cleanup() {
+          clearTimeout(timer);
+          try { delete window[cbName]; } catch(e) { window[cbName] = undefined; }
+          if (s.parentNode && s.parentNode.removeChild) s.parentNode.removeChild(s);
+        }
+        if (options && options.signal) {
+          options.signal.addEventListener("abort", () => {
+            cleanup();
+            reject(new DOMException("The operation was aborted", "AbortError"));
+          });
+        }
+        window[cbName] = (data) => {
+          cleanup();
+          const jsonStr = JSON.stringify(data);
+          const resp = {
+            ok: true,
+            status: 200,
+            statusText: "OK",
+            headers: typeof Headers !== "undefined" ? new Headers({ "content-type": "application/json" }) : { get: () => "application/json" },
+            json: () => Promise.resolve(data),
+            text: () => Promise.resolve(jsonStr),
+            blob: () => Promise.resolve(new Blob([jsonStr], { type: "application/json" })),
+            clone: function() { return this; }
+          };
+          resolve(resp);
+        };
+        s.onerror = () => {
+          cleanup();
+          reject(new TypeError("Failed to load resource: net::ERR_FAILED"));
+        };
+        s.src = jsonpUrl;
+        (document.head || document.body || document.documentElement).appendChild(s);
+      });
+    }
+    return _poppy_orig_fetch ? _poppy_orig_fetch.apply(this, arguments) : Promise.reject(new TypeError("fetch not supported"));
+  };
+} catch(e) {}
 document.addEventListener("submit",e=>{
   if(!e.defaultPrevented&&(!e.target.action||e.target.action.startsWith("about:")||e.target.action===window.location.href)){
     e.preventDefault();
